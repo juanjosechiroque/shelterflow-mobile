@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "ShelterFlow"
+  },
+  "navigation": {
+    "home": "Home",
+    "settings": "Settings"
+  },
+  "foundation": {
+    "eyebrow": "PHASE 0",
+    "title": "ShelterFlow's foundation is ready",
+    "description": "A mobile application that supports every adoption from evaluation through follow-up.",
+    "settingsAction": "Configure language"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": {
+      "title": "Language",
+      "description": "Your selected language will be remembered the next time you open the application.",
+      "saveError": "We couldn't save the language. Please try again.",
+      "spanish": "Español",
+      "english": "English"
+    }
+  }
+}
