@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '@/constants/theme';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
 import {
+  selectAdoptionForCandidate,
   selectAnimalById,
   selectCandidateById,
   selectFollowUpsForAnimal,
@@ -26,9 +27,7 @@ export function AdoptionConfirmationScreen() {
     ? selectAnimalById(state, candidate.animalId)
     : undefined;
   const adoption = candidate
-    ? state.adoptions.find(
-        (a) => a.candidateId === candidate.id && a.status === 'ACTIVE',
-      )
+    ? selectAdoptionForCandidate(state, candidate.id)
     : undefined;
   const followUps = animal ? selectFollowUpsForAnimal(state, animal.id) : [];
 

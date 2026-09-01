@@ -13,7 +13,6 @@ import type { PrototypeFlowRepository } from './repository-contract';
 import { createMockPrototypeRepository } from './mock-repository';
 import { createPrototypeFlowReducer } from './prototype-flow-reducer';
 import type {
-  CandidateStatus,
   FollowUpOutcome,
   MockEvaluation,
   MockMeeting,
@@ -26,7 +25,7 @@ export interface PrototypeFlowCommands {
     candidateId: string,
     evaluation: Omit<MockEvaluation, 'id' | 'recordedOn'>,
   ): void;
-  continueContact(candidateId: string, toStatus: CandidateStatus): void;
+  continueContact(candidateId: string): void;
   scheduleMeeting(
     candidateId: string,
     meetingType: MockMeeting['type'],
@@ -88,8 +87,12 @@ export function PrototypeFlowProvider({
     () => ({
       recordEvaluation: (candidateId, evaluation) =>
         dispatch({ type: 'RECORD_EVALUATION', candidateId, evaluation }),
-      continueContact: (candidateId, toStatus) =>
-        dispatch({ type: 'CONTINUE_CANDIDATE', candidateId, toStatus }),
+      continueContact: (candidateId) =>
+        dispatch({
+          type: 'CONTINUE_CANDIDATE',
+          candidateId,
+          toStatus: 'CONTACT_PENDING',
+        }),
       scheduleMeeting: (candidateId, meetingType, scheduledOn, notes) =>
         dispatch({
           type: 'SCHEDULE_MEETING',
