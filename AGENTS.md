@@ -21,7 +21,7 @@ For Expo implementation, use the exact SDK documentation matching the installed 
 
 ## Scope control
 
-- Work on one roadmap phase or vertical slice at a time.
+- Work on one coherent vertical slice at a time.
 - Do not implement future roadmap features unless explicitly requested.
 - Do not introduce a dependency without explaining why it is needed.
 - Do not create generic CRM concepts such as Lead, Opportunity, Activity, or Task unless the public product scope is explicitly updated.

@@ -59,7 +59,7 @@ created_at
 updated_at
 ```
 
-The account-creation operation must create both records atomically. Exact database defaults, indexes, and foreign-key behavior are defined with the migrations in Phase 4.
+The account-creation operation must create both records atomically. Exact database defaults, indexes, and foreign-key behavior will be defined alongside the database migrations.
 
 ## Entity relationships
 

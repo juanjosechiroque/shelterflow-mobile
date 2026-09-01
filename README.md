@@ -2,7 +2,7 @@
 
 ShelterFlow is a Spanish-first React Native application for small animal shelters and independent rescuers. It supports the operational adoption journey after a candidate has already been shortlisted: evaluation, meeting, decision, adoption, and post-adoption follow-up.
 
-The repository currently contains the mobile foundation and the canonical adoption domain model. Business workflows and Supabase persistence have not been implemented yet.
+The repository currently contains the mobile foundation, the canonical adoption domain model, and a mocked operational browse prototype. Business workflows and Supabase persistence have not been implemented yet.
 
 ## Product scope
 
@@ -64,7 +64,7 @@ Spanish (`es`) is the default language and English (`en`) is supported. UI strin
 
 ## Foundation architecture
 
-Expo Router maps files in `src/app` to application routes. For example, `src/app/index.tsx` is `/` and `src/app/settings.tsx` is `/settings`; the root layout composes navigation and application-level providers. Navigation only determines which screen is visible. It must not be used to represent domain state such as an animal being adopted or a candidate being selected.
+Expo Router maps files in `src/app` to application routes. For example, `src/app/(tabs)/index.tsx` is the Today tab and `src/app/settings.tsx` is `/settings`; the root layout composes navigation and application-level providers. Navigation only determines which screen is visible. It must not be used to represent domain state such as an animal being adopted or a candidate being selected.
 
 TypeScript extends Expo's SDK-matched base configuration, enables strict mode, and exposes the `@/` alias for source imports. Generated Expo Router route types are included so invalid route references can be detected during development.
 
@@ -83,7 +83,7 @@ The initial dependencies are intentionally limited:
 | Jest and React Native Testing Library      | Unit and component validation                       |
 | TypeScript, ESLint, and Prettier           | Static types and consistent code quality            |
 
-Server-state, authentication, database, and business-domain dependencies remain out of scope for Phase 0.
+Server-state, authentication, database, and business-domain dependencies will be introduced only when the corresponding functionality requires them.
 
 ## Documentation
 
@@ -104,8 +104,9 @@ GitHub Actions runs `npm ci`, type checking, linting, formatting validation, and
 src/
   app/          Expo Router routes and layouts
   constants/    Foundation-level visual constants
+  features/     Feature screens, mock data, and presenters
   i18n/         Translation resources, persistence, and formatting
   providers/    Application-level providers
 ```
 
-Feature folders will be introduced incrementally when their roadmap phase begins.
+The current `animals` and `today` feature folders support a mocked browse prototype. Additional feature folders will be introduced incrementally as their functionality is implemented.

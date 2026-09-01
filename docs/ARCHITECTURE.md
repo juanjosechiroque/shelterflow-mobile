@@ -2,9 +2,9 @@
 
 ## Status and scope
 
-This document describes the intended V1 architecture and the boundaries that guide incremental implementation. Phase 1 does not introduce the backend, authentication, business screens, or future dependencies described here.
+This document describes the intended V1 architecture and the boundaries that guide incremental implementation. The current prototype includes mocked operational browse screens but does not yet include the backend, authentication, mutations, or future dependencies described here.
 
-The current application foundation is Expo SDK 57, React Native, TypeScript, Expo Router, a development client, i18next, AsyncStorage, Jest, ESLint, and Prettier.
+The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used only for navigation and presentation.
 
 ## Architectural goals
 
@@ -14,7 +14,7 @@ The current application foundation is Expo SDK 57, React Native, TypeScript, Exp
 - Enforce critical multi-record invariants atomically in PostgreSQL.
 - Treat shelter ownership as a backend authorization boundary.
 - Keep mobile-specific concerns at the application edge.
-- Add abstractions and dependencies only when a roadmap phase creates a concrete need.
+- Add abstractions and dependencies only when implemented functionality creates a concrete need.
 
 ## Target system shape
 
@@ -45,7 +45,7 @@ Supabase
 └── Storage
 ```
 
-Mock and Supabase implementations are introduced in different phases. They must not coexist through a premature framework built in Phase 1.
+Mock and Supabase implementations are introduced incrementally. They must not be forced to coexist through a premature framework before persistence creates a concrete need.
 
 ## Navigation is not business state
 
@@ -67,7 +67,7 @@ Changing routes must never be the mechanism that changes persisted domain state.
 
 ## Source organization
 
-The target structure grows by feature as phases require it:
+The target structure grows by feature as the product requires it:
 
 ```text
 src/
@@ -141,7 +141,7 @@ Foreign keys, checks, unique constraints, and server-side operations must preven
 - invalid state transitions;
 - a second return for one adoption.
 
-Exact SQL design and indexes are decided with migrations in the Supabase phase, not in mobile components.
+Exact SQL design and indexes are decided alongside Supabase migrations, not in mobile components.
 
 ### Atomic operations
 
@@ -199,20 +199,20 @@ Complex synchronization queues are out of scope unless real requirements demonst
 
 ## Testing strategy
 
-Testing accompanies each phase:
+Testing accompanies each implementation increment:
 
 - unit tests for transition rules and pure formatting or validation;
 - component tests for forms and visible interaction behavior;
 - database integration tests for constraints, RLS, and transactional operations;
 - end-to-end tests only for critical paths where their cost is justified.
 
-The later Testing Hardening phase reviews gaps; it is not when testing begins.
+A later testing-hardening pass reviews gaps; it is not when testing begins.
 
 ## Environments and delivery
 
 Development, preview, and production builds use separate native identifiers selected by `APP_VARIANT`. The development client is used instead of Expo Go because the project targets Expo SDK 57 and will require native modules.
 
-Preview and production delivery will use EAS in the production-build phase. No secret or production credential should be required for ordinary local foundation checks.
+Preview and production delivery will use EAS when release builds are introduced. No secret or production credential should be required for ordinary local foundation checks.
 
 ## Alternatives deliberately deferred
 
