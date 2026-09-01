@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '@/i18n';
-import { prototypeFlowReducer } from '@/features/prototype-flow/prototype-flow-reducer';
-import { getInitialPrototypeState } from '@/features/prototype-flow/prototype-flow-selectors';
+import { fixedClock } from '@/features/prototype-flow/clock';
+import { createMockPrototypeRepository } from '@/features/prototype-flow/mock-repository';
+import { createPrototypeFlowReducer } from '@/features/prototype-flow/prototype-flow-reducer';
 import {
   selectCandidateById,
   selectAnimalById,
@@ -12,15 +13,16 @@ import type { PrototypeFlowState } from '@/features/prototype-flow/types';
 
 describe('prototype flow reducer', () => {
   let state: PrototypeFlowState;
+  const reducer = createPrototypeFlowReducer(fixedClock('2026-09-01'));
 
   beforeEach(async () => {
     await AsyncStorage.clear();
     await i18n.changeLanguage('es');
-    state = getInitialPrototypeState();
+    state = createMockPrototypeRepository().getSnapshot();
   });
 
   it('rejects recording an evaluation for a candidate that already has a status', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'RECORD_EVALUATION',
       candidateId: 'luna-carlos', // MEETING_SCHEDULED
       evaluation: {
@@ -39,7 +41,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('records an evaluation and moves a NEEDS_EVALUATION candidate to EVALUATED', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'RECORD_EVALUATION',
       candidateId: 'luna-andrea',
       evaluation: {
@@ -64,7 +66,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('continues an EVALUATED candidate to CONTACT_PENDING and moves the animal to IN_PROCESS', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'CONTINUE_CANDIDATE',
       candidateId: 'luna-sofia',
       toStatus: 'CONTACT_PENDING',
@@ -80,7 +82,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('rejects continuing a candidate through an invalid transition', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'CONTINUE_CANDIDATE',
       candidateId: 'luna-andrea', // NEEDS_EVALUATION only allows... none
       toStatus: 'MEETING_SCHEDULED',
@@ -92,13 +94,13 @@ describe('prototype flow reducer', () => {
   });
 
   it('schedules a meeting for a CONTACT_PENDING candidate', () => {
-    const contact = prototypeFlowReducer(state, {
+    const contact = reducer(state, {
       type: 'CONTINUE_CANDIDATE',
       candidateId: 'luna-sofia',
       toStatus: 'CONTACT_PENDING',
     });
 
-    const next = prototypeFlowReducer(contact, {
+    const next = reducer(contact, {
       type: 'SCHEDULE_MEETING',
       candidateId: 'luna-sofia',
       meetingType: 'MEET_AND_GREET',
@@ -117,8 +119,8 @@ describe('prototype flow reducer', () => {
   });
 
   it('rejects scheduling a meeting for a DECISION_PENDING candidate', () => {
-    const decision = prototypeFlowReducer(
-      prototypeFlowReducer(state, {
+    const decision = reducer(
+      reducer(state, {
         type: 'COMPLETE_MEETING',
         meetingId: 'luna-carlos-meeting',
         result: 'GOOD',
@@ -130,7 +132,7 @@ describe('prototype flow reducer', () => {
     );
 
     const before = decision.meetings.length;
-    const next = prototypeFlowReducer(decision, {
+    const next = reducer(decision, {
       type: 'SCHEDULE_MEETING',
       candidateId: 'luna-carlos',
       meetingType: 'VISIT',
@@ -144,13 +146,13 @@ describe('prototype flow reducer', () => {
   });
 
   it('rejects scheduling a meeting with an invalid date', () => {
-    const contact = prototypeFlowReducer(state, {
+    const contact = reducer(state, {
       type: 'CONTINUE_CANDIDATE',
       candidateId: 'luna-sofia',
       toStatus: 'CONTACT_PENDING',
     });
     const before = contact.meetings.length;
-    const next = prototypeFlowReducer(contact, {
+    const next = reducer(contact, {
       type: 'SCHEDULE_MEETING',
       candidateId: 'luna-sofia',
       meetingType: 'VISIT',
@@ -161,7 +163,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('completes a scheduled meeting recording a result', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'COMPLETE_MEETING',
       meetingId: 'luna-carlos-meeting',
       result: 'GOOD',
@@ -175,12 +177,12 @@ describe('prototype flow reducer', () => {
   });
 
   it('rejects completing an already completed meeting', () => {
-    const completed = prototypeFlowReducer(state, {
+    const completed = reducer(state, {
       type: 'COMPLETE_MEETING',
       meetingId: 'luna-carlos-meeting',
       result: 'GOOD',
     });
-    const next = prototypeFlowReducer(completed, {
+    const next = reducer(completed, {
       type: 'COMPLETE_MEETING',
       meetingId: 'luna-carlos-meeting',
       result: 'STRONG_MATCH',
@@ -191,7 +193,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('rejects marking decision pending without a completed meeting', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'MARK_DECISION_PENDING',
       candidateId: 'luna-carlos', // has only a SCHEDULED meeting
     });
@@ -205,12 +207,12 @@ describe('prototype flow reducer', () => {
   });
 
   it('moves a candidate with a completed meeting to DECISION_PENDING', () => {
-    const completed = prototypeFlowReducer(state, {
+    const completed = reducer(state, {
       type: 'COMPLETE_MEETING',
       meetingId: 'luna-carlos-meeting',
       result: 'GOOD',
     });
-    const next = prototypeFlowReducer(completed, {
+    const next = reducer(completed, {
       type: 'MARK_DECISION_PENDING',
       candidateId: 'luna-carlos',
     });
@@ -224,7 +226,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('rejects marking decision pending for a candidate not in MEETING_SCHEDULED', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'MARK_DECISION_PENDING',
       candidateId: 'luna-andrea', // NEEDS_EVALUATION
     });
@@ -235,7 +237,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('runs the full Andrea journey through a completed meeting to adoption', () => {
-    let next = prototypeFlowReducer(state, {
+    let next = reducer(state, {
       type: 'RECORD_EVALUATION',
       candidateId: 'luna-andrea',
       evaluation: {
@@ -246,12 +248,12 @@ describe('prototype flow reducer', () => {
         recommendation: 'CONTINUE',
       },
     });
-    next = prototypeFlowReducer(next, {
+    next = reducer(next, {
       type: 'CONTINUE_CANDIDATE',
       candidateId: 'luna-andrea',
       toStatus: 'CONTACT_PENDING',
     });
-    next = prototypeFlowReducer(next, {
+    next = reducer(next, {
       type: 'SCHEDULE_MEETING',
       candidateId: 'luna-andrea',
       meetingType: 'HOME_VISIT',
@@ -260,13 +262,13 @@ describe('prototype flow reducer', () => {
     const andreaMeeting = next.meetings.find(
       (m) => m.candidateId === 'luna-andrea' && m.status === 'SCHEDULED',
     )!;
-    next = prototypeFlowReducer(next, {
+    next = reducer(next, {
       type: 'COMPLETE_MEETING',
       meetingId: andreaMeeting.id,
       result: 'GOOD',
       notes: 'Muy buena impresión.',
     });
-    next = prototypeFlowReducer(next, {
+    next = reducer(next, {
       type: 'MARK_DECISION_PENDING',
       candidateId: 'luna-andrea',
     });
@@ -275,7 +277,7 @@ describe('prototype flow reducer', () => {
       'DECISION_PENDING',
     );
 
-    const final = prototypeFlowReducer(next, {
+    const final = reducer(next, {
       type: 'CONFIRM_ADOPTION',
       candidateId: 'luna-andrea',
       adoptionDate: '2026-09-05',
@@ -308,7 +310,7 @@ describe('prototype flow reducer', () => {
   });
 
   it('rejects confirming adoption for a candidate not in DECISION_PENDING', () => {
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'CONFIRM_ADOPTION',
       candidateId: 'luna-carlos', // MEETING_SCHEDULED
       adoptionDate: '2026-09-05',
@@ -325,7 +327,7 @@ describe('prototype flow reducer', () => {
     const miaPending = state.followUps.find(
       (f) => f.animalId === 'mia' && f.status === 'PENDING',
     )!;
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'COMPLETE_FOLLOWUP',
       followUpId: miaPending.id,
       outcome: 'EXCELLENT',
@@ -342,7 +344,7 @@ describe('prototype flow reducer', () => {
     const miaCompleted = state.followUps.find(
       (f) => f.animalId === 'mia' && f.status === 'COMPLETED',
     )!;
-    const next = prototypeFlowReducer(state, {
+    const next = reducer(state, {
       type: 'COMPLETE_FOLLOWUP',
       followUpId: miaCompleted.id,
       outcome: 'GOOD',
@@ -353,17 +355,17 @@ describe('prototype flow reducer', () => {
     expect(updated?.outcome).toBe('EXCELLENT');
   });
 
-  it('resets the state back to the initial prototype data', () => {
-    const completed = prototypeFlowReducer(state, {
+  it('restores a fresh initial snapshot after mutations via the repository', () => {
+    const completed = reducer(state, {
       type: 'COMPLETE_MEETING',
       meetingId: 'luna-carlos-meeting',
       result: 'GOOD',
     });
-    const decision = prototypeFlowReducer(completed, {
+    const decision = reducer(completed, {
       type: 'MARK_DECISION_PENDING',
       candidateId: 'luna-carlos',
     });
-    const advanced = prototypeFlowReducer(decision, {
+    const advanced = reducer(decision, {
       type: 'CONFIRM_ADOPTION',
       candidateId: 'luna-carlos',
       adoptionDate: '2026-09-05',
@@ -371,7 +373,8 @@ describe('prototype flow reducer', () => {
 
     expect(selectAnimalById(advanced, 'luna')?.status).toBe('ADOPTED');
 
-    const reset = prototypeFlowReducer(advanced, { type: 'RESET' });
+    const repository = createMockPrototypeRepository();
+    const reset = repository.getSnapshot();
 
     expect(selectCandidateById(reset, 'luna-andrea')?.status).toBe(
       'NEEDS_EVALUATION',
@@ -381,19 +384,20 @@ describe('prototype flow reducer', () => {
     );
     expect(selectAnimalById(reset, 'luna')?.status).toBe('IN_PROCESS');
     expect(reset.adoptions.length).toBe(state.adoptions.length);
+    expect(reset).not.toBe(advanced);
   });
 
   it('assigns unique IDs to the follow-ups created by confirming an adoption', () => {
-    const completed = prototypeFlowReducer(state, {
+    const completed = reducer(state, {
       type: 'COMPLETE_MEETING',
       meetingId: 'luna-carlos-meeting',
       result: 'GOOD',
     });
-    const decision = prototypeFlowReducer(completed, {
+    const decision = reducer(completed, {
       type: 'MARK_DECISION_PENDING',
       candidateId: 'luna-carlos',
     });
-    const next = prototypeFlowReducer(decision, {
+    const next = reducer(decision, {
       type: 'CONFIRM_ADOPTION',
       candidateId: 'luna-carlos',
       adoptionDate: '2026-09-05',
@@ -407,16 +411,16 @@ describe('prototype flow reducer', () => {
   });
 
   it('assigns unique IDs to the timeline events created by confirming an adoption', () => {
-    const completed = prototypeFlowReducer(state, {
+    const completed = reducer(state, {
       type: 'COMPLETE_MEETING',
       meetingId: 'luna-carlos-meeting',
       result: 'GOOD',
     });
-    const decision = prototypeFlowReducer(completed, {
+    const decision = reducer(completed, {
       type: 'MARK_DECISION_PENDING',
       candidateId: 'luna-carlos',
     });
-    const next = prototypeFlowReducer(decision, {
+    const next = reducer(decision, {
       type: 'CONFIRM_ADOPTION',
       candidateId: 'luna-carlos',
       adoptionDate: '2026-09-05',
@@ -432,12 +436,12 @@ describe('prototype flow reducer', () => {
   });
 
   it('assigns unique timeline IDs when the first meeting moves an animal to IN_PROCESS', () => {
-    const contact = prototypeFlowReducer(state, {
+    const contact = reducer(state, {
       type: 'CONTINUE_CANDIDATE',
       candidateId: 'luna-sofia',
       toStatus: 'CONTACT_PENDING',
     });
-    const next = prototypeFlowReducer(contact, {
+    const next = reducer(contact, {
       type: 'SCHEDULE_MEETING',
       candidateId: 'luna-sofia',
       meetingType: 'MEET_AND_GREET',

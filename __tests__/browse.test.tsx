@@ -16,10 +16,8 @@ import {
   hasAdvancedCandidate,
 } from '@/features/animals/presenters';
 import { PrototypeFlowProvider } from '@/features/prototype-flow/prototype-flow-provider';
-import {
-  getInitialPrototypeState,
-  selectCandidatesForAnimal,
-} from '@/features/prototype-flow/prototype-flow-selectors';
+import { createMockPrototypeRepository } from '@/features/prototype-flow/mock-repository';
+import { selectCandidatesForAnimal } from '@/features/prototype-flow/prototype-flow-selectors';
 import { TodayScreen } from '@/features/today/today-screen';
 import i18n from '@/i18n';
 
@@ -106,7 +104,7 @@ describe('Shelter browse prototype', () => {
   });
 
   it('keeps animal filters aligned with domain states', () => {
-    const protoState = getInitialPrototypeState();
+    const protoState = createMockPrototypeRepository().getSnapshot();
     expect(
       filterAnimals(protoState.animals, 'IN_PROCESS').map(({ id }) => id),
     ).toEqual(['luna']);
@@ -116,7 +114,7 @@ describe('Shelter browse prototype', () => {
   });
 
   it('keeps initial prototype candidates aligned with animal availability', () => {
-    const protoState = getInitialPrototypeState();
+    const protoState = createMockPrototypeRepository().getSnapshot();
     const lunaCandidates = selectCandidatesForAnimal(protoState, 'luna');
     const nalaCandidates = selectCandidatesForAnimal(protoState, 'nala');
     const tobyCandidates = selectCandidatesForAnimal(protoState, 'toby');

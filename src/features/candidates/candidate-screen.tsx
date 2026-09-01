@@ -22,7 +22,7 @@ import { formatDate } from '@/i18n/format';
 
 export function CandidateScreen() {
   const { t } = useTranslation();
-  const { state, dispatch } = usePrototypeFlow();
+  const { state, commands } = usePrototypeFlow();
   const params = useLocalSearchParams<{ candidateId: string }>();
   const candidateId = Array.isArray(params.candidateId)
     ? params.candidateId[0]
@@ -55,18 +55,11 @@ export function CandidateScreen() {
   const canMarkDecision = canMarkDecisionPending(state, candidate.id);
 
   function handleContinueContact(candidateId: string) {
-    dispatch({
-      type: 'CONTINUE_CANDIDATE',
-      candidateId,
-      toStatus: 'CONTACT_PENDING',
-    });
+    commands.continueContact(candidateId, 'CONTACT_PENDING');
   }
 
   function handleMarkDecisionPending(candidateId: string) {
-    dispatch({
-      type: 'MARK_DECISION_PENDING',
-      candidateId,
-    });
+    commands.markDecisionPending(candidateId);
   }
 
   return (

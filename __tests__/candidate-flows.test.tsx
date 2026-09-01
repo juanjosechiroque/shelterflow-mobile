@@ -19,19 +19,19 @@ import { CandidateScreen } from '@/features/candidates/candidate-screen';
 import { EvaluationScreen } from '@/features/evaluations/evaluation-screen';
 import { FollowUpsScreen } from '@/features/followups/followups-screen';
 import { MeetingsScreen } from '@/features/meetings/meetings-screen';
+import { fixedClock } from '@/features/prototype-flow/clock';
+import { createMockPrototypeRepository } from '@/features/prototype-flow/mock-repository';
 import {
   PrototypeFlowProvider,
   usePrototypeFlow,
+  type PrototypeFlowCommands,
 } from '@/features/prototype-flow/prototype-flow-provider';
 import {
   selectAnimalById,
   selectCandidatesForAnimal,
   selectFollowUpsForAnimal,
 } from '@/features/prototype-flow/prototype-flow-selectors';
-import type {
-  PrototypeFlowAction,
-  PrototypeFlowState,
-} from '@/features/prototype-flow/types';
+import type { PrototypeFlowState } from '@/features/prototype-flow/types';
 import i18n from '@/i18n';
 
 jest.mock('expo-router', () => ({
@@ -44,21 +44,26 @@ jest.mock('expo-router', () => ({
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 
 async function renderWithProvider(ui: ReactElement): Promise<RenderResult> {
-  return render(<PrototypeFlowProvider>{ui}</PrototypeFlowProvider>);
+  return render(
+    <PrototypeFlowProvider
+      repository={createMockPrototypeRepository()}
+      clock={fixedClock('2026-09-01')}
+    >
+      {ui}
+    </PrototypeFlowProvider>,
+  );
 }
 
 function DispatchBeforeRender({
-  actions,
+  setup,
   children,
 }: {
-  actions: PrototypeFlowAction[];
+  setup: (commands: PrototypeFlowCommands) => void;
   children: ReactElement;
 }) {
-  const { dispatch } = usePrototypeFlow();
+  const { commands } = usePrototypeFlow();
   useEffect(() => {
-    for (const action of actions) {
-      dispatch(action);
-    }
+    setup(commands);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <>{children}</>;
@@ -141,13 +146,9 @@ describe('Candidate and adoption flows', () => {
     mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-carlos' });
     const screen = await renderWithProvider(
       <DispatchBeforeRender
-        actions={[
-          {
-            type: 'COMPLETE_MEETING',
-            meetingId: 'luna-carlos-meeting',
-            result: 'GOOD',
-          },
-        ]}
+        setup={(commands) =>
+          commands.completeMeeting('luna-carlos-meeting', 'GOOD')
+        }
       >
         <CandidateScreen />
       </DispatchBeforeRender>,
@@ -206,14 +207,10 @@ describe('Candidate and adoption flows', () => {
     mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-carlos' });
     const screen = await renderWithProvider(
       <DispatchBeforeRender
-        actions={[
-          {
-            type: 'COMPLETE_MEETING',
-            meetingId: 'luna-carlos-meeting',
-            result: 'GOOD',
-          },
-          { type: 'MARK_DECISION_PENDING', candidateId: 'luna-carlos' },
-        ]}
+        setup={(commands) => {
+          commands.completeMeeting('luna-carlos-meeting', 'GOOD');
+          commands.markDecisionPending('luna-carlos');
+        }}
       >
         <AdoptionConfirmationScreen />
       </DispatchBeforeRender>,
@@ -256,31 +253,18 @@ describe('Candidate and adoption flows', () => {
     let sharedState: PrototypeFlowState | null = null;
 
     function AndreaJourney() {
-      const { state, dispatch } = usePrototypeFlow();
+      const { state, commands } = usePrototypeFlow();
 
       useEffect(() => {
-        dispatch({
-          type: 'RECORD_EVALUATION',
+        commands.recordEvaluation('luna-andrea', {
           candidateId: 'luna-andrea',
-          evaluation: {
-            candidateId: 'luna-andrea',
-            overallFit: 'STRONG',
-            positiveFactors: ['Buena disposición.'],
-            concerns: [],
-            recommendation: 'CONTINUE',
-          },
+          overallFit: 'STRONG',
+          positiveFactors: ['Buena disposición.'],
+          concerns: [],
+          recommendation: 'CONTINUE',
         });
-        dispatch({
-          type: 'CONTINUE_CANDIDATE',
-          candidateId: 'luna-andrea',
-          toStatus: 'CONTACT_PENDING',
-        });
-        dispatch({
-          type: 'SCHEDULE_MEETING',
-          candidateId: 'luna-andrea',
-          meetingType: 'HOME_VISIT',
-          scheduledOn: '2026-09-01',
-        });
+        commands.continueContact('luna-andrea', 'CONTACT_PENDING');
+        commands.scheduleMeeting('luna-andrea', 'HOME_VISIT', '2026-09-01');
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }, []);
 
@@ -291,20 +275,9 @@ describe('Candidate and adoption flows', () => {
 
       useEffect(() => {
         if (andreaMeeting && andrea?.status === 'MEETING_SCHEDULED') {
-          dispatch({
-            type: 'COMPLETE_MEETING',
-            meetingId: andreaMeeting.id,
-            result: 'GOOD',
-          });
-          dispatch({
-            type: 'MARK_DECISION_PENDING',
-            candidateId: 'luna-andrea',
-          });
-          dispatch({
-            type: 'CONFIRM_ADOPTION',
-            candidateId: 'luna-andrea',
-            adoptionDate: '2026-09-05',
-          });
+          commands.completeMeeting(andreaMeeting.id, 'GOOD');
+          commands.markDecisionPending('luna-andrea');
+          commands.confirmAdoption('luna-andrea', '2026-09-05');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [andreaMeeting, andrea]);

@@ -5,9 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
-import { mockShelter } from '@/features/animals/mock-animals';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
-import { selectTodayTasks } from '@/features/prototype-flow/prototype-flow-selectors';
+import {
+  selectShelter,
+  selectTodayTasks,
+} from '@/features/prototype-flow/prototype-flow-selectors';
 import type { MockTodayTask } from '@/features/prototype-flow/types';
 
 const taskToneStyles: Record<
@@ -72,6 +74,7 @@ function taskHref(task: MockTodayTask):
 export function TodayScreen() {
   const { t } = useTranslation();
   const { state } = usePrototypeFlow();
+  const shelter = selectShelter(state);
   const todayTasks = selectTodayTasks(state);
 
   const tasks: MockTodayTask[] = todayTasks;
@@ -84,7 +87,7 @@ export function TodayScreen() {
       >
         <View style={styles.topBar}>
           <View style={styles.brandBlock}>
-            <Text style={styles.shelterName}>{mockShelter.name}</Text>
+            <Text style={styles.shelterName}>{shelter.name}</Text>
             <Text style={styles.productName}>{t('app.name')}</Text>
           </View>
 

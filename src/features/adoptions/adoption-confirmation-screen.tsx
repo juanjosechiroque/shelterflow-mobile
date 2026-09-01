@@ -16,7 +16,7 @@ import { getCandidateStatusLabel } from '@/features/animals/presenters';
 
 export function AdoptionConfirmationScreen() {
   const { t } = useTranslation();
-  const { state, dispatch } = usePrototypeFlow();
+  const { state, commands } = usePrototypeFlow();
   const params = useLocalSearchParams<{ candidateId: string }>();
   const candidateId = Array.isArray(params.candidateId)
     ? params.candidateId[0]
@@ -36,12 +36,7 @@ export function AdoptionConfirmationScreen() {
 
   function handleConfirm() {
     if (!canConfirm) return;
-    const today = new Date().toISOString().slice(0, 10);
-    dispatch({
-      type: 'CONFIRM_ADOPTION',
-      candidateId,
-      adoptionDate: today,
-    });
+    commands.confirmAdoption(candidateId);
   }
 
   if (!candidate || !animal) {

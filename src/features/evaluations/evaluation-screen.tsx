@@ -195,7 +195,7 @@ function EvaluationSummary({ evaluation }: { evaluation: MockEvaluation }) {
 
 function EvaluationForm({ candidateId }: { candidateId: string }) {
   const { t } = useTranslation();
-  const { dispatch } = usePrototypeFlow();
+  const { commands } = usePrototypeFlow();
 
   const [overallFit, setOverallFit] = useState<EvaluationOverallFit>('STRONG');
   const [recommendation, setRecommendation] =
@@ -241,11 +241,7 @@ function EvaluationForm({ candidateId }: { candidateId: string }) {
       notes: notes.trim() || undefined,
       recommendation,
     };
-    dispatch({
-      type: 'RECORD_EVALUATION',
-      candidateId,
-      evaluation,
-    });
+    commands.recordEvaluation(candidateId, evaluation);
   }
 
   const canSubmit = positiveFactors.length > 0;

@@ -89,7 +89,7 @@ export function FollowUpsScreen() {
 
 function FollowUpCard({ followUp }: { followUp: MockFollowUp }) {
   const { t } = useTranslation();
-  const { state, dispatch } = usePrototypeFlow();
+  const { state, commands } = usePrototypeFlow();
   const [outcome, setOutcome] = useState<FollowUpOutcome>('GOOD');
   const [notes, setNotes] = useState('');
 
@@ -97,12 +97,7 @@ function FollowUpCard({ followUp }: { followUp: MockFollowUp }) {
   const canComplete = canCompleteFollowUp(state, followUp.id);
 
   function handleComplete() {
-    dispatch({
-      type: 'COMPLETE_FOLLOWUP',
-      followUpId: followUp.id,
-      outcome,
-      notes: notes.trim() || undefined,
-    });
+    commands.completeFollowUp(followUp.id, outcome, notes.trim() || undefined);
   }
 
   return (

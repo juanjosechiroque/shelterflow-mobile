@@ -1,30 +1,7 @@
-import { mockAnimals } from '@/features/animals/mock-animals';
-import { mockCandidateDetails } from '@/features/candidates/mock-candidates';
-import { mockEvaluations } from '@/features/evaluations/mock-evaluations';
-import { mockMeetings } from '@/features/meetings/mock-meetings';
-import { mockAdoptions } from '@/features/adoptions/mock-adoptions';
-import { mockFollowUps } from '@/features/followups/mock-followups';
-import { mockTimelineEvents } from '@/features/animals/mock-timeline';
-
 import type { PrototypeFlowState, MockTodayTask } from './types';
 
-export function getInitialPrototypeState(): PrototypeFlowState {
-  return {
-    animals: [...mockAnimals],
-    candidates: mockCandidateDetails.map((c) => ({
-      ...c,
-      person: { ...c.person },
-    })),
-    evaluations: mockEvaluations.map((e) => ({
-      ...e,
-      positiveFactors: [...e.positiveFactors],
-      concerns: [...e.concerns],
-    })),
-    meetings: mockMeetings.map((m) => ({ ...m })),
-    adoptions: mockAdoptions.map((a) => ({ ...a })),
-    followUps: mockFollowUps.map((f) => ({ ...f })),
-    timelineEvents: mockTimelineEvents.map((t) => ({ ...t })),
-  };
+export function selectShelter(state: PrototypeFlowState) {
+  return state.shelter;
 }
 
 export function selectAnimalById(state: PrototypeFlowState, animalId: string) {

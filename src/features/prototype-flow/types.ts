@@ -13,6 +13,7 @@ import type {
 } from '@/features/evaluations/types';
 import type { MockMeeting } from '@/features/meetings/types';
 import type { MockFollowUp, FollowUpOutcome } from '@/features/followups/types';
+import type { MockAdoption } from '@/features/adoptions/types';
 
 export type {
   MockAnimal,
@@ -24,20 +25,18 @@ export type {
   MockFollowUp,
   FollowUpOutcome,
   MockTimelineEvent,
+  MockAdoption,
 };
 
 export type { CandidateStatus, AnimalStatus, TimelineEventType };
 
-export interface MockAdoption {
+export interface MockShelter {
   id: string;
-  animalId: string;
-  candidateId: string;
-  adoptionDate: string;
-  status: 'ACTIVE' | 'RETURNED';
-  handoverNotes?: string;
+  name: string;
 }
 
 export interface PrototypeFlowState {
+  shelter: MockShelter;
   animals: MockAnimal[];
   candidates: MockCandidateDetail[];
   evaluations: MockEvaluation[];
@@ -86,8 +85,7 @@ export type PrototypeFlowAction =
       followUpId: string;
       outcome: MockFollowUp['outcome'];
       notes?: string;
-    }
-  | { type: 'RESET' };
+    };
 
 export type TodayTaskKind =
   'evaluations' | 'meeting' | 'decisions' | 'followups' | 'reevaluation';
