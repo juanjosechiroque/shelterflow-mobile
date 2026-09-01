@@ -59,7 +59,7 @@ created_at
 updated_at
 ```
 
-The account-creation operation must create both records atomically. Exact database defaults, indexes, and foreign-key behavior will be defined alongside the database migrations.
+There is no registration flow in V1. Shelters and profiles are provisioned externally by the product owners, not through the mobile application. Exact database defaults, indexes, and foreign-key behavior are defined alongside the database migrations.
 
 ## Entity relationships
 
@@ -100,7 +100,7 @@ species
 sex
 approximate_age_months?
 size
-primary_photo_url?
+primary_photo_path?
 notes?
 status
 archived_at?
@@ -117,6 +117,10 @@ Size:    SMALL | MEDIUM | LARGE | UNKNOWN
 ```
 
 Approximate age is stored as nullable months. `NULL` means unknown; display conversion into months or years is a localization concern.
+
+### Image references
+
+Persisted image fields (`primary_photo_path`, `adoption_photo_path`, `followup.photo_path`) store storage paths that identify the uploaded object, not signed or public URLs. A signed or public URL must never be persisted as the canonical attachment reference because it can expire or change. Storage buckets, upload handling, and image UI belong to a later phase.
 
 ### Animal states
 
@@ -292,7 +296,7 @@ animal_id
 candidate_id
 adoption_date
 handover_notes?
-adoption_photo_url?
+adoption_photo_path?
 status
 created_at
 ```
@@ -321,7 +325,10 @@ due_date
 status
 outcome?
 notes?
+photo_path?
 completed_at?
+cancelled_at?
+cancellation_reason?
 rescheduled_from_followup_id?
 created_at
 updated_at
@@ -330,9 +337,11 @@ updated_at
 Controlled values:
 
 ```text
-Status:  PENDING | COMPLETED | RESCHEDULED | MISSED
+Status:  PENDING | COMPLETED | RESCHEDULED | MISSED | CANCELLED
 Outcome: EXCELLENT | GOOD | CONCERNS | INTERVENTION_REQUIRED
 ```
+
+`CANCELLED` is used only by the return workflow. When `return_adoption()` runs, historical follow-ups are preserved unchanged, and only pending follow-ups are moved to `CANCELLED`, preventing further reminders. A cancelled follow-up always records `cancelled_at` and the controlled reason `ADOPTION_RETURNED` in `cancellation_reason`; no other reason value is valid. On any status other than `CANCELLED`, both `cancelled_at` and `cancellation_reason` must be null.
 
 The application may offer 7, 30, and 60 days as defaults, but the shelter can change the plan during adoption confirmation. These intervals are not fixed domain rules.
 
@@ -381,20 +390,7 @@ Timeline is not a generic audit system. Security auditing and operational logs a
 
 ## Atomic domain operations
 
-### Create shelter account
-
-`create_shelter_account()` must atomically create the shelter and the authenticated user's profile:
-
-```text
-BEGIN
-validate authenticated user has no profile
-create Shelter
-create Profile with profile.id = auth.uid()
-associate Profile with Shelter
-COMMIT
-```
-
-Failure leaves neither partial row.
+Shelters and profiles are provisioned externally by the product owners; there is no account-creation operation in the mobile application.
 
 ### Confirm adoption
 
@@ -443,11 +439,12 @@ validate all preconditions
 create AdoptionReturn
 Adoption: ACTIVE → RETURNED
 Animal: ADOPTED → REEVALUATION
+pending FollowUps: PENDING → CANCELLED (preserve completed/rescheduled/missed)
 create return TimelineEvent
 COMMIT
 ```
 
-Any failure rolls back every change. Returning an animal does not cancel or delete historical follow-ups.
+Any failure rolls back every change. Returning an animal preserves historical follow-ups and moves only pending follow-ups to `CANCELLED`, preventing further reminders. It never deletes follow-up records.
 
 ### Complete reevaluation
 
@@ -493,6 +490,7 @@ Adoption ACTIVE + Animal ADOPTED
 Adoption RETURNED
 AdoptionReturn preserved
 Animal REEVALUATION
+Pending follow-ups CANCELLED; historical follow-ups preserved
 Previous candidate, adoption, follow-ups, and timeline preserved
 → human reevaluation
 Animal READY or NOT_AVAILABLE
