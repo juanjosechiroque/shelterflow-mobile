@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
 import { I18nProvider } from '@/providers/i18n-provider';
+import { PrototypeFlowProvider } from '@/features/prototype-flow/prototype-flow-provider';
 
 function RootNavigator() {
   const { t } = useTranslation();
@@ -34,7 +35,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <I18nProvider>
-        <RootNavigator />
+        <PrototypeFlowProvider>
+          <RootNavigator />
+        </PrototypeFlowProvider>
       </I18nProvider>
     </SafeAreaProvider>
   );

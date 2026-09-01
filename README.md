@@ -2,7 +2,7 @@
 
 ShelterFlow is a Spanish-first React Native application for small animal shelters and independent rescuers. It supports the operational adoption journey after a candidate has already been shortlisted: evaluation, meeting, decision, adoption, and post-adoption follow-up.
 
-The repository currently contains the mobile foundation, the canonical adoption domain model, and a mocked operational browse prototype. Business workflows and Supabase persistence have not been implemented yet.
+The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype keeps its data in memory and lets you walk an adoption journey end to end — evaluation, meeting, decision, adoption confirmation, and follow-up — but the data resets when the app reloads. Backend services and real persistence have not been implemented yet.
 
 ## Product scope
 
@@ -109,4 +109,4 @@ src/
   providers/    Application-level providers
 ```
 
-The current `animals` and `today` feature folders support a mocked browse prototype. Additional feature folders will be introduced incrementally as their functionality is implemented.
+The current `animals`, `candidates`, `evaluations`, `meetings`, `adoptions`, `followups`, and `today` feature folders support an interactive prototype whose state lives in memory. A shared in-memory store (`src/features/prototype-flow`) drives the screens; it is seeded with fictitious data and reset on reload. Additional feature folders will be introduced incrementally as their functionality is implemented.

@@ -11,9 +11,10 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
+import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
 
 import { AnimalCard } from './components/animal-card';
-import { mockAnimals, mockShelter } from './mock-animals';
+import { mockShelter } from './mock-animals';
 import { filterAnimals, type AnimalFilter } from './presenters';
 
 const filters: readonly {
@@ -34,10 +35,11 @@ const filters: readonly {
 
 export function AnimalsScreen() {
   const { t } = useTranslation();
+  const { state } = usePrototypeFlow();
   const [selectedFilter, setSelectedFilter] = useState<AnimalFilter>('ALL');
   const visibleAnimals = useMemo(
-    () => filterAnimals(mockAnimals, selectedFilter),
-    [selectedFilter],
+    () => filterAnimals(state.animals, selectedFilter),
+    [state.animals, selectedFilter],
   );
 
   return (

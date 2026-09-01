@@ -7,7 +7,6 @@ import type {
   AnimalStatus,
   CandidateStatus,
   MockAnimal,
-  MockCandidate,
   MockTimelineEvent,
   TimelineEventType,
 } from './types';
@@ -196,7 +195,7 @@ export function parseOccurredOn(occurredOn: string): Date {
 }
 
 export function hasAdvancedCandidate(
-  candidates: readonly MockCandidate[],
+  candidates: readonly { status: CandidateStatus }[],
 ): boolean {
   return candidates.some((candidate) =>
     advancedCandidateStatuses.has(candidate.status),
@@ -204,7 +203,7 @@ export function hasAdvancedCandidate(
 }
 
 export function hasActiveCandidate(
-  candidates: readonly MockCandidate[],
+  candidates: readonly { status: CandidateStatus }[],
 ): boolean {
   return candidates.some(
     (candidate) => !terminalCandidateStatuses.has(candidate.status),

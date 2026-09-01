@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/constants/theme';
 
-import type { MockCandidate } from '../types';
+import type { MockCandidateDetail } from '@/features/candidates/types';
 import { CandidateStatusBadge } from './candidate-status-badge';
 
 interface CandidateRowProps {
-  candidate: MockCandidate;
+  candidate: MockCandidateDetail;
 }
 
 export function CandidateRow({ candidate }: CandidateRowProps) {
@@ -24,7 +24,7 @@ export function CandidateRow({ candidate }: CandidateRowProps) {
     >
       <Pressable
         accessibilityLabel={t('animals.candidates.rowAccessibility', {
-          name: candidate.personName,
+          name: candidate.person.name,
         })}
         accessibilityRole="button"
         style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
@@ -32,10 +32,10 @@ export function CandidateRow({ candidate }: CandidateRowProps) {
         <View style={styles.identity}>
           <View style={styles.initials}>
             <Text style={styles.initialsText}>
-              {candidate.personName.slice(0, 1).toUpperCase()}
+              {candidate.person.name.slice(0, 1).toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.name}>{candidate.personName}</Text>
+          <Text style={styles.name}>{candidate.person.name}</Text>
         </View>
         <CandidateStatusBadge status={candidate.status} />
         <Text style={styles.chevron}>›</Text>

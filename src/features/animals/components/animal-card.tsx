@@ -3,8 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/constants/theme';
+import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
+import { selectCandidatesForAnimal } from '@/features/prototype-flow/prototype-flow-selectors';
 
-import { getCandidatesForAnimal } from '../mock-candidates';
 import { getAnimalSpeciesLabel, getAnimalStatusLabel } from '../presenters';
 import type { MockAnimal } from '../types';
 import { AnimalAvatar } from './animal-avatar';
@@ -16,8 +17,9 @@ interface AnimalCardProps {
 
 export function AnimalCard({ animal }: AnimalCardProps) {
   const { t } = useTranslation();
+  const { state } = usePrototypeFlow();
   const statusLabel = getAnimalStatusLabel(t, animal.status);
-  const candidateCount = getCandidatesForAnimal(animal.id).length;
+  const candidateCount = selectCandidatesForAnimal(state, animal.id).length;
 
   return (
     <Link

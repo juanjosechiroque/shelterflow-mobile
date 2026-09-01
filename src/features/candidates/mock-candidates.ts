@@ -2,16 +2,16 @@ import type { MockCandidateDetail } from './types';
 
 export const mockCandidateDetails: readonly MockCandidateDetail[] = [
   {
-    id: 'luna-ana',
+    id: 'luna-andrea',
     animalId: 'luna',
     person: {
-      id: 'ana-perez',
-      name: 'Ana Pérez',
+      id: 'andrea-perez',
+      name: 'Andrea Pérez',
       phone: '+51 999 111 222',
-      email: 'ana.perez@example.com',
+      email: 'andrea.perez@example.com',
       notes: 'Vive en un departamento con patio pequeño.',
     },
-    status: 'DECISION_PENDING',
+    status: 'NEEDS_EVALUATION',
     source: 'APPLICATION',
     applicationDate: '2026-07-20',
     notes: 'Se acompañó del proceso de preselección del refugio.',
@@ -30,14 +30,14 @@ export const mockCandidateDetails: readonly MockCandidateDetail[] = [
     applicationDate: '2026-07-28',
   },
   {
-    id: 'luna-marta',
+    id: 'luna-sofia',
     animalId: 'luna',
     person: {
-      id: 'marta-diaz',
-      name: 'Marta Díaz',
+      id: 'sofia-vargas',
+      name: 'Sofía Vargas',
       phone: '+51 999 555 666',
     },
-    status: 'NEEDS_EVALUATION',
+    status: 'EVALUATED',
     source: 'WALK_IN',
     applicationDate: '2026-08-15',
   },

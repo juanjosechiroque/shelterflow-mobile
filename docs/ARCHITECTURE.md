@@ -2,9 +2,9 @@
 
 ## Status and scope
 
-This document describes the intended V1 architecture and the boundaries that guide incremental implementation. The current prototype includes mocked operational browse screens but does not yet include the backend, authentication, mutations, or future dependencies described here.
+This document describes the intended V1 architecture and the boundaries that guide incremental implementation. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. The backend, authentication, real persistence, and the future dependencies described here are not yet implemented.
 
-The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used only for navigation and presentation.
+The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used to demonstrate the interactive flow.
 
 ## Architectural goals
 
@@ -108,6 +108,8 @@ AsyncStorage is appropriate for small device-local preferences such as selected 
 
 A global client-state library is not part of the baseline. Redux, Zustand, or an equivalent may be introduced only for a concrete state-sharing requirement not already served by navigation, React context, form state, TanStack Query, or local persistence.
 
+The prototype uses a lightweight in-memory store (`src/features/prototype-flow`) built on React Context and `useReducer`. It holds animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, and it owns the domain transition rules. Screens read from it through selectors and dispatch domain actions. This store is a stopgap to make the adoption journey interactive before persistence exists; it is not intended to replace the backend and resets on reload. It is mounted once in the root layout and is deliberately not a generic CRM or global state abstraction.
+
 ## Domain layer
 
 Domain states and allowed transitions are defined in `DOMAIN.md`. React components may request a transition and present its result, but they must not be the only place enforcing invariants.
@@ -115,8 +117,8 @@ Domain states and allowed transitions are defined in `DOMAIN.md`. React componen
 The implementation path is incremental:
 
 1. Mocked UI establishes mobile interaction and navigation.
-2. A small local domain/repository boundary removes direct fixture coupling.
-3. Supabase repositories replace mocks by vertical slice.
+2. A small in-memory domain store owns transition rules and removes direct fixture coupling. ([state ownership](#state-ownership))
+3. Supabase repositories replace the in-memory store by vertical slice.
 4. Critical cross-record operations move to PostgreSQL functions.
 
 Simple single-record validation can exist in shared domain code and database constraints. Security and multi-record atomicity must be enforced by the backend even when the client also validates for user experience.

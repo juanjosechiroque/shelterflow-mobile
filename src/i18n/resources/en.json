@@ -161,8 +161,11 @@
     "notes": "Notes",
     "actions": "Actions",
     "viewEvaluation": "View evaluation",
+    "registerEvaluation": "Register evaluation",
     "viewMeetings": "View meetings",
     "confirmAdoption": "Confirm adoption",
+    "continueContact": "Continue contact",
+    "markDecisionPending": "Mark for decision",
     "confirmHint": "Confirmation is available only when the process status is {{status}}.",
     "noEvaluationHint": "This candidate has no evaluation recorded yet.",
     "sourceLabels": {
@@ -199,7 +202,19 @@
     },
     "emptyTitle": "No evaluation",
     "emptyDescription": "This candidate has no evaluation recorded yet.",
-    "backToCandidate": "Back to candidate"
+    "backToCandidate": "Back to candidate",
+    "form": {
+      "title": "Register evaluation",
+      "overallFit": "Overall fit",
+      "positiveFactors": "Positive factors",
+      "positiveFactorPlaceholder": "E.g. Dog experience",
+      "concerns": "Concerns",
+      "concernPlaceholder": "E.g. No garden access",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional observations",
+      "recommendation": "Recommendation",
+      "submit": "Save evaluation"
+    }
   },
   "meetings": {
     "title": "Meetings",
@@ -226,6 +241,16 @@
       "concerns": "With concerns",
       "notRecommended": "Not recommended"
     },
+    "form": {
+      "title": "Schedule a meeting",
+      "type": "Type",
+      "date": "Date (YYYY-MM-DD)",
+      "notes": "Notes",
+      "notesPlaceholder": "Meeting observations",
+      "scheduleAction": "Schedule meeting",
+      "result": "Result",
+      "completeAction": "Complete meeting"
+    },
     "notFoundTitle": "Candidate not found"
   },
   "adoptions": {
@@ -242,6 +267,7 @@
       "warning": "On confirmation the adoption is recorded and the other candidates are left unselected. This action is performed atomically on the server.",
       "successTitle": "Adoption confirmed",
       "successDescription": "The animal adoption has been recorded. You can now review and complete the follow-ups.",
+      "viewFollowUps": "View follow-ups",
       "done": "Done"
     },
     "notFoundTitle": "Candidate not found"
@@ -265,7 +291,12 @@
       "interventionRequired": "Intervention required"
     },
     "noAdoptionTitle": "No active adoption",
-    "noAdoptionDescription": "This animal has no active adoption to show follow-ups for."
+    "noAdoptionDescription": "This animal has no active adoption to show follow-ups for.",
+    "form": {
+      "outcome": "Outcome",
+      "notesPlaceholder": "Follow-up observations",
+      "completeAction": "Complete follow-up"
+    }
   },
   "settings": {
     "title": "Settings",

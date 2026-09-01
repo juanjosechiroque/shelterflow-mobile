@@ -1,17 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render } from '@testing-library/react-native';
+import {
+  fireEvent,
+  render,
+  type RenderResult,
+} from '@testing-library/react-native';
+import type { ReactElement } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 
 import { AnimalDetailScreen } from '@/features/animals/animal-detail-screen';
 import { AnimalsScreen } from '@/features/animals/animals-screen';
-import { mockAnimals } from '@/features/animals/mock-animals';
-import { getCandidatesForAnimal } from '@/features/animals/mock-candidates';
 import {
   filterAnimals,
   getApproximateAgeLabel,
   hasActiveCandidate,
   hasAdvancedCandidate,
 } from '@/features/animals/presenters';
+import { PrototypeFlowProvider } from '@/features/prototype-flow/prototype-flow-provider';
+import {
+  getInitialPrototypeState,
+  selectCandidatesForAnimal,
+} from '@/features/prototype-flow/prototype-flow-selectors';
 import { TodayScreen } from '@/features/today/today-screen';
 import i18n from '@/i18n';
 
@@ -24,6 +32,10 @@ jest.mock('expo-router', () => ({
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 
+async function renderWithProvider(ui: ReactElement): Promise<RenderResult> {
+  return render(<PrototypeFlowProvider>{ui}</PrototypeFlowProvider>);
+}
+
 describe('Shelter browse prototype', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -32,16 +44,18 @@ describe('Shelter browse prototype', () => {
   });
 
   it('shows actionable work with fictitious shelter data', async () => {
-    const screen = await render(<TodayScreen />);
+    const screen = await renderWithProvider(<TodayScreen />);
 
     expect(screen.getByText('Huellitas Rescue')).toBeTruthy();
-    expect(screen.getByText('2 candidatos necesitan evaluación')).toBeTruthy();
-    expect(screen.getByText('3 seguimientos pendientes')).toBeTruthy();
+    expect(screen.getByText('1 candidato necesita evaluación')).toBeTruthy();
+    expect(screen.getByText('1 reunión programada para hoy')).toBeTruthy();
+    expect(screen.getByText('1 seguimiento pendiente')).toBeTruthy();
+    expect(screen.getByText('1 animal necesita reevaluación')).toBeTruthy();
     expect(screen.getByText(/candidatos de Luna/)).toBeTruthy();
   });
 
   it('filters the animal list by operational status', async () => {
-    const screen = await render(<AnimalsScreen />);
+    const screen = await renderWithProvider(<AnimalsScreen />);
 
     expect(screen.getByText('5 animales')).toBeTruthy();
     expect(screen.getByText('Luna')).toBeTruthy();
@@ -56,7 +70,7 @@ describe('Shelter browse prototype', () => {
 
   it('uses localized pluralization and labels in English', async () => {
     await i18n.changeLanguage('en');
-    const screen = await render(<AnimalsScreen />);
+    const screen = await renderWithProvider(<AnimalsScreen />);
 
     await fireEvent.press(screen.getByRole('tab', { name: 'Reevaluation' }));
 
@@ -66,12 +80,14 @@ describe('Shelter browse prototype', () => {
   });
 
   it('shows candidates and timeline on the animal detail screen', async () => {
-    const screen = await render(<AnimalDetailScreen />);
+    const screen = await renderWithProvider(<AnimalDetailScreen />);
 
-    expect(screen.getByText('Ana Pérez')).toBeTruthy();
-    expect(screen.getByText('Decisión pendiente')).toBeTruthy();
+    expect(screen.getByText('Andrea Pérez')).toBeTruthy();
+    expect(screen.getByText('Necesita evaluación')).toBeTruthy();
     expect(screen.getByText('Carlos Ruiz')).toBeTruthy();
     expect(screen.getByText('Reunión programada')).toBeTruthy();
+    expect(screen.getByText('Sofía Vargas')).toBeTruthy();
+    expect(screen.getByText('Evaluado')).toBeTruthy();
     expect(
       screen.getByText('Luna pasó a un proceso de adopción activo.'),
     ).toBeTruthy();
@@ -79,7 +95,7 @@ describe('Shelter browse prototype', () => {
 
   it('shows an empty candidate state when the animal has none', async () => {
     mockedUseLocalSearchParams.mockReturnValue({ animalId: 'toby' });
-    const screen = await render(<AnimalDetailScreen />);
+    const screen = await renderWithProvider(<AnimalDetailScreen />);
 
     expect(
       screen.getByText(
@@ -89,21 +105,23 @@ describe('Shelter browse prototype', () => {
     expect(screen.getByText('Toby quedó listo para adopción.')).toBeTruthy();
   });
 
-  it('keeps mock animal filters aligned with domain states', () => {
+  it('keeps animal filters aligned with domain states', () => {
+    const protoState = getInitialPrototypeState();
     expect(
-      filterAnimals(mockAnimals, 'IN_PROCESS').map(({ id }) => id),
+      filterAnimals(protoState.animals, 'IN_PROCESS').map(({ id }) => id),
     ).toEqual(['luna']);
     expect(
-      filterAnimals(mockAnimals, 'REEVALUATION').map(({ id }) => id),
+      filterAnimals(protoState.animals, 'REEVALUATION').map(({ id }) => id),
     ).toEqual(['bruno']);
   });
 
-  it('keeps mock candidates aligned with animal availability', () => {
-    const lunaCandidates = getCandidatesForAnimal('luna');
-    const nalaCandidates = getCandidatesForAnimal('nala');
-    const tobyCandidates = getCandidatesForAnimal('toby');
-    const miaCandidates = getCandidatesForAnimal('mia');
-    const brunoCandidates = getCandidatesForAnimal('bruno');
+  it('keeps initial prototype candidates aligned with animal availability', () => {
+    const protoState = getInitialPrototypeState();
+    const lunaCandidates = selectCandidatesForAnimal(protoState, 'luna');
+    const nalaCandidates = selectCandidatesForAnimal(protoState, 'nala');
+    const tobyCandidates = selectCandidatesForAnimal(protoState, 'toby');
+    const miaCandidates = selectCandidatesForAnimal(protoState, 'mia');
+    const brunoCandidates = selectCandidatesForAnimal(protoState, 'bruno');
 
     expect(hasAdvancedCandidate(lunaCandidates)).toBe(true);
     expect(hasActiveCandidate(nalaCandidates)).toBe(true);

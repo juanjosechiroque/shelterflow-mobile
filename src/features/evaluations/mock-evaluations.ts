@@ -2,17 +2,14 @@ import type { MockEvaluation } from './types';
 
 export const mockEvaluations: readonly MockEvaluation[] = [
   {
-    id: 'luna-ana-eval',
-    candidateId: 'luna-ana',
-    overallFit: 'STRONG',
-    positiveFactors: [
-      'Experiencia previa con perros medianos.',
-      'Disposición a visitas de seguimiento.',
-    ],
-    concerns: ['Espacio disponible limitado en el departamento.'],
-    notes: 'Buena actitud y expectativas realistas sobre la adaptación.',
-    recommendation: 'CONTINUE',
-    recordedOn: '2026-07-24',
+    id: 'luna-sofia-eval',
+    candidateId: 'luna-sofia',
+    overallFit: 'POSSIBLE',
+    positiveFactors: ['Interés real en la adopción responsable.'],
+    concerns: ['Necesita coordinar horarios de la visita al hogar.'],
+    notes: 'Buena disposición general.',
+    recommendation: 'MORE_INFORMATION',
+    recordedOn: '2026-08-18',
   },
   {
     id: 'nala-jorge-eval',

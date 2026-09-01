@@ -3,14 +3,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/constants/theme';
+import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
+import {
+  selectAnimalById,
+  selectCandidatesForAnimal,
+  selectTimelineForAnimal,
+} from '@/features/prototype-flow/prototype-flow-selectors';
 
 import { AnimalAvatar } from './components/animal-avatar';
 import { CandidateRow } from './components/candidate-row';
 import { StatusBadge } from './components/status-badge';
 import { TimelineEventItem } from './components/timeline-event-item';
-import { getMockAnimalById } from './mock-animals';
-import { getCandidatesForAnimal } from './mock-candidates';
-import { getTimelineForAnimal } from './mock-timeline';
 import {
   getAnimalSexLabel,
   getAnimalSizeLabel,
@@ -38,13 +41,14 @@ const nextStepKeys: Record<
 
 export function AnimalDetailScreen() {
   const { t } = useTranslation();
+  const { state } = usePrototypeFlow();
   const params = useLocalSearchParams<{ animalId: string }>();
   const animalId = Array.isArray(params.animalId)
     ? params.animalId[0]
     : params.animalId;
-  const animal = getMockAnimalById(animalId);
-  const candidates = animal ? getCandidatesForAnimal(animal.id) : [];
-  const timeline = animal ? getTimelineForAnimal(animal.id) : [];
+  const animal = selectAnimalById(state, animalId);
+  const candidates = animal ? selectCandidatesForAnimal(state, animal.id) : [];
+  const timeline = animal ? selectTimelineForAnimal(state, animal.id) : [];
 
   if (!animal) {
     return (
