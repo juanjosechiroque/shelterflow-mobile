@@ -245,6 +245,7 @@
       "title": "Programar una reunión",
       "type": "Tipo",
       "date": "Fecha (AAAA-MM-DD)",
+      "datePlaceholder": "AAAA-MM-DD",
       "notes": "Notas",
       "notesPlaceholder": "Observaciones de la reunión",
       "scheduleAction": "Programar reunión",

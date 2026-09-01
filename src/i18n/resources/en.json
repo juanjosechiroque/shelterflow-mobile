@@ -245,6 +245,7 @@
       "title": "Schedule a meeting",
       "type": "Type",
       "date": "Date (YYYY-MM-DD)",
+      "datePlaceholder": "YYYY-MM-DD",
       "notes": "Notes",
       "notesPlaceholder": "Meeting observations",
       "scheduleAction": "Schedule meeting",

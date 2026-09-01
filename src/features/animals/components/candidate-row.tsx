@@ -37,24 +37,19 @@ export function CandidateRow({ candidate }: CandidateRowProps) {
           </View>
           <Text style={styles.name}>{candidate.person.name}</Text>
         </View>
-        <CandidateStatusBadge status={candidate.status} />
-        <Text style={styles.chevron}>›</Text>
+        <View style={styles.status}>
+          <CandidateStatusBadge status={candidate.status} />
+        </View>
       </Pressable>
     </Link>
   );
 }
 
 const styles = StyleSheet.create({
-  chevron: {
-    color: colors.textMuted,
-    fontSize: 24,
-  },
   identity: {
     alignItems: 'center',
-    flex: 1,
     flexDirection: 'row',
     gap: 12,
-    paddingRight: 12,
   },
   initials: {
     alignItems: 'center',
@@ -76,13 +71,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'space-between',
-    minHeight: 56,
+    gap: 16,
+    paddingBottom: 16,
+    paddingTop: 16,
   },
   rowPressed: {
     opacity: 0.7,
+  },
+  status: {
+    marginLeft: 44,
   },
 });

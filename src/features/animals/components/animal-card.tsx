@@ -40,12 +40,9 @@ export function AnimalCard({ animal }: AnimalCardProps) {
         <AnimalAvatar animal={animal} />
 
         <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <Text numberOfLines={1} style={styles.name}>
-              {animal.name}
-            </Text>
-            <Text style={styles.chevron}>›</Text>
-          </View>
+          <Text numberOfLines={1} style={styles.name}>
+            {animal.name}
+          </Text>
           <Text style={styles.meta}>
             {getAnimalSpeciesLabel(t, animal.species)} ·{' '}
             {t('animals.candidates.count', { count: candidateCount })}
@@ -73,11 +70,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     transform: [{ scale: 0.99 }],
   },
-  chevron: {
-    color: colors.textMuted,
-    fontSize: 28,
-    lineHeight: 30,
-  },
   content: {
     flex: 1,
     gap: 7,
@@ -89,13 +81,7 @@ const styles = StyleSheet.create({
   },
   name: {
     color: colors.text,
-    flex: 1,
     fontSize: 20,
     fontWeight: '800',
-  },
-  titleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
   },
 });
