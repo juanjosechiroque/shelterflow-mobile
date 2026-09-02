@@ -1,9 +1,10 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/theme';
+import { colors, spacing, typography } from '@/constants/theme';
+import { Card, PrimaryButton, ScreenHeader, StateView } from '@/components/ui';
 import {
   useAdoptionDecisionCandidate,
   useConfirmAdoption,
@@ -91,40 +92,24 @@ export function PersistedAdoptionConfirmationScreen() {
   }
 
   if (candidateQuery.isLoading) {
-    return (
-      <View style={styles.stateContainer}>
-        <Stack.Screen options={{ title: t('adoptions.persisted.title') }} />
-        <Text accessibilityRole="progressbar" style={styles.stateText}>
-          {t('adoptions.persisted.loading')}
-        </Text>
-      </View>
-    );
+    return <Stack.Screen options={{ title: t('adoptions.persisted.title') }} />;
   }
 
   if (candidateQuery.isError) {
     return (
       <View style={styles.stateContainer}>
         <Stack.Screen options={{ title: t('adoptions.persisted.title') }} />
-        <Text accessibilityRole="header" style={styles.title}>
-          {t('adoptions.persisted.loadErrorTitle')}
-        </Text>
-        <Text style={styles.stateText}>
-          {t('adoptions.persisted.loadErrorDescription')}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            void candidateQuery.refetch();
+        <StateView
+          description={t('adoptions.persisted.loadErrorDescription')}
+          primaryAction={{
+            label: t('adoptions.persisted.retry'),
+            onPress: () => {
+              void candidateQuery.refetch();
+            },
           }}
-          style={({ pressed }) => [
-            styles.confirmButton,
-            pressed && styles.confirmButtonPressed,
-          ]}
-        >
-          <Text style={styles.confirmButtonText}>
-            {t('adoptions.persisted.retry')}
-          </Text>
-        </Pressable>
+          title={t('adoptions.persisted.loadErrorTitle')}
+          tone="error"
+        />
       </View>
     );
   }
@@ -133,12 +118,11 @@ export function PersistedAdoptionConfirmationScreen() {
     return (
       <View style={styles.stateContainer}>
         <Stack.Screen options={{ title: t('adoptions.persisted.title') }} />
-        <Text accessibilityRole="header" style={styles.title}>
-          {t('adoptions.persisted.notFoundTitle')}
-        </Text>
-        <Text style={styles.stateText}>
-          {t('adoptions.persisted.notFoundDescription')}
-        </Text>
+        <StateView
+          description={t('adoptions.persisted.notFoundDescription')}
+          title={t('adoptions.persisted.notFoundTitle')}
+          tone="info"
+        />
       </View>
     );
   }
@@ -147,24 +131,16 @@ export function PersistedAdoptionConfirmationScreen() {
     return (
       <View style={styles.stateContainer}>
         <Stack.Screen options={{ title: t('adoptions.persisted.title') }} />
-        <Text accessibilityRole="alert" style={styles.successTitle}>
-          {t('adoptions.persisted.successTitle')}
-        </Text>
-        <Text style={styles.successDescription}>
-          {t('adoptions.persisted.successDescription')}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.replace('/')}
-          style={({ pressed }) => [
-            styles.confirmButton,
-            pressed && styles.confirmButtonPressed,
-          ]}
-        >
-          <Text style={styles.confirmButtonText}>
-            {t('adoptions.persisted.backToToday')}
-          </Text>
-        </Pressable>
+        <StateView
+          align="center"
+          description={t('adoptions.persisted.successDescription')}
+          primaryAction={{
+            label: t('adoptions.persisted.backToToday'),
+            onPress: () => router.replace('/'),
+          }}
+          title={t('adoptions.persisted.successTitle')}
+          tone="info"
+        />
       </View>
     );
   }
@@ -175,37 +151,44 @@ export function PersistedAdoptionConfirmationScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Stack.Screen options={{ title: t('adoptions.persisted.title') }} />
-      <Text accessibilityRole="header" style={styles.title}>
-        {t('adoptions.persisted.title')}
-      </Text>
-      <Text style={styles.subtitle}>
-        {t('adoptions.persisted.subtitle', {
-          personName: candidate.personName,
-          animalName: candidate.animal.name,
-        })}
-      </Text>
-
-      <View style={styles.card}>
-        <SummaryRow
-          label={t('adoptions.persisted.status')}
-          value={
-            isDecisionPending
-              ? t('adoptions.persisted.decisionPending')
-              : getCandidateStatusLabel(t, candidate.status as CandidateStatus)
-          }
-        />
-        <SummaryRow
-          label={t('adoptions.persisted.candidate')}
-          value={candidate.personName}
-        />
-        <SummaryRow
-          label={t('adoptions.persisted.animal')}
-          value={candidate.animal.name}
+      <View style={styles.header}>
+        <ScreenHeader
+          subtitle={t('adoptions.persisted.subtitle', {
+            personName: candidate.personName,
+            animalName: candidate.animal.name,
+          })}
+          title={t('adoptions.persisted.title')}
         />
       </View>
 
+      <View style={styles.section}>
+        <Card padding="comfortable" variant="elevated">
+          <SummaryRow
+            label={t('adoptions.persisted.animal')}
+            value={candidate.animal.name}
+          />
+          <View style={styles.divider} />
+          <SummaryRow
+            label={t('adoptions.persisted.candidate')}
+            value={candidate.personName}
+          />
+          <View style={styles.divider} />
+          <SummaryRow
+            label={t('adoptions.persisted.status')}
+            value={
+              isDecisionPending
+                ? t('adoptions.persisted.decisionPending')
+                : getCandidateStatusLabel(
+                    t,
+                    candidate.status as CandidateStatus,
+                  )
+            }
+          />
+        </Card>
+      </View>
+
       {!isDecisionPending ? (
-        <Text accessibilityRole="alert" style={styles.unavailableText}>
+        <Text accessibilityRole="alert" style={styles.warningText}>
           {t('adoptions.persisted.unavailable')}
         </Text>
       ) : null}
@@ -215,23 +198,20 @@ export function PersistedAdoptionConfirmationScreen() {
         </Text>
       ) : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !isDecisionPending || isSubmitting }}
-        disabled={!isDecisionPending || isSubmitting}
-        onPress={handleConfirm}
-        style={({ pressed }) => [
-          styles.confirmButton,
-          (!isDecisionPending || isSubmitting) && styles.confirmButtonDisabled,
-          pressed && styles.confirmButtonPressed,
-        ]}
-      >
-        <Text style={styles.confirmButtonText}>
-          {isSubmitting
-            ? t('adoptions.persisted.confirming')
-            : t('adoptions.persisted.confirm')}
-        </Text>
-      </Pressable>
+      <View style={styles.actionWrapper}>
+        <PrimaryButton
+          accessibilityLabel={t('adoptions.persisted.confirm')}
+          disabled={!isDecisionPending || isSubmitting}
+          fullWidth
+          label={
+            isSubmitting
+              ? t('adoptions.persisted.confirming')
+              : t('adoptions.persisted.confirm')
+          }
+          loading={isSubmitting}
+          onPress={handleConfirm}
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -246,106 +226,57 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginTop: 24,
-    padding: 18,
-  },
-  confirmButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    justifyContent: 'center',
-    marginTop: 24,
-    minHeight: 54,
-    paddingHorizontal: 20,
-  },
-  confirmButtonDisabled: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  confirmButtonPressed: {
-    backgroundColor: colors.primaryPressed,
-  },
-  confirmButtonText: {
-    color: colors.surface,
-    fontSize: 17,
-    fontWeight: '900',
+  actionWrapper: {
+    marginTop: spacing.lg,
   },
   container: {
     backgroundColor: colors.background,
     flexGrow: 1,
-    padding: 20,
-    paddingBottom: 48,
+    paddingBottom: spacing['3xl'],
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  divider: {
+    backgroundColor: colors.borderSubtle,
+    height: StyleSheet.hairlineWidth,
+    marginVertical: spacing.sm,
   },
   errorText: {
+    ...typography.body,
     color: colors.danger,
-    fontSize: 15,
-    lineHeight: 21,
-    marginTop: 16,
+    marginTop: spacing.md,
+  },
+  header: {
+    marginBottom: spacing.lg,
+  },
+  section: {
+    marginTop: spacing.md,
   },
   stateContainer: {
-    alignItems: 'center',
     backgroundColor: colors.background,
     flex: 1,
-    justifyContent: 'center',
-    padding: 28,
-  },
-  stateText: {
-    color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 23,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 23,
-    marginTop: 8,
-  },
-  successDescription: {
-    color: colors.text,
-    fontSize: 16,
-    lineHeight: 23,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  successTitle: {
-    color: colors.text,
-    fontSize: 23,
-    fontWeight: '900',
-    textAlign: 'center',
   },
   summaryLabel: {
-    color: colors.textMuted,
+    ...typography.metaStrong,
+    color: colors.textSubtle,
     flex: 1,
-    fontSize: 14,
+    textTransform: 'uppercase',
   },
   summaryRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
-    gap: 12,
-    paddingVertical: 8,
+    gap: spacing.md,
+    paddingVertical: spacing.xs,
   },
   summaryValue: {
+    ...typography.bodyStrong,
     color: colors.text,
     flex: 2,
-    fontSize: 15,
-    fontWeight: '800',
     textAlign: 'right',
   },
-  title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  unavailableText: {
+  warningText: {
+    ...typography.body,
     color: colors.warning,
-    fontSize: 15,
-    lineHeight: 21,
-    marginTop: 16,
+    marginTop: spacing.md,
   },
 });

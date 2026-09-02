@@ -1,9 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,8 +10,10 @@ import {
 } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
+import { PrimaryButton, ScreenHeader } from '@/components/ui';
 
 import { useAuth, type SignInError } from './auth-provider';
 
@@ -67,178 +67,150 @@ export function LoginScreen({
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.flex}
-    >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
       >
-        <Text style={styles.eyebrow}>{t('auth.eyebrow')}</Text>
-        <Text style={styles.title}>{t('auth.title')}</Text>
-        <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
-
-        {configMissing ? (
-          <Text accessibilityRole="alert" style={styles.banner}>
-            {t('auth.errors.configMissing')}
-          </Text>
-        ) : null}
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('auth.fields.email')}</Text>
-          <TextInput
-            accessibilityLabel={t('auth.fields.email')}
-            autoCapitalize="none"
-            autoComplete="email"
-            autoCorrect={false}
-            editable={!isSubmitting}
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            placeholder={t('auth.fields.emailPlaceholder')}
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            value={email}
-          />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>{t('auth.fields.password')}</Text>
-          <TextInput
-            accessibilityLabel={t('auth.fields.password')}
-            autoCapitalize="none"
-            autoComplete="password"
-            autoCorrect={false}
-            editable={!isSubmitting}
-            onChangeText={setPassword}
-            onSubmitEditing={() => void handleSubmit()}
-            placeholder={t('auth.fields.passwordPlaceholder')}
-            placeholderTextColor={colors.textMuted}
-            secureTextEntry
-            style={styles.input}
-            value={password}
-          />
-        </View>
-
-        {hasError ? (
-          <Text accessibilityRole="alert" style={styles.error}>
-            {hasError}
-          </Text>
-        ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          disabled={isDisabled}
-          onPress={() => void handleSubmit()}
-          style={({ pressed }) => [
-            styles.button,
-            isDisabled && styles.buttonDisabled,
-            pressed && !isDisabled && styles.buttonPressed,
-          ]}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
         >
-          {isSubmitting ? (
-            <ActivityIndicator color={colors.surface} />
-          ) : (
-            <Text style={styles.buttonLabel}>{t('auth.submit')}</Text>
-          )}
-        </Pressable>
+          <View style={styles.header}>
+            <ScreenHeader
+              eyebrow={t('auth.eyebrow')}
+              title={t('auth.title')}
+              subtitle={t('auth.subtitle')}
+            />
+          </View>
 
-        <Text style={styles.note}>{t('auth.devNote')}</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {configMissing ? (
+            <View style={styles.banner}>
+              <Text accessibilityRole="alert" style={styles.bannerText}>
+                {t('auth.errors.configMissing')}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={styles.field}>
+            <Text style={styles.label}>{t('auth.fields.email')}</Text>
+            <TextInput
+              accessibilityLabel={t('auth.fields.email')}
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+              editable={!isSubmitting}
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder={t('auth.fields.emailPlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={styles.input}
+              value={email}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>{t('auth.fields.password')}</Text>
+            <TextInput
+              accessibilityLabel={t('auth.fields.password')}
+              autoCapitalize="none"
+              autoComplete="password"
+              autoCorrect={false}
+              editable={!isSubmitting}
+              onChangeText={setPassword}
+              onSubmitEditing={() => void handleSubmit()}
+              placeholder={t('auth.fields.passwordPlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              secureTextEntry
+              style={styles.input}
+              value={password}
+            />
+          </View>
+
+          {hasError ? (
+            <Text accessibilityRole="alert" style={styles.error}>
+              {hasError}
+            </Text>
+          ) : null}
+
+          <View style={styles.submit}>
+            <PrimaryButton
+              accessibilityLabel={t('auth.submit')}
+              disabled={isDisabled}
+              fullWidth
+              label={t('auth.submit')}
+              loading={isSubmitting}
+              onPress={() => void handleSubmit()}
+            />
+          </View>
+
+          <Text style={styles.note}>{t('auth.devNote')}</Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#FFE7E0',
-    borderColor: colors.danger,
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radii.md,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  bannerText: {
+    ...typography.body,
     color: colors.danger,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-    padding: 12,
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    justifyContent: 'center',
-    minHeight: 52,
-    paddingHorizontal: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonLabel: {
-    color: colors.surface,
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  buttonPressed: {
-    opacity: 0.85,
   },
   content: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    marginBottom: 8,
-    textTransform: 'uppercase',
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing['3xl'],
   },
   error: {
+    ...typography.body,
     color: colors.danger,
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: spacing.md,
+    marginTop: spacing.xs,
   },
   field: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   flex: {
-    backgroundColor: colors.background,
     flex: 1,
+  },
+  header: {
+    marginBottom: spacing.xl,
   },
   input: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
     color: colors.text,
-    fontSize: 17,
+    fontSize: 16,
     minHeight: 52,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
   },
   label: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 8,
+    ...typography.metaStrong,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
   },
   note: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 16,
+    ...typography.meta,
+    color: colors.textSubtle,
+    marginTop: spacing.lg,
     textAlign: 'center',
   },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 22,
-    marginBottom: 24,
+  safeArea: {
+    backgroundColor: colors.background,
+    flex: 1,
   },
-  title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: '800',
-    marginBottom: 8,
+  submit: {
+    marginTop: spacing.md,
   },
 });

@@ -1,8 +1,9 @@
 import { Link, router, Stack, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
+import { Card, PrimaryButton, SectionHeader, StateView } from '@/components/ui';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
 import {
   selectAnimalById,
@@ -54,24 +55,15 @@ export function AnimalDetailScreen() {
     return (
       <View style={styles.notFoundContainer}>
         <Stack.Screen options={{ title: t('animals.detail.notFoundTitle') }} />
-        <Text accessibilityRole="header" style={styles.notFoundTitle}>
-          {t('animals.detail.notFoundTitle')}
-        </Text>
-        <Text style={styles.notFoundDescription}>
-          {t('animals.detail.notFoundDescription')}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.primaryButtonPressed,
-          ]}
-        >
-          <Text style={styles.primaryButtonText}>
-            {t('animals.detail.goBack')}
-          </Text>
-        </Pressable>
+        <StateView
+          title={t('animals.detail.notFoundTitle')}
+          description={t('animals.detail.notFoundDescription')}
+          tone="info"
+          primaryAction={{
+            label: t('animals.detail.goBack'),
+            onPress: () => router.back(),
+          }}
+        />
       </View>
     );
   }
@@ -105,257 +97,190 @@ export function AnimalDetailScreen() {
       <View style={styles.hero}>
         <AnimalAvatar animal={animal} size="large" />
         <View style={styles.heroCopy}>
-          <Text accessibilityRole="header" style={styles.name}>
+          <Text accessibilityRole="header" style={styles.heroName}>
             {animal.name}
           </Text>
-          <StatusBadge status={animal.status} />
-        </View>
-      </View>
-
-      <Text style={styles.sectionTitle}>{t('animals.detail.overview')}</Text>
-      <View style={styles.detailGrid}>
-        {details.map((detail) => (
-          <View key={detail.label} style={styles.detailCell}>
-            <Text style={styles.detailLabel}>{detail.label}</Text>
-            <Text style={styles.detailValue}>{detail.value}</Text>
+          <Text style={styles.heroMeta}>
+            {getAnimalSpeciesLabel(t, animal.species)} ·{' '}
+            {getAnimalSexLabel(t, animal.sex)} ·{' '}
+            {getAnimalSizeLabel(t, animal.size)}
+          </Text>
+          <View style={styles.heroBadge}>
+            <StatusBadge status={animal.status} />
           </View>
-        ))}
-      </View>
-
-      <Text style={styles.sectionTitle}>
-        {t('animals.detail.currentProcess')}
-      </Text>
-      <View style={styles.processCard}>
-        <View style={styles.processRow}>
-          <Text style={styles.processLabel}>
-            {t('animals.detail.activeCandidates')}
-          </Text>
-          <Text style={styles.processValue}>
-            {t('animals.candidates.count', { count: candidates.length })}
-          </Text>
         </View>
-        <View style={styles.divider} />
-        <Text style={styles.nextStepLabel}>{t('animals.detail.nextStep')}</Text>
-        <Text style={styles.nextStepValue}>
-          {t(nextStepKeys[animal.status])}
-        </Text>
-        {animal.status === 'ADOPTED' ? (
-          <Link
-            href={{
-              pathname: '/animals/followups/[animalId]',
-              params: { animalId: animal.id },
-            }}
-            asChild
-          >
-            <Pressable
-              accessibilityRole="button"
-              style={({ pressed }) => [
-                styles.followUpsButton,
-                pressed && styles.followUpsButtonPressed,
-              ]}
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader title={t('animals.detail.overview')} />
+        <Card padding="comfortable" variant="elevated">
+          <View style={styles.detailGrid}>
+            {details.map((detail) => (
+              <View key={detail.label} style={styles.detailRow}>
+                <Text style={styles.detailLabel}>{detail.label}</Text>
+                <Text style={styles.detailValue}>{detail.value}</Text>
+              </View>
+            ))}
+          </View>
+        </Card>
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader title={t('animals.detail.currentProcess')} />
+        <Card padding="comfortable" variant="elevated">
+          <View style={styles.processRow}>
+            <Text style={styles.processLabel}>
+              {t('animals.detail.activeCandidates')}
+            </Text>
+            <Text style={styles.processValue}>
+              {t('animals.candidates.count', { count: candidates.length })}
+            </Text>
+          </View>
+          <View style={styles.divider} />
+          <Text style={styles.processLabel}>
+            {t('animals.detail.nextStep')}
+          </Text>
+          <Text style={styles.nextStepValue}>
+            {t(nextStepKeys[animal.status])}
+          </Text>
+          {animal.status === 'ADOPTED' ? (
+            <Link
+              href={{
+                pathname: '/animals/followups/[animalId]',
+                params: { animalId: animal.id },
+              }}
+              asChild
             >
-              <Text style={styles.followUpsButtonText}>
-                {t('animals.detail.reviewFollowUps')}
-              </Text>
-            </Pressable>
-          </Link>
-        ) : null}
+              <PrimaryButton
+                accessibilityLabel={t('animals.detail.reviewFollowUps')}
+                fullWidth
+                label={t('animals.detail.reviewFollowUps')}
+                onPress={() => undefined}
+              />
+            </Link>
+          ) : null}
+        </Card>
       </View>
 
-      <Text style={styles.sectionTitle}>{t('animals.candidates.title')}</Text>
-      <View style={styles.listCard}>
-        {candidates.length === 0 ? (
-          <Text style={styles.emptyCopy}>{t('animals.candidates.empty')}</Text>
-        ) : (
-          candidates.map((candidate, index) => (
-            <View key={candidate.id}>
-              {index > 0 ? <View style={styles.candidateDivider} /> : null}
-              <CandidateRow candidate={candidate} />
-            </View>
-          ))
-        )}
+      <View style={styles.section}>
+        <SectionHeader title={t('animals.candidates.title')} />
+        <Card padding="comfortable" variant="elevated">
+          {candidates.length === 0 ? (
+            <Text style={styles.emptyCopy}>
+              {t('animals.candidates.empty')}
+            </Text>
+          ) : (
+            candidates.map((candidate, index) => (
+              <View key={candidate.id}>
+                {index > 0 ? <View style={styles.candidateDivider} /> : null}
+                <CandidateRow candidate={candidate} />
+              </View>
+            ))
+          )}
+        </Card>
       </View>
 
-      <Text style={styles.sectionTitle}>{t('animals.timeline.title')}</Text>
-      <View style={styles.listCard}>
-        {timeline.map((event, index) => (
-          <TimelineEventItem
-            animalName={animal.name}
-            event={event}
-            isLast={index === timeline.length - 1}
-            key={event.id}
-          />
-        ))}
+      <View style={styles.section}>
+        <SectionHeader title={t('animals.timeline.title')} />
+        <Card padding="comfortable" variant="elevated">
+          {timeline.map((event, index) => (
+            <TimelineEventItem
+              animalName={animal.name}
+              event={event}
+              isLast={index === timeline.length - 1}
+              key={event.id}
+            />
+          ))}
+        </Card>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    paddingBottom: 40,
+  candidateDivider: {
+    backgroundColor: colors.borderSubtle,
+    height: StyleSheet.hairlineWidth,
   },
-  detailCell: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 1,
-    flexBasis: '47%',
-    flexGrow: 1,
-    gap: 5,
-    minHeight: 86,
-    padding: 14,
+  container: {
+    paddingBottom: spacing['3xl'],
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
   detailGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.xs,
   },
   detailLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
+    ...typography.metaStrong,
+    color: colors.textSubtle,
     textTransform: 'uppercase',
   },
+  detailRow: {
+    gap: spacing['2xs'],
+    paddingVertical: spacing.xs,
+  },
   detailValue: {
+    ...typography.bodyStrong,
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
-    lineHeight: 22,
   },
   divider: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.borderSubtle,
     height: StyleSheet.hairlineWidth,
+    marginVertical: spacing.sm,
   },
-  candidateDivider: {
-    backgroundColor: colors.border,
-    height: StyleSheet.hairlineWidth,
-    marginVertical: 8,
+  emptyCopy: {
+    ...typography.body,
+    color: colors.textMuted,
   },
   hero: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
-    borderRadius: 22,
+    borderRadius: radii.xl,
     flexDirection: 'row',
-    gap: 18,
-    padding: 20,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  heroBadge: {
+    marginTop: spacing['2xs'],
   },
   heroCopy: {
     flex: 1,
-    gap: 10,
+    gap: spacing['2xs'],
   },
-  name: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: '900',
-  },
-  nextStepLabel: {
+  heroMeta: {
+    ...typography.meta,
     color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
-  nextStepValue: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 23,
-  },
-  notFoundContainer: {
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    flex: 1,
-    justifyContent: 'center',
-    padding: 28,
-  },
-  notFoundDescription: {
-    color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 24,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  notFoundTitle: {
+  heroName: {
+    ...typography.display,
     color: colors.text,
     fontSize: 24,
-    fontWeight: '900',
   },
-  primaryButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    justifyContent: 'center',
-    marginTop: 24,
-    minHeight: 50,
-    paddingHorizontal: 20,
+  nextStepValue: {
+    ...typography.body,
+    color: colors.text,
+    marginTop: spacing['2xs'],
   },
-  primaryButtonPressed: {
-    backgroundColor: colors.primaryPressed,
-  },
-  primaryButtonText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  processCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    gap: 14,
-    padding: 18,
+  notFoundContainer: {
+    backgroundColor: colors.background,
+    flex: 1,
   },
   processLabel: {
-    color: colors.textMuted,
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.metaStrong,
+    color: colors.textSubtle,
+    textTransform: 'uppercase',
   },
   processRow: {
-    alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     justifyContent: 'space-between',
-  },
-  emptyCopy: {
-    color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  followUpsButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    justifyContent: 'center',
-    minHeight: 46,
-    paddingHorizontal: 16,
-  },
-  followUpsButtonPressed: {
-    backgroundColor: colors.primaryPressed,
-  },
-  followUpsButtonText: {
-    color: colors.surface,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  listCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 18,
+    paddingVertical: spacing.xs,
   },
   processValue: {
+    ...typography.bodyStrong,
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '800',
   },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: '900',
-    marginBottom: 12,
-    marginTop: 26,
+  section: {
+    marginTop: spacing.xl,
   },
 });
