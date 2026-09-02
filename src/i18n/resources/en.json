@@ -140,12 +140,8 @@
         "reevaluation": "Complete a human review before changing availability.",
         "notAvailable": "The shelter must decide when to restart preparation."
       },
-      "prototype": {
-        "title": "Demo data",
-        "description": "This prototype uses fictitious information. Evaluations, meetings, and adoption confirmation will be added in later phases."
-      },
       "notFoundTitle": "Animal not found",
-      "notFoundDescription": "We couldn't find this animal in the demo data.",
+      "notFoundDescription": "We couldn't find this animal.",
       "goBack": "Go back"
     }
   },
@@ -176,7 +172,7 @@
       "unknown": "Unknown"
     },
     "notFoundTitle": "Candidate not found",
-    "notFoundDescription": "We couldn't find this candidate in the demo data."
+    "notFoundDescription": "We couldn't find this candidate."
   },
   "evaluations": {
     "title": "Evaluation",

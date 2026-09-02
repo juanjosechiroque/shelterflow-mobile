@@ -140,12 +140,8 @@
         "reevaluation": "Realizar una revisión humana antes de cambiar su disponibilidad.",
         "notAvailable": "El refugio debe decidir cuándo reiniciar la preparación."
       },
-      "prototype": {
-        "title": "Datos de demostración",
-        "description": "Este prototipo usa información ficticia. Las evaluaciones, reuniones y confirmaciones de adopción se añadirán en fases posteriores."
-      },
       "notFoundTitle": "Animal no encontrado",
-      "notFoundDescription": "No pudimos encontrar este animal en los datos de demostración.",
+      "notFoundDescription": "No pudimos encontrar este animal.",
       "goBack": "Volver"
     }
   },
@@ -176,7 +172,7 @@
       "unknown": "Desconocida"
     },
     "notFoundTitle": "Candidato no encontrado",
-    "notFoundDescription": "No pudimos encontrar este candidato en los datos de demostración."
+    "notFoundDescription": "No pudimos encontrar este candidato."
   },
   "evaluations": {
     "title": "Evaluación",
