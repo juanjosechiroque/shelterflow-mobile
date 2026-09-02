@@ -36,6 +36,7 @@ const INVALID_PASSWORD = 'wrong-password';
 
 const PRIMARY_SHELTER_ID = '00000000-0000-4000-8000-000000000001';
 const SECONDARY_SHELTER_ID = '00000000-0000-4000-8000-000000000002';
+const NALA_DECISION_CANDIDATE_ID = '00000000-0000-4000-8000-000000000055';
 
 const failures = [];
 function expect(label, condition) {
@@ -201,7 +202,20 @@ async function main() {
     );
   }
 
-  // 9. Authenticated direct INSERT/UPDATE/DELETE are denied.
+  // 9. A candidate detail query must not disclose a real decision from a
+  // different shelter, including its embedded person and animal details.
+  {
+    const { data, error } = await isolationClient
+      .from('candidates')
+      .select('id, people ( name ), animals ( id, name, status )')
+      .eq('id', NALA_DECISION_CANDIDATE_ID);
+    expect(
+      'RLS user cannot read the primary shelter adoption-decision detail',
+      !error && data?.length === 0,
+    );
+  }
+
+  // 10. Authenticated direct INSERT/UPDATE/DELETE are denied.
   await expectError(
     'authenticated INSERT into animals is denied',
     (async () =>

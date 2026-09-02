@@ -33,13 +33,14 @@
 ## Documentation and validation
 
 - Keep repository documentation, identifiers, comments, and commit messages in English. Update public docs only for behavior, architecture, or domain-contract changes; update the local delivery plan only for delivery status.
+- When writing an implementation prompt or reporting validation, use concise commands: `npm --silent run typecheck`, `npm --silent run lint`, `npm --silent run format:check`, `npm test -- --silent`, and `git diff --check`. Report only each command's final status and actionable failure output. Run focused checks during implementation and the full suite only before declaring work ready. Do not use test flags that mask lifecycle failures, such as `--forceExit`.
 - Before presenting work as ready, run:
 
   ```bash
-  npm run typecheck
-  npm run lint
-  npm run format:check
-  npm test
+  npm --silent run typecheck
+  npm --silent run lint
+  npm --silent run format:check
+  npm test -- --silent
   git diff --check
   ```
 

@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
+import { useAuth } from '@/features/auth/auth-provider';
+import { usePendingAdoptionDecisions } from '@/features/adoptions/adoption-queries';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
 import {
   selectShelter,
@@ -73,9 +75,14 @@ function taskHref(task: MockTodayTask):
 
 export function TodayScreen() {
   const { t } = useTranslation();
+  const { supabase, profile } = useAuth();
   const { state } = usePrototypeFlow();
   const shelter = selectShelter(state);
   const todayTasks = selectTodayTasks(state);
+  const pendingDecisions = usePendingAdoptionDecisions(
+    supabase,
+    profile?.shelterId ?? null,
+  );
 
   const tasks: MockTodayTask[] = todayTasks;
 
@@ -150,6 +157,67 @@ export function TodayScreen() {
           })}
         </View>
 
+        <View style={styles.realDecisionsSection}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>
+            {t('today.realDecisions.title')}
+          </Text>
+          <Text style={styles.sectionSubtitle}>
+            {t('today.realDecisions.subtitle')}
+          </Text>
+
+          {pendingDecisions.isLoading ? (
+            <Text accessibilityRole="progressbar" style={styles.stateText}>
+              {t('today.realDecisions.loading')}
+            </Text>
+          ) : null}
+
+          {pendingDecisions.isError ? (
+            <Text accessibilityRole="alert" style={styles.errorText}>
+              {t('today.realDecisions.error')}
+            </Text>
+          ) : null}
+
+          {!pendingDecisions.isLoading &&
+          !pendingDecisions.isError &&
+          pendingDecisions.data?.length === 0 ? (
+            <Text style={styles.stateText}>
+              {t('today.realDecisions.empty')}
+            </Text>
+          ) : null}
+
+          <View style={styles.realDecisionList}>
+            {pendingDecisions.data?.map((candidate) => (
+              <Link
+                href={{
+                  pathname: '/adoptions/confirm/[candidateId]',
+                  params: { candidateId: candidate.id },
+                }}
+                key={candidate.id}
+                asChild
+              >
+                <Pressable
+                  accessibilityLabel={t('today.realDecisions.open', {
+                    personName: candidate.personName,
+                    animalName: candidate.animal.name,
+                  })}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.realDecisionCard,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.realDecisionPerson}>
+                    {candidate.personName}
+                  </Text>
+                  <Text style={styles.realDecisionAnimal}>
+                    {candidate.animal.name}
+                  </Text>
+                </Pressable>
+              </Link>
+            ))}
+          </View>
+        </View>
+
         <Link href="/animals" asChild>
           <Pressable
             accessibilityRole="button"
@@ -176,6 +244,12 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingHorizontal: 20,
   },
+  errorText: {
+    color: colors.danger,
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 12,
+  },
   countBadge: {
     alignItems: 'center',
     borderRadius: 14,
@@ -200,6 +274,33 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.72,
   },
+  realDecisionAnimal: {
+    color: colors.textMuted,
+    fontSize: 15,
+    marginTop: 4,
+  },
+  realDecisionCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+  realDecisionList: {
+    gap: 10,
+    marginTop: 14,
+  },
+  realDecisionPerson: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  realDecisionsSection: {
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    marginTop: 28,
+    paddingTop: 24,
+  },
   productName: {
     color: colors.textMuted,
     fontSize: 13,
@@ -218,6 +319,17 @@ const styles = StyleSheet.create({
     marginTop: 24,
     minHeight: 52,
     paddingHorizontal: 18,
+  },
+  sectionSubtitle: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 4,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 21,
+    fontWeight: '900',
   },
   secondaryButtonText: {
     color: colors.primary,
@@ -280,6 +392,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     lineHeight: 22,
+  },
+  stateText: {
+    color: colors.textMuted,
+    fontSize: 15,
+    lineHeight: 21,
+    marginTop: 12,
   },
   title: {
     color: colors.text,

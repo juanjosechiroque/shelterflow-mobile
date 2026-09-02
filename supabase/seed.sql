@@ -13,6 +13,8 @@
 -- credentials are local-development fixtures only and must never be used in
 -- any other environment.
 
+begin;
+
 insert into public.shelters (id, name, country, created_at)
 values
   ('00000000-0000-4000-8000-000000000001', 'Huellitas Rescue', 'Peru', now() - interval '180 days'),
@@ -67,7 +69,7 @@ values
   ('00000000-0000-4000-8000-000000000052', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000032', '00000000-0000-4000-8000-000000000011', 'Web form', null, 'NOT_SELECTED', now() - interval '67 days', now() - interval '31 days'),
   ('00000000-0000-4000-8000-000000000053', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000033', '00000000-0000-4000-8000-000000000011', 'Web form', 'Applicant withdrew before evaluation.', 'WITHDRAWN', now() - interval '65 days', now() - interval '62 days'),
   ('00000000-0000-4000-8000-000000000054', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000034', '00000000-0000-4000-8000-000000000012', 'Adoption event', null, 'SELECTED', now() - interval '100 days', now() - interval '90 days'),
-  ('00000000-0000-4000-8000-000000000055', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000035', '00000000-0000-4000-8000-000000000013', 'Web form', 'Positive first impression.', 'MEETING_SCHEDULED', now() - interval '38 days', now() - interval '20 days'),
+  ('00000000-0000-4000-8000-000000000055', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000035', '00000000-0000-4000-8000-000000000013', 'Web form', 'Positive first impression.', 'DECISION_PENDING', now() - interval '38 days', now() - interval '3 days'),
   ('00000000-0000-4000-8000-000000000056', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000036', '00000000-0000-4000-8000-000000000014', 'Referral', 'Large yard available.', 'EVALUATED', now() - interval '30 days', now() - interval '28 days'),
   ('00000000-0000-4000-8000-000000000061', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000041', '00000000-0000-4000-8000-000000000021', 'Web form', 'First-time applicant.', 'NEEDS_EVALUATION', now() - interval '10 days', now() - interval '10 days');
 
@@ -84,7 +86,7 @@ values
   ('00000000-0000-4000-8000-000000000081', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000051', 'MEET_AND_GREET', now() - interval '61 days', 'RESCHEDULED', null, 'Original meeting postponed by the applicant.', null, now() - interval '61 days', now() - interval '60 days'),
   ('00000000-0000-4000-8000-000000000082', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000051', 'MEET_AND_GREET', now() - interval '58 days', 'COMPLETED', 'STRONG_MATCH', 'Luna and Andrea interacted well.', '00000000-0000-4000-8000-000000000081', now() - interval '58 days', now() - interval '56 days'),
   ('00000000-0000-4000-8000-000000000083', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000054', 'HOME_VISIT', now() - interval '95 days', 'COMPLETED', 'STRONG_MATCH', 'Suitable home observed.', null, now() - interval '95 days', now() - interval '94 days'),
-  ('00000000-0000-4000-8000-000000000084', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000055', 'MEET_AND_GREET', now() + interval '5 days', 'SCHEDULED', null, null, null, now() - interval '20 days', now() - interval '20 days');
+  ('00000000-0000-4000-8000-000000000084', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000055', 'MEET_AND_GREET', now() - interval '4 days', 'COMPLETED', 'GOOD', 'Nala and Lucia had a calm, positive meeting.', null, now() - interval '20 days', now() - interval '3 days');
 
 insert into public.adoptions (id, shelter_id, animal_id, candidate_id, adoption_date, handover_notes, adoption_photo_path, status, created_at)
 values
@@ -135,4 +137,7 @@ values
   ('00000000-0000-4000-8000-000000000146', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000014', 'EVALUATION_RECORDED', 'evaluation', '00000000-0000-4000-8000-000000000075', '{}', now() - interval '28 days', now() - interval '28 days'),
   ('00000000-0000-4000-8000-000000000147', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000015', 'ANIMAL_READY', 'animal', '00000000-0000-4000-8000-000000000015', '{}', now() - interval '45 days', now() - interval '45 days'),
   ('00000000-0000-4000-8000-000000000148', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000021', 'ANIMAL_READY', 'animal', '00000000-0000-4000-8000-000000000021', '{}', now() - interval '15 days', now() - interval '15 days'),
-  ('00000000-0000-4000-8000-000000000149', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000021', 'CANDIDATE_CREATED', 'candidate', '00000000-0000-4000-8000-000000000061', '{"person": "Valeria Gomez"}', now() - interval '10 days', now() - interval '10 days');
+  ('00000000-0000-4000-8000-000000000149', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000021', 'CANDIDATE_CREATED', 'candidate', '00000000-0000-4000-8000-000000000061', '{"person": "Valeria Gomez"}', now() - interval '10 days', now() - interval '10 days'),
+  ('00000000-0000-4000-8000-000000000150', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000013', 'DECISION_PENDING', 'candidate', '00000000-0000-4000-8000-000000000055', '{}', now() - interval '3 days', now() - interval '3 days');
+
+commit;

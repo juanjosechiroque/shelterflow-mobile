@@ -36,6 +36,14 @@
       "decisions": "El proceso de {{animalName}} está listo para una decisión.",
       "followups": "Revisa la adopción activa de {{animalName}}.",
       "reevaluations": "{{animalName}} requiere una revisión humana."
+    },
+    "realDecisions": {
+      "title": "Decisiones de adopción reales pendientes",
+      "subtitle": "Estas decisiones se consultan en el refugio autenticado.",
+      "loading": "Cargando decisiones de adopción…",
+      "empty": "No hay decisiones de adopción reales pendientes.",
+      "error": "No pudimos cargar las decisiones de adopción. Inténtalo nuevamente.",
+      "open": "Abrir decisión de adopción de {{personName}} para {{animalName}}"
     }
   },
   "animals": {
@@ -267,7 +275,28 @@
       "viewFollowUps": "Ver seguimientos",
       "done": "Listo"
     },
-    "notFoundTitle": "Candidato no encontrado"
+    "notFoundTitle": "Candidato no encontrado",
+    "persisted": {
+      "title": "Confirmar adopción",
+      "subtitle": "Confirma la adopción de {{animalName}} con {{personName}}.",
+      "loading": "Cargando la decisión de adopción…",
+      "loadErrorTitle": "No pudimos cargar la decisión",
+      "loadErrorDescription": "Revisa tu conexión e inténtalo nuevamente.",
+      "retry": "Reintentar",
+      "notFoundTitle": "Decisión no disponible",
+      "notFoundDescription": "No pudimos encontrar esta decisión de adopción en tu refugio.",
+      "status": "Estado",
+      "decisionPending": "Decisión pendiente",
+      "candidate": "Candidato",
+      "animal": "Animal",
+      "confirm": "Confirmar adopción",
+      "confirming": "Confirmando adopción…",
+      "unavailable": "Esta adopción solo se puede confirmar cuando el servidor indica una decisión pendiente.",
+      "error": "No pudimos confirmar la adopción. Revisa la decisión e inténtalo nuevamente.",
+      "successTitle": "Adopción confirmada",
+      "successDescription": "La adopción se registró correctamente.",
+      "backToToday": "Volver a Hoy"
+    }
   },
   "followups": {
     "title": "Seguimientos",
