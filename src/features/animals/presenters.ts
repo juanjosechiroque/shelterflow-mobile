@@ -149,6 +149,7 @@ const candidateStatusKeys: Record<
 const timelineEventKeys: Record<
   TimelineEventType,
   | 'animals.timeline.events.animalReady'
+  | 'animals.timeline.events.animalNotAvailable'
   | 'animals.timeline.events.candidateCreated'
   | 'animals.timeline.events.evaluationRecorded'
   | 'animals.timeline.events.meetingScheduled'
@@ -162,6 +163,7 @@ const timelineEventKeys: Record<
   ADOPTION_CONFIRMED: 'animals.timeline.events.adoptionConfirmed',
   ADOPTION_RETURNED: 'animals.timeline.events.adoptionReturned',
   ANIMAL_IN_PROCESS: 'animals.timeline.events.animalInProcess',
+  ANIMAL_NOT_AVAILABLE: 'animals.timeline.events.animalNotAvailable',
   ANIMAL_READY: 'animals.timeline.events.animalReady',
   CANDIDATE_CREATED: 'animals.timeline.events.candidateCreated',
   DECISION_PENDING: 'animals.timeline.events.decisionPending',

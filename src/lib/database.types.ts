@@ -606,6 +606,13 @@ export type Database = {
         }
         Returns: string
       }
+      complete_reevaluation: {
+        Args: {
+          p_animal_id: string
+          p_next_status: string
+        }
+        Returns: string
+      }
       confirm_adoption: {
         Args: {
           p_adoption_date: string

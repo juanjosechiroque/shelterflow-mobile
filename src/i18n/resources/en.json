@@ -81,6 +81,7 @@
       "title": "Timeline",
       "events": {
         "animalReady": "{{animalName}} became ready for adoption.",
+        "animalNotAvailable": "{{animalName}} is no longer available for adoption.",
         "candidateCreated": "{{personName}} was registered as a candidate.",
         "evaluationRecorded": "{{personName}}'s evaluation was recorded.",
         "meetingScheduled": "A meeting was scheduled with {{personName}}.",
@@ -88,6 +89,7 @@
         "decisionPending": "{{personName}}'s process is ready for a decision.",
         "adoptionConfirmed": "The adoption with {{personName}} was confirmed.",
         "followUpsPlanned": "Adoption follow-ups were planned.",
+        "followUpCompleted": "An adoption follow-up was completed.",
         "adoptionReturned": "The adoption with {{personName}} was returned.",
         "reevaluationRequired": "{{animalName}} requires a human reevaluation."
       }
@@ -139,7 +141,7 @@
       "description": "Try another filter to continue."
     },
     "detail": {
-      "title": "Animal details",
+      "title": "Animal detail",
       "overview": "Overview",
       "species": "Species",
       "sex": "Sex",
@@ -149,17 +151,25 @@
       "activeCandidates": "Registered candidates",
       "nextStep": "Next step",
       "reviewFollowUps": "Review follow-ups",
+      "completeReevaluation": "Complete reevaluation",
       "nextSteps": {
-        "preparing": "Complete preparation before making the animal available.",
-        "ready": "Review candidates or wait for a newly shortlisted application.",
-        "inProcess": "Continue pending evaluations, meetings, and decisions.",
+        "preparing": "Finish preparation before enabling adoption.",
+        "ready": "Review candidates or wait for a new shortlisted applicant.",
+        "inProcess": "Continue evaluations, meetings, and pending decisions.",
         "adopted": "Review and complete the adoption follow-ups.",
-        "reevaluation": "Complete a human review before changing availability.",
+        "reevaluation": "Perform a human review before changing availability.",
         "notAvailable": "The shelter must decide when to restart preparation."
       },
       "notFoundTitle": "Animal not found",
       "notFoundDescription": "We couldn't find this animal.",
-      "goBack": "Go back"
+      "goBack": "Go back",
+      "loading": "Loading the animal…",
+      "loadErrorTitle": "We couldn't load the animal",
+      "loadErrorDescription": "Check your connection and try again.",
+      "retry": "Retry",
+      "timelineLoading": "Loading the timeline…",
+      "timelineError": "We couldn't load the timeline.",
+      "timelineEmpty": "There are no timeline events recorded yet."
     }
   },
   "candidates": {
@@ -379,6 +389,36 @@
       "cancel": "Cancel",
       "successTitle": "Return recorded",
       "successDescription": "The adoption was returned and the pending follow-ups were cancelled.",
+      "backToAdoption": "View adoption"
+    },
+    "reevaluation": {
+      "title": "Complete reevaluation",
+      "subtitle": "Decide how {{animalName}} should proceed after the recorded return.",
+      "context": "The previous adoption was returned and the animal moved into a human reevaluation.",
+      "options": {
+        "ready": {
+          "label": "Ready for adoption",
+          "description": "The animal is available again to start a new adoption process."
+        },
+        "notAvailable": {
+          "label": "Not available",
+          "description": "The animal is paused and must be prepared again before another attempt."
+        }
+      },
+      "warning": "This decision changes the animal's availability and is recorded in its timeline.",
+      "decisionPrompt": "Select a decision to enable the action.",
+      "missingDecision": "Select a decision to enable the action.",
+      "submit": "Complete reevaluation",
+      "submitting": "Saving reevaluation…",
+      "error": "We couldn't save the reevaluation. Please try again.",
+      "cancel": "Cancel",
+      "successTitle": "Reevaluation completed",
+      "successDescription": "{{animalName}}'s status has been updated in your shelter.",
+      "backToAnimal": "View animal",
+      "notFoundTitle": "Animal unavailable",
+      "notFoundDescription": "We couldn't find this animal in your shelter.",
+      "invalidStateTitle": "Reevaluation unavailable",
+      "invalidStateDescription": "The reevaluation can only be completed while the animal is in REEVALUATION.",
       "backToAdoption": "View adoption"
     }
   },

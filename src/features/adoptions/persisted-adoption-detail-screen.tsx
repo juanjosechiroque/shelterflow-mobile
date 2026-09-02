@@ -263,6 +263,25 @@ export function PersistedAdoptionDetailScreen() {
           </Card>
         </View>
       ) : null}
+
+      {isReturned && adoption.animal.status === 'REEVALUATION' ? (
+        <View style={styles.section}>
+          <Link
+            href={{
+              pathname: '/animals/[animalId]/reevaluation',
+              params: { animalId: adoption.animal.id },
+            }}
+            asChild
+          >
+            <PrimaryButton
+              accessibilityLabel={t('animals.detail.completeReevaluation')}
+              fullWidth
+              label={t('animals.detail.completeReevaluation')}
+              onPress={() => undefined}
+            />
+          </Link>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
