@@ -85,6 +85,11 @@ export function TodayScreen() {
   );
 
   const tasks: MockTodayTask[] = todayTasks;
+  const pendingDecisionCount = pendingDecisions.data?.length ?? 0;
+  const shouldRenderPendingDecisions =
+    pendingDecisions.isLoading ||
+    pendingDecisions.isError ||
+    pendingDecisionCount > 0;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -119,6 +124,79 @@ export function TodayScreen() {
           </Text>
           <Text style={styles.subtitle}>{t('today.subtitle')}</Text>
         </View>
+
+        {shouldRenderPendingDecisions ? (
+          <View style={styles.pendingDecisionsSection}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              {t('today.pendingDecisions.title')}
+            </Text>
+            <Text style={styles.sectionSubtitle}>
+              {t('today.pendingDecisions.subtitle')}
+            </Text>
+
+            {pendingDecisions.isLoading ? (
+              <Text accessibilityRole="progressbar" style={styles.stateText}>
+                {t('today.pendingDecisions.loading')}
+              </Text>
+            ) : null}
+
+            {pendingDecisions.isError ? (
+              <View>
+                <Text accessibilityRole="alert" style={styles.errorText}>
+                  {t('today.pendingDecisions.error')}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    void pendingDecisions.refetch();
+                  }}
+                  style={({ pressed }) => [
+                    styles.retryButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.retryButtonText}>
+                    {t('today.pendingDecisions.retry')}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {!pendingDecisions.isLoading && !pendingDecisions.isError ? (
+              <View style={styles.pendingDecisionList}>
+                {pendingDecisions.data?.map((candidate) => (
+                  <Link
+                    href={{
+                      pathname: '/adoptions/confirm/[candidateId]',
+                      params: { candidateId: candidate.id },
+                    }}
+                    key={candidate.id}
+                    asChild
+                  >
+                    <Pressable
+                      accessibilityLabel={t('today.pendingDecisions.open', {
+                        personName: candidate.personName,
+                        animalName: candidate.animal.name,
+                      })}
+                      accessibilityRole="button"
+                      style={({ pressed }) => [
+                        styles.pendingDecisionCard,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Text style={styles.pendingDecisionPerson}>
+                        {candidate.personName}
+                      </Text>
+                      <Text style={styles.pendingDecisionAnimal}>
+                        {candidate.animal.name}
+                      </Text>
+                    </Pressable>
+                  </Link>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={styles.taskList}>
           {tasks.map((task) => {
@@ -155,67 +233,6 @@ export function TodayScreen() {
               </Link>
             );
           })}
-        </View>
-
-        <View style={styles.realDecisionsSection}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>
-            {t('today.realDecisions.title')}
-          </Text>
-          <Text style={styles.sectionSubtitle}>
-            {t('today.realDecisions.subtitle')}
-          </Text>
-
-          {pendingDecisions.isLoading ? (
-            <Text accessibilityRole="progressbar" style={styles.stateText}>
-              {t('today.realDecisions.loading')}
-            </Text>
-          ) : null}
-
-          {pendingDecisions.isError ? (
-            <Text accessibilityRole="alert" style={styles.errorText}>
-              {t('today.realDecisions.error')}
-            </Text>
-          ) : null}
-
-          {!pendingDecisions.isLoading &&
-          !pendingDecisions.isError &&
-          pendingDecisions.data?.length === 0 ? (
-            <Text style={styles.stateText}>
-              {t('today.realDecisions.empty')}
-            </Text>
-          ) : null}
-
-          <View style={styles.realDecisionList}>
-            {pendingDecisions.data?.map((candidate) => (
-              <Link
-                href={{
-                  pathname: '/adoptions/confirm/[candidateId]',
-                  params: { candidateId: candidate.id },
-                }}
-                key={candidate.id}
-                asChild
-              >
-                <Pressable
-                  accessibilityLabel={t('today.realDecisions.open', {
-                    personName: candidate.personName,
-                    animalName: candidate.animal.name,
-                  })}
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.realDecisionCard,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.realDecisionPerson}>
-                    {candidate.personName}
-                  </Text>
-                  <Text style={styles.realDecisionAnimal}>
-                    {candidate.animal.name}
-                  </Text>
-                </Pressable>
-              </Link>
-            ))}
-          </View>
         </View>
 
         <Link href="/animals" asChild>
@@ -271,35 +288,47 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 28,
   },
-  pressed: {
-    opacity: 0.72,
-  },
-  realDecisionAnimal: {
+  pendingDecisionAnimal: {
     color: colors.textMuted,
     fontSize: 15,
     marginTop: 4,
   },
-  realDecisionCard: {
+  pendingDecisionCard: {
     backgroundColor: colors.surface,
     borderColor: colors.primary,
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
   },
-  realDecisionList: {
+  pendingDecisionList: {
     gap: 10,
     marginTop: 14,
   },
-  realDecisionPerson: {
+  pendingDecisionPerson: {
     color: colors.text,
     fontSize: 17,
     fontWeight: '800',
   },
-  realDecisionsSection: {
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    marginTop: 28,
-    paddingTop: 24,
+  pendingDecisionsSection: {
+    marginBottom: 24,
+  },
+  pressed: {
+    opacity: 0.72,
+  },
+  retryButton: {
+    alignItems: 'center',
+    borderColor: colors.primary,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: 12,
+    minHeight: 44,
+    paddingHorizontal: 16,
+  },
+  retryButtonText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '800',
   },
   productName: {
     color: colors.textMuted,
