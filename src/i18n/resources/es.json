@@ -44,6 +44,15 @@
       "retry": "Reintentar",
       "error": "No pudimos cargar las decisiones de adopción. Inténtalo nuevamente.",
       "open": "Abrir decisión de adopción de {{personName}} para {{animalName}}"
+    },
+    "activeAdoptions": {
+      "title": "Adopciones activas",
+      "subtitle": "Adopciones activas registradas en el refugio autenticado.",
+      "loading": "Cargando adopciones activas…",
+      "retry": "Reintentar",
+      "error": "No pudimos cargar las adopciones activas. Inténtalo nuevamente.",
+      "open": "Abrir adopción activa de {{personName}} para {{animalName}}",
+      "adoptionDate": "Adoptado el {{date}}"
     }
   },
   "animals": {
@@ -295,7 +304,82 @@
       "error": "No pudimos confirmar la adopción. Revisa la decisión e inténtalo nuevamente.",
       "successTitle": "Adopción confirmada",
       "successDescription": "La adopción se registró correctamente.",
+      "viewAdoption": "Ver adopción",
       "backToToday": "Volver a Hoy"
+    },
+    "detail": {
+      "title": "Adopción",
+      "loading": "Cargando la adopción…",
+      "loadErrorTitle": "No pudimos cargar la adopción",
+      "loadErrorDescription": "Revisa tu conexión e inténtalo nuevamente.",
+      "retry": "Reintentar",
+      "notFoundTitle": "Adopción no encontrada",
+      "notFoundDescription": "No encontramos esta adopción en tu refugio.",
+      "activeBadge": "Activa",
+      "returnedBadge": "Devuelta",
+      "status": "Estado",
+      "animal": "Animal",
+      "candidate": "Candidato",
+      "adoptionDate": "Fecha de adopción",
+      "handoverNotes": "Notas de entrega",
+      "handoverNotesEmpty": "No se registraron notas de entrega.",
+      "followups": {
+        "title": "Seguimientos",
+        "loading": "Cargando seguimientos…",
+        "empty": "Esta adopción no tiene seguimientos registrados.",
+        "dueDate": "Fecha",
+        "status": "Estado",
+        "outcome": "Resultado",
+        "notes": "Notas",
+        "notesEmpty": "Sin notas registradas.",
+        "complete": "Completar seguimiento",
+        "unavailable": "Este seguimiento solo se puede completar mientras esté pendiente.",
+        "cancelledReturn": "Cancelado por devolución de la adopción."
+      },
+      "return": {
+        "trigger": "Registrar retorno",
+        "registeredTitle": "Retorno registrado",
+        "registeredDescription": "La adopción fue devuelta. El animal pasó a reevaluación y los seguimientos pendientes fueron cancelados."
+      }
+    },
+    "completeFollowup": {
+      "title": "Completar seguimiento",
+      "subtitle": "Registra el resultado del seguimiento programado para {{animalName}} con {{personName}}.",
+      "outcome": "Resultado",
+      "outcomes": {
+        "excellent": "Excelente",
+        "good": "Bueno",
+        "concerns": "Con preocupaciones",
+        "interventionRequired": "Requiere intervención"
+      },
+      "notes": "Notas",
+      "notesPlaceholder": "Observaciones del seguimiento",
+      "submit": "Completar seguimiento",
+      "submitting": "Guardando seguimiento…",
+      "error": "No pudimos guardar el seguimiento. Inténtalo nuevamente.",
+      "missingOutcome": "Selecciona un resultado para habilitar la acción.",
+      "cancel": "Cancelar",
+      "notFoundTitle": "Seguimiento no disponible",
+      "notFoundDescription": "No encontramos este seguimiento en tu refugio."
+    },
+    "return": {
+      "title": "Registrar retorno",
+      "subtitle": "Registra la devolución de la adopción de {{animalName}} con {{personName}}.",
+      "reason": "Motivo del retorno",
+      "reasonPlaceholder": "Describe brevemente el motivo",
+      "notes": "Notas",
+      "notesPlaceholder": "Observaciones adicionales",
+      "warning": "Al registrar el retorno, la adopción quedará marcada como devuelta, el animal volverá a reevaluación y los seguimientos pendientes se cancelarán.",
+      "acknowledgement": "Entiendo que esta acción no se puede deshacer.",
+      "submit": "Registrar retorno",
+      "submitting": "Registrando retorno…",
+      "error": "No pudimos registrar el retorno. Inténtalo nuevamente.",
+      "missingReason": "Ingresa un motivo para habilitar la acción.",
+      "missingAcknowledgement": "Debes confirmar la advertencia antes de continuar.",
+      "cancel": "Cancelar",
+      "successTitle": "Retorno registrado",
+      "successDescription": "La adopción fue devuelta y los pendientes fueron cancelados.",
+      "backToAdoption": "Ver adopción"
     }
   },
   "followups": {
@@ -308,7 +392,8 @@
       "pending": "Pendiente",
       "completed": "Completado",
       "rescheduled": "Reprogramado",
-      "missed": "Perdido"
+      "missed": "Perdido",
+      "cancelled": "Cancelado"
     },
     "outcomes": {
       "excellent": "Excelente",

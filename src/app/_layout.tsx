@@ -37,10 +37,7 @@ function RootNavigator() {
             name="settings"
             options={{ title: t('navigation.settings') }}
           />
-          <Stack.Screen
-            name="adoptions/confirm/[candidateId]"
-            options={{ title: t('adoptions.persisted.title') }}
-          />
+          <Stack.Screen name="adoptions" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Protected guard={!isAuthenticated}>
           <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />

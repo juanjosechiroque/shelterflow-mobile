@@ -2,7 +2,7 @@
 
 ShelterFlow is a Spanish-first React Native application for small animal shelters and independent rescuers. It supports the operational adoption journey after a candidate has already been shortlisted: evaluation, meeting, decision, adoption, and post-adoption follow-up.
 
-The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype keeps its operational data in memory and lets you walk an adoption journey end to end — evaluation, meeting, decision, adoption confirmation, and follow-up — but the data resets when the app reloads. Supabase supports authentication, authenticated shelter identity, and a persisted adoption-confirmation slice from Today; the remaining operational animal, candidate, adoption, and follow-up flows remain in memory.
+The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype keeps its operational data in memory and lets you walk an adoption journey end to end — evaluation, meeting, decision, adoption confirmation, and follow-up — but the data resets when the app reloads. Supabase supports authentication, authenticated shelter identity, and the persisted adoption journey from Today: pending decisions, active adoptions, follow-ups, follow-up completion, and adoption returns. The remaining operational animal, candidate, evaluation, meeting, and follow-up editing flows remain in memory.
 
 ## Product scope
 

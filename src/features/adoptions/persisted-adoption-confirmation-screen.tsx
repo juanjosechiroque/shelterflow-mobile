@@ -57,7 +57,9 @@ export function PersistedAdoptionConfirmationScreen() {
   const confirmMutation = useConfirmAdoption(supabase, shelterId);
   const submissionStartedRef = useRef(false);
   const [hasMutationError, setHasMutationError] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmedAdoptionId, setConfirmedAdoptionId] = useState<string | null>(
+    null,
+  );
 
   const candidate = candidateQuery.data;
   const isDecisionPending = candidate?.status === 'DECISION_PENDING';
@@ -84,8 +86,8 @@ export function PersistedAdoptionConfirmationScreen() {
           submissionStartedRef.current = false;
           setHasMutationError(true);
         },
-        onSuccess: () => {
-          setConfirmed(true);
+        onSuccess: (adoptionId) => {
+          setConfirmedAdoptionId(adoptionId);
         },
       },
     );
@@ -127,7 +129,7 @@ export function PersistedAdoptionConfirmationScreen() {
     );
   }
 
-  if (confirmed) {
+  if (confirmedAdoptionId) {
     return (
       <View style={styles.stateContainer}>
         <Stack.Screen options={{ title: t('adoptions.persisted.title') }} />
@@ -135,6 +137,14 @@ export function PersistedAdoptionConfirmationScreen() {
           align="center"
           description={t('adoptions.persisted.successDescription')}
           primaryAction={{
+            label: t('adoptions.persisted.viewAdoption'),
+            onPress: () =>
+              router.replace({
+                pathname: '/adoptions/[adoptionId]',
+                params: { adoptionId: confirmedAdoptionId },
+              }),
+          }}
+          secondaryAction={{
             label: t('adoptions.persisted.backToToday'),
             onPress: () => router.replace('/'),
           }}

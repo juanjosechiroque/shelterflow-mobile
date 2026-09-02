@@ -8,12 +8,14 @@ import { colors, radii, spacing, typography } from '@/constants/theme';
 import { Card, ScreenHeader, SectionHeader } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-provider';
 import { usePendingAdoptionDecisions } from '@/features/adoptions/adoption-queries';
+import { useActiveAdoptions } from '@/features/adoptions/active-adoption-queries';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
 import {
   selectShelter,
   selectTodayTasks,
 } from '@/features/prototype-flow/prototype-flow-selectors';
 import type { MockTodayTask } from '@/features/prototype-flow/types';
+import { formatDate } from '@/i18n/format';
 
 const taskToneStyles: Record<
   MockTodayTask['tone'],
@@ -84,6 +86,10 @@ export function TodayScreen() {
     supabase,
     profile?.shelterId ?? null,
   );
+  const activeAdoptions = useActiveAdoptions(
+    supabase,
+    profile?.shelterId ?? null,
+  );
 
   const tasks: MockTodayTask[] = todayTasks;
   const pendingDecisionCount = pendingDecisions.data?.length ?? 0;
@@ -91,6 +97,12 @@ export function TodayScreen() {
     pendingDecisions.isLoading ||
     pendingDecisions.isError ||
     pendingDecisionCount > 0;
+
+  const activeAdoptionCount = activeAdoptions.data?.length ?? 0;
+  const shouldRenderActiveAdoptions =
+    activeAdoptions.isLoading ||
+    activeAdoptions.isError ||
+    activeAdoptionCount > 0;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -127,7 +139,7 @@ export function TodayScreen() {
         </View>
 
         {shouldRenderPendingDecisions ? (
-          <View style={styles.pendingDecisionsSection}>
+          <View style={styles.section}>
             <SectionHeader
               description={t('today.pendingDecisions.subtitle')}
               title={t('today.pendingDecisions.title')}
@@ -162,7 +174,7 @@ export function TodayScreen() {
             ) : null}
 
             {!pendingDecisions.isLoading && !pendingDecisions.isError ? (
-              <View style={styles.pendingDecisionList}>
+              <View style={styles.cardList}>
                 {pendingDecisions.data?.map((candidate) => (
                   <Link
                     href={{
@@ -181,11 +193,88 @@ export function TodayScreen() {
                       padding="comfortable"
                       variant="subtle"
                     >
-                      <Text style={styles.pendingDecisionPerson}>
+                      <Text style={styles.cardPerson}>
                         {candidate.personName}
                       </Text>
-                      <Text style={styles.pendingDecisionAnimal}>
+                      <Text style={styles.cardAnimal}>
                         {candidate.animal.name}
+                      </Text>
+                    </Card>
+                  </Link>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {shouldRenderActiveAdoptions ? (
+          <View style={styles.section}>
+            <SectionHeader
+              description={t('today.activeAdoptions.subtitle')}
+              title={t('today.activeAdoptions.title')}
+            />
+
+            {activeAdoptions.isLoading ? (
+              <Text accessibilityRole="progressbar" style={styles.stateText}>
+                {t('today.activeAdoptions.loading')}
+              </Text>
+            ) : null}
+
+            {activeAdoptions.isError ? (
+              <View>
+                <Text accessibilityRole="alert" style={styles.errorText}>
+                  {t('today.activeAdoptions.error')}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    void activeAdoptions.refetch();
+                  }}
+                  style={({ pressed }) => [
+                    styles.retryButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.retryButtonText}>
+                    {t('today.activeAdoptions.retry')}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {!activeAdoptions.isLoading && !activeAdoptions.isError ? (
+              <View style={styles.cardList}>
+                {activeAdoptions.data?.map((adoption) => (
+                  <Link
+                    href={{
+                      pathname: '/adoptions/[adoptionId]',
+                      params: { adoptionId: adoption.id },
+                    }}
+                    key={adoption.id}
+                    asChild
+                  >
+                    <Card
+                      accessibilityLabel={t('today.activeAdoptions.open', {
+                        personName: adoption.candidate.person.name,
+                        animalName: adoption.animal.name,
+                      })}
+                      accessibilityRole="button"
+                      padding="comfortable"
+                      variant="elevated"
+                    >
+                      <Text style={styles.cardPerson}>
+                        {adoption.candidate.person.name}
+                      </Text>
+                      <Text style={styles.cardAnimal}>
+                        {adoption.animal.name}
+                      </Text>
+                      <Text style={styles.cardMeta}>
+                        {t('today.activeAdoptions.adoptionDate', {
+                          date: formatDate(
+                            new Date(adoption.adoptionDate + 'T12:00:00'),
+                            { dateStyle: 'medium' },
+                          ),
+                        })}
                       </Text>
                     </Card>
                   </Link>
@@ -258,6 +347,25 @@ const styles = StyleSheet.create({
   brandBlock: {
     gap: 2,
   },
+  cardAnimal: {
+    ...typography.subtitle,
+    color: colors.textMuted,
+    marginTop: spacing['2xs'],
+  },
+  cardList: {
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  cardMeta: {
+    ...typography.meta,
+    color: colors.textSubtle,
+    marginTop: spacing.xs,
+  },
+  cardPerson: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    fontSize: 16,
+  },
   container: {
     paddingBottom: spacing['2xl'],
     paddingHorizontal: spacing.lg,
@@ -281,23 +389,6 @@ const styles = StyleSheet.create({
   intro: {
     marginBottom: spacing.xl,
     marginTop: spacing.lg,
-  },
-  pendingDecisionAnimal: {
-    ...typography.subtitle,
-    color: colors.textMuted,
-    marginTop: spacing['2xs'],
-  },
-  pendingDecisionList: {
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  pendingDecisionPerson: {
-    ...typography.bodyStrong,
-    color: colors.text,
-    fontSize: 16,
-  },
-  pendingDecisionsSection: {
-    marginBottom: spacing.xl,
   },
   pressed: {
     opacity: 0.78,
@@ -324,6 +415,9 @@ const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: colors.background,
     flex: 1,
+  },
+  section: {
+    marginBottom: spacing.xl,
   },
   settingsButton: {
     alignItems: 'center',

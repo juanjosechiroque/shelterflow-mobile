@@ -67,24 +67,47 @@ function createClient({
   list = { data: [candidate], error: null },
   detail = { data: candidate, error: null },
   rpc = { data: '00000000-0000-4000-8000-000000000091', error: null },
+  adoptionList = { data: [], error: null },
+  adoptionDetail = { data: null, error: null },
+  followupList = { data: [], error: null },
 }: {
   list?: { data: unknown[] | null; error: unknown } | Promise<unknown>;
   detail?: { data: unknown | null; error: unknown } | Promise<unknown>;
   rpc?: { data: string | null; error: unknown } | Promise<unknown>;
+  adoptionList?: { data: unknown[] | null; error: unknown } | Promise<unknown>;
+  adoptionDetail?: { data: unknown | null; error: unknown } | Promise<unknown>;
+  followupList?: { data: unknown[] | null; error: unknown } | Promise<unknown>;
 } = {}) {
   const listOrder = jest.fn(() => list);
   const listEq = jest.fn(() => ({ order: listOrder }));
   const detailMaybeSingle = jest.fn(() => detail);
   const detailEq = jest.fn(() => ({ maybeSingle: detailMaybeSingle }));
-  const select = jest.fn((fields: string) =>
-    fields.includes('animals')
-      ? {
-          eq: jest.fn((column: string) =>
-            column === 'status' ? listEq() : detailEq(),
-          ),
-        }
-      : undefined,
-  );
+
+  const adoptionListOrder = jest.fn(() => adoptionList);
+  const adoptionListEq = jest.fn(() => ({ order: adoptionListOrder }));
+  const adoptionDetailMaybeSingle = jest.fn(() => adoptionDetail);
+  const adoptionDetailEq = jest.fn(() => ({
+    maybeSingle: adoptionDetailMaybeSingle,
+  }));
+
+  const followupListOrder = jest.fn(() => followupList);
+  const followupListEq = jest.fn(() => ({ order: followupListOrder }));
+
+  function router(fields: string, column: string) {
+    if (fields.includes('handover_notes')) {
+      if (column === 'status') return adoptionListEq();
+      return adoptionDetailEq();
+    }
+    if (fields.includes('due_date')) {
+      return followupListEq();
+    }
+    if (column === 'status') return listEq();
+    return detailEq();
+  }
+
+  const select = jest.fn((fields: string) => ({
+    eq: jest.fn((column: string) => router(fields, column)),
+  }));
   const from = jest.fn(() => ({ select }));
   const client = {
     from,
@@ -93,7 +116,20 @@ function createClient({
 
   return {
     client,
-    mocks: { from, select, listEq, listOrder, detailEq, detailMaybeSingle },
+    mocks: {
+      from,
+      select,
+      listEq,
+      listOrder,
+      detailEq,
+      detailMaybeSingle,
+      adoptionListEq,
+      adoptionListOrder,
+      adoptionDetailEq,
+      adoptionDetailMaybeSingle,
+      followupListEq,
+      followupListOrder,
+    },
   };
 }
 

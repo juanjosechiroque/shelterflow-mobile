@@ -371,6 +371,24 @@ Conceptually, a timeline event identifies its shelter, animal, event type, occur
 
 Timeline is not a generic audit system. Security auditing and operational logs are separate concerns.
 
+Timeline event types observed by the mobile application:
+
+```text
+ANIMAL_READY
+CANDIDATE_CREATED
+EVALUATION_RECORDED
+MEETING_SCHEDULED
+ANIMAL_IN_PROCESS
+DECISION_PENDING
+ADOPTION_CONFIRMED
+FOLLOW_UPS_PLANNED
+FOLLOW_UP_COMPLETED
+ADOPTION_RETURNED
+REEVALUATION_REQUIRED
+```
+
+`FOLLOW_UP_COMPLETED` carries the recorded `outcome` in its `data` payload.
+
 ## Domain invariants
 
 1. Every principal domain row belongs to one shelter.
@@ -478,6 +496,54 @@ COMMIT
 ```
 
 Any failure rolls back every change. Returning an animal preserves historical follow-ups and moves only pending follow-ups to `CANCELLED`, preventing further reminders. It never deletes follow-up records.
+
+### Complete follow-up
+
+RPC contract:
+
+```text
+public.complete_followup(
+  p_followup_id uuid,
+  p_outcome text,
+  p_notes text
+) returns uuid
+```
+
+Only authenticated actors may execute the RPC. It derives `shelter_id` from
+the authenticated profile and never accepts a shelter, adoption, or user
+identifier from the client.
+
+Preconditions:
+
+```text
+Follow-up exists in the authenticated shelter
+Follow-up status = PENDING
+Adoption status = ACTIVE
+Animal status = ADOPTED
+p_outcome in ('EXCELLENT', 'GOOD', 'CONCERNS', 'INTERVENTION_REQUIRED')
+```
+
+`complete_followup(followup_id, outcome, notes, …)` performs:
+
+```text
+BEGIN
+  lock the adoption row
+  lock the follow-up row
+  validate every precondition
+  update follow-up: status = COMPLETED, outcome, notes, completed_at = now(), updated_at = now()
+  insert timeline_event FOLLOW_UP_COMPLETED on the animal referencing the follow-up
+COMMIT
+```
+
+Any failure rolls back every change.
+
+To avoid races with `return_adoption()`, the RPC locks the adoption row
+before the follow-up row. A concurrent `return_adoption()` therefore cancels
+pending follow-ups first, and `complete_followup()` rejects any follow-up
+whose status is no longer `PENDING`.
+
+The stored notes preserve the value provided by the caller, including
+leading or trailing whitespace chosen by the user.
 
 ### Complete reevaluation
 
