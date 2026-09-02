@@ -190,10 +190,12 @@ export async function completeFollowup(
   const { data, error } = await client.rpc('complete_followup', {
     p_followup_id: input.followupId,
     p_outcome: input.outcome,
-    p_notes: input.notes,
+    p_notes:
+      input.notes as Database['public']['Functions']['complete_followup']['Args']['p_notes'],
   });
 
   if (error) throw error;
+  if (data === null) throw new Error('supabase_rpc_result_missing');
   return data;
 }
 
@@ -210,9 +212,11 @@ export async function returnAdoption(
   const { data, error } = await client.rpc('return_adoption', {
     p_adoption_id: input.adoptionId,
     p_reason: input.reason,
-    p_notes: input.notes,
+    p_notes:
+      input.notes as Database['public']['Functions']['return_adoption']['Args']['p_notes'],
   });
 
   if (error) throw error;
+  if (data === null) throw new Error('supabase_rpc_result_missing');
   return data;
 }

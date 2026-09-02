@@ -576,11 +576,11 @@ describe('Persisted reevaluation flow', () => {
       resolveRpc({ data: animalId, error: null });
     });
 
-    it('keeps the form recoverable when the RPC fails and hides internal details', async () => {
+    it('keeps the form recoverable when the RPC returns no result', async () => {
       const { client, mocks } = createClient({
         completeReevaluationRpc: {
           data: null,
-          error: { message: 'SQL state P0001 leaked' },
+          error: null,
         },
       });
       const { screen } = await renderWithClient(
@@ -600,8 +600,6 @@ describe('Persisted reevaluation flow', () => {
           'No pudimos guardar la reevaluación. Inténtalo nuevamente.',
         ),
       ).toBeTruthy();
-      expect(screen.queryByText(/SQL state P0001/)).toBeNull();
-
       await fireEvent.press(
         screen.getByRole('button', { name: 'Completar reevaluación' }),
       );

@@ -79,6 +79,10 @@ Run `npm run supabase:start` to bring up the stack and the seed will create the 
 
 Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in `supabase/seed.sql` and are reapplied by every reset. Seed data is deterministic and clearly fictitious (invented names and `example.com` addresses). The mobile application is wired to local Supabase Auth for sign-in, session restoration, and logout, reads the authenticated profile and shelter identity with shelter-scoped Row Level Security, and lists and confirms real `DECISION_PENDING` candidates from Today through `confirm_adoption()`. Other operational animal, candidate, adoption, and follow-up flows still use the in-memory prototype store.
 
+### Hosted development fixture data
+
+The linked hosted development project is intentionally separate from the local stack. Its one-time, manually run fixture loader is [`supabase/hosted-dev-seed.sql`](supabase/hosted-dev-seed.sql); run it in that project's SQL Editor, never with `supabase db push`. It refuses to run unless the project has exactly one shelter named `Huellitas Peru` and an existing `admin@shelter.com` profile. It does not create users, shelters, Storage objects, or any credentials. The script provides fictitious operational data for the persisted adoption decision, follow-up, return, and reevaluation flows. Rerunning it updates its stable core records but deliberately preserves records created by manual tests.
+
 ## Application variants
 
 The app configuration reads `APP_VARIANT` and keeps native application identifiers separate:
