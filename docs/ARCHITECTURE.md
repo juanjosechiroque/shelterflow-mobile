@@ -2,9 +2,9 @@
 
 ## Status and scope
 
-This document describes the intended V1 architecture and the boundaries that guide incremental implementation. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. The backend, authentication, real persistence, and the future dependencies described here are not yet implemented.
+This document describes the intended V1 architecture and the boundaries that guide incremental implementation. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented; operational animal, candidate, adoption, and follow-up persistence is not yet connected to the mobile flow.
 
-The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used to demonstrate the interactive flow.
+The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, Supabase Auth, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used to demonstrate the interactive flow.
 
 ## Architectural goals
 
@@ -127,11 +127,19 @@ Simple single-record validation can exist in shared domain code and database con
 
 ### Authentication
 
-Supabase Auth identifies the actor through `auth.uid()`. A profile maps that user to exactly one shelter in V1.
+Supabase Auth identifies the actor through `auth.uid()`. V1 has no signup, no shelter creation, no password recovery, and no social login. Users, profiles, and shelters are provisioned externally by the product owners. The mobile application exposes only email-and-password sign-in, session restoration, and logout.
+
+The Supabase React Native client (`src/lib/supabase.ts`) reads `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from environment variables, persists the session through `@react-native-async-storage/async-storage`, and ties `startAutoRefresh`/`stopAutoRefresh` to React Native `AppState` so the refresh loop only runs while the app is in the foreground. The session storage key is namespaced by the client. SecureStore is intentionally not used as the session adapter.
+
+The service-role key is never referenced, imported, or stored by the mobile application.
 
 ### Authorization
 
-Row Level Security compares the current profile's `shelter_id` with each row's `shelter_id`. Client-side filtering is never authorization.
+Row Level Security compares the current profile's `shelter_id` with each row's `shelter_id`. Client-side filtering is never authorization. A single-purpose `SECURITY DEFINER` helper (`public.auth_shelter_id()`) resolves the authenticated user's shelter inside policy expressions while bypassing RLS so policies can avoid recursive profile lookups.
+
+Every public Phase 4 table enables `rowsecurity` and `forcerowsecurity`, exposes only `SELECT` to the `authenticated` role, and explicitly `REVOKE`s all privileges from `anon`. Direct mobile-client `INSERT`, `UPDATE`, and `DELETE` paths remain denied in this phase; later domain mutations arrive through reviewed server-side operations.
+
+The Expo Router root layout mounts the tabs and settings routes inside `<Stack.Protected guard={isAuthenticated}>` and the login screen inside `<Stack.Protected guard={!isAuthenticated}>`. The guard flips when the auth provider emits `SIGNED_IN` or `SIGNED_OUT`, so navigation stays in sync with the session and session-expired tokens return the user to the login screen automatically.
 
 ### Database integrity
 

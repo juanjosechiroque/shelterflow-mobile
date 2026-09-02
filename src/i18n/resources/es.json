@@ -307,6 +307,33 @@
       "saveError": "No pudimos guardar el idioma. Inténtalo nuevamente.",
       "spanish": "Español",
       "english": "English"
+    },
+    "shelter": {
+      "title": "Mi refugio",
+      "readOnly": "Estos datos se muestran solo con fines informativos. No pueden modificarse desde la aplicación.",
+      "shelterName": "Nombre del refugio",
+      "shelterCountry": "País",
+      "displayName": "Nombre del usuario",
+      "email": "Correo autenticado",
+      "logout": "Cerrar sesión"
+    }
+  },
+  "auth": {
+    "eyebrow": "ACCESO",
+    "title": "Inicia sesión en ShelterFlow",
+    "subtitle": "Ingresa el correo y la contraseña proporcionados por el equipo de ShelterFlow.",
+    "fields": {
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu-correo@ejemplo.com",
+      "password": "Contraseña",
+      "passwordPlaceholder": "••••••••"
+    },
+    "submit": "Iniciar sesión",
+    "devNote": "Los datos de inicio de sesión se utilizan únicamente para desarrollo local y nunca para producción.",
+    "errors": {
+      "invalidCredentials": "No pudimos verificar tu correo o contraseña. Inténtalo de nuevo.",
+      "configMissing": "La aplicación no está conectada a Supabase. Configura las variables de entorno locales.",
+      "unknown": "No pudimos iniciar sesión. Inténtalo de nuevo."
     }
   }
 }

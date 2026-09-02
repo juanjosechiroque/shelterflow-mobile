@@ -1,22 +1,46 @@
 -- ShelterFlow fictitious local fixtures for reproducible local development.
 -- All identities are invented. Emails use example.com and provide no login capability.
+--
+-- Phase 5 adds two login-capable local users:
+--   * admin@shelter.com / shelter2026        belongs to Huellitas Rescue and
+--                                             is the visible manual demo
+--                                             account.
+--   * rls-fixture@example.com / rls-fixture-2026  belongs to Patitas Felices
+--                                             and exists only for automated
+--                                             RLS isolation tests. It is
+--                                             NEVER used as a manual demo.
+-- Both passwords are bcrypt-hashed with `extensions.crypt(..., bf)`. These
+-- credentials are local-development fixtures only and must never be used in
+-- any other environment.
 
 insert into public.shelters (id, name, country, created_at)
 values
   ('00000000-0000-4000-8000-000000000001', 'Huellitas Rescue', 'Peru', now() - interval '180 days'),
   ('00000000-0000-4000-8000-000000000002', 'Patitas Felices', 'Argentina', now() - interval '90 days');
 
-insert into auth.users (id, aud, role, email, email_confirmed_at, created_at, updated_at)
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, confirmation_token, recovery_token, email_change, email_change_token_current, email_change_token_new, email_change_confirm_status, phone_change, phone_change_token, reauthentication_token, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
-  ('00000000-0000-4000-8000-000000000101', 'authenticated', 'authenticated', 'helena.rios@example.com', now() - interval '180 days', now() - interval '180 days', now() - interval '180 days'),
-  ('00000000-0000-4000-8000-000000000102', 'authenticated', 'authenticated', 'rafael.silva@example.com', now() - interval '170 days', now() - interval '170 days', now() - interval '170 days'),
-  ('00000000-0000-4000-8000-000000000201', 'authenticated', 'authenticated', 'luisa.mejia@example.com', now() - interval '90 days', now() - interval '90 days', now() - interval '90 days');
+  ('00000000-0000-4000-8000-000000000101', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'helena.rios@example.com', null, now() - interval '180 days', '', '', '', '', '', 0, '', '', '', '{}', '{}', now() - interval '180 days', now() - interval '180 days'),
+  ('00000000-0000-4000-8000-000000000102', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'rafael.silva@example.com', null, now() - interval '170 days', '', '', '', '', '', 0, '', '', '', '{}', '{}', now() - interval '170 days', now() - interval '170 days'),
+  ('00000000-0000-4000-8000-000000000103', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@shelter.com', extensions.crypt('shelter2026', extensions.gen_salt('bf')), now() - interval '180 days', '', '', '', '', '', 0, '', '', '', '{"provider":"email","providers":["email"]}', '{}', now() - interval '180 days', now() - interval '180 days'),
+  ('00000000-0000-4000-8000-000000000201', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'luisa.mejia@example.com', null, now() - interval '90 days', '', '', '', '', '', 0, '', '', '', '{}', '{}', now() - interval '90 days', now() - interval '90 days'),
+  ('00000000-0000-4000-8000-000000000202', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'rls-fixture@example.com', extensions.crypt('rls-fixture-2026', extensions.gen_salt('bf')), now() - interval '90 days', '', '', '', '', '', 0, '', '', '', '{"provider":"email","providers":["email"]}', '{}', now() - interval '90 days', now() - interval '90 days');
+
+-- Link an email identity for each login-capable local user so GoTrue can
+-- resolve password grants and account linking lookups the same way it does
+-- for users it provisions through its own signup flow.
+insert into auth.identities (id, user_id, provider, provider_id, identity_data, last_sign_in_at, created_at, updated_at)
+values
+  (gen_random_uuid(), '00000000-0000-4000-8000-000000000103', 'email', '00000000-0000-4000-8000-000000000103', '{"sub":"00000000-0000-4000-8000-000000000103","email":"admin@shelter.com","email_verified":true}', null, now() - interval '180 days', now() - interval '180 days'),
+  (gen_random_uuid(), '00000000-0000-4000-8000-000000000202', 'email', '00000000-0000-4000-8000-000000000202', '{"sub":"00000000-0000-4000-8000-000000000202","email":"rls-fixture@example.com","email_verified":true}', null, now() - interval '90 days', now() - interval '90 days');
 
 insert into public.profiles (id, shelter_id, display_name, created_at, updated_at)
 values
   ('00000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001', 'Helena Rios', now() - interval '180 days', now() - interval '180 days'),
   ('00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000001', 'Rafael Silva', now() - interval '170 days', now() - interval '170 days'),
-  ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000002', 'Luisa Mejia', now() - interval '90 days', now() - interval '90 days');
+  ('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000001', 'Administrador Huellitas', now() - interval '180 days', now() - interval '180 days'),
+  ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000002', 'Luisa Mejia', now() - interval '90 days', now() - interval '90 days'),
+  ('00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000002', 'Fixture Aislamiento', now() - interval '90 days', now() - interval '90 days');
 
 insert into public.animals (id, shelter_id, name, species, sex, approximate_age_months, size, primary_photo_path, notes, status, created_at, updated_at)
 values

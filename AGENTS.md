@@ -5,6 +5,9 @@
 - Work on `main`, one explicitly requested vertical slice at a time.
 - Do not commit or stage files; the user validates, stages, and commits.
 - Keep increments small and reviewable. When ready, report checks, manual validation, and a tentative English commit message.
+- Treat a broad roadmap phase as a sequence of bounded increments. Use one fresh implementation chat for each independently testable increment; do not ask an agent to complete a broad phase in one pass.
+- Before an unfamiliar integration, resolve its technical constraints in a short preflight or research step. Do not combine open-ended discovery with a large implementation request.
+- If the same external or tooling blocker remains after two focused attempts, stop and report the command, relevant output, changed files, and current hypothesis. Do not spend an unbounded turn repeatedly investigating it.
 
 ## Context
 
@@ -25,7 +28,7 @@
 
 - Spanish is the default UI language and English is supported. Put every UI string in both locale resources; do not translate user-entered content.
 - Use pressable native controls with clear pressed or disabled states. Support scrolling, safe areas, and keyboard access where content can overflow.
-- Demo data must be clearly fictitious: never use real personal data and use `example.com` for sample email addresses.
+- Demo data must be clearly fictitious: never use real personal data and use `example.com` for sample email addresses, except explicitly documented local authentication fixtures.
 
 ## Documentation and validation
 
@@ -40,4 +43,6 @@
   git diff --check
   ```
 
+- During implementation, run the smallest relevant test or check first; reserve the full validation suite for the end of an increment. Run `supabase db reset` only when migrations or seed data change, or when explicitly verifying reproducibility.
+- Match tests to the trust boundary: component tests for UI behavior, database/RLS tests for persistence and authorization, and a focused integration test for a critical cross-boundary flow. Do not duplicate the same assertion across all layers without a concrete reason.
 - Describe remaining manual checks. For significant technical decisions, explain the choice, alternatives, implications, and failure scenarios.

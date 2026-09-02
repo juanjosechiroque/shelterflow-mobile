@@ -6,6 +6,6 @@ module.exports = defineConfig([
   expoConfig,
   eslintPluginPrettierRecommended,
   {
-    ignores: ['coverage/*', 'dist/*'],
+    ignores: ['coverage/*', 'dist/*', 'src/lib/database.types.ts'],
   },
 ]);

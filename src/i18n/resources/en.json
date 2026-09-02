@@ -307,6 +307,33 @@
       "saveError": "We couldn't save the language. Please try again.",
       "spanish": "Español",
       "english": "English"
+    },
+    "shelter": {
+      "title": "My shelter",
+      "readOnly": "This information is shown read-only and cannot be edited from the application.",
+      "shelterName": "Shelter name",
+      "shelterCountry": "Country",
+      "displayName": "User name",
+      "email": "Authenticated email",
+      "logout": "Sign out"
+    }
+  },
+  "auth": {
+    "eyebrow": "ACCESS",
+    "title": "Sign in to ShelterFlow",
+    "subtitle": "Enter the email and password provided by the ShelterFlow team.",
+    "fields": {
+      "email": "Email address",
+      "emailPlaceholder": "your-email@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••"
+    },
+    "submit": "Sign in",
+    "devNote": "Sign-in details are local-development fixtures only and are never used in production.",
+    "errors": {
+      "invalidCredentials": "We couldn't verify your email or password. Please try again.",
+      "configMissing": "The application is not connected to Supabase. Configure the local environment variables.",
+      "unknown": "We couldn't sign you in. Please try again."
     }
   }
 }

@@ -2,7 +2,7 @@
 
 ShelterFlow is a Spanish-first React Native application for small animal shelters and independent rescuers. It supports the operational adoption journey after a candidate has already been shortlisted: evaluation, meeting, decision, adoption, and post-adoption follow-up.
 
-The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype keeps its data in memory and lets you walk an adoption journey end to end — evaluation, meeting, decision, adoption confirmation, and follow-up — but the data resets when the app reloads. Backend services and real persistence have not been implemented yet.
+The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype keeps its operational data in memory and lets you walk an adoption journey end to end — evaluation, meeting, decision, adoption confirmation, and follow-up — but the data resets when the app reloads. Supabase currently supports authentication and reads the authenticated profile and shelter identity; operational animal, candidate, adoption, and follow-up flows remain in memory.
 
 ## Product scope
 
@@ -52,14 +52,32 @@ npm test
 The project ships a reproducible local Supabase backend under `supabase/`. Docker must be running before any of these commands:
 
 ```bash
-npm run supabase:start     # start the local stack (migrations applied)
-npm run supabase:status    # show local service URLs and ports
-npm run supabase:reset     # reset to migrations and reapply supabase/seed.sql
-npm run supabase:test      # run database tests (pgTAP) against the local database
-npm run supabase:stop      # stop the local stack
+npm run supabase:start       # start the local stack (migrations applied)
+npm run supabase:status      # show local service URLs and ports and keys
+npm run supabase:reset       # reset to migrations and reapply supabase/seed.sql
+npm run supabase:test        # run database tests (pgTAP) against the local database
+npm run supabase:test:rls    # run the real Auth + RLS integration test against the local stack
+npm run supabase:stop        # stop the local stack
 ```
 
-Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in `supabase/seed.sql` and are reapplied by every reset. Seed data is deterministic and clearly fictitious (invented names and `example.com` addresses). No remote Supabase project is linked or modified by these commands. The mobile app still uses its in-memory prototype and does not connect to Supabase yet.
+### Local environment variables
+
+The mobile application reads two `EXPO_PUBLIC_*` variables for Supabase. Copy `.env.example` to `.env` and fill them from `npm run supabase:status`:
+
+```bash
+cp .env.example .env
+npm run supabase:status -o env   # print key/value pairs
+```
+
+`EXPO_PUBLIC_SUPABASE_URL` is the API URL (default `http://127.0.0.1:54321`). `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the publishable key printed under "Authentication Keys". The Supabase **secret** key is server-side only and must never be embedded in the mobile app.
+
+The local repository is the authoritative source for fixtures: a fresh `npm run supabase:reset` always produces the same two shelters, animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, plus two login-capable local users (`admin@shelter.com / shelter2026` for Huellitas Rescue and `rls-fixture@example.com / rls-fixture-2026` for Patitas Felices, the latter is reserved for the RLS integration test).
+
+### Local administrator sign-in
+
+Run `npm run supabase:start` to bring up the stack and the seed will create the credentials above. They are local development fixtures only and are not used in any other environment.
+
+Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in `supabase/seed.sql` and are reapplied by every reset. Seed data is deterministic and clearly fictitious (invented names and `example.com` addresses). The mobile application is wired to local Supabase Auth for sign-in, session restoration, and logout, and reads the authenticated profile and shelter identity with shelter-scoped Row Level Security. Operational animal, candidate, adoption, and follow-up flows still use the in-memory prototype store.
 
 ## Application variants
 
