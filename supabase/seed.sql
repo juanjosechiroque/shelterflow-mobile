@@ -1,7 +1,7 @@
 -- ShelterFlow fictitious local fixtures for reproducible local development.
 -- All identities are invented. Emails use example.com and provide no login capability.
 --
--- Phase 5 adds two login-capable local users:
+-- The local fixtures include two login-capable users:
 --   * admin@shelter.com / shelter2026        belongs to Huellitas Rescue and
 --                                             is the visible manual demo
 --                                             account.

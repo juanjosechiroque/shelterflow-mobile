@@ -120,7 +120,7 @@ Approximate age is stored as nullable months. `NULL` means unknown; display conv
 
 ### Image references
 
-Persisted image fields (`primary_photo_path`, `adoption_photo_path`, `followup.photo_path`) store storage paths that identify the uploaded object, not signed or public URLs. A signed or public URL must never be persisted as the canonical attachment reference because it can expire or change. Storage buckets, upload handling, and image UI belong to a later phase.
+Persisted image fields (`primary_photo_path`, `adoption_photo_path`, `followup.photo_path`) store storage paths that identify the uploaded object, not signed or public URLs. A signed or public URL must never be persisted as the canonical attachment reference because it can expire or change. Storage buckets, upload handling, and image UI are separate concerns.
 
 ### Animal states
 
@@ -437,6 +437,23 @@ COMMIT
 Any failure rolls back every change.
 
 ### Return adoption
+
+RPC contract:
+
+```text
+public.return_adoption(
+  p_adoption_id uuid,
+  p_reason text,
+  p_notes text
+) returns uuid
+```
+
+Only authenticated actors may execute the RPC. It derives both `shelter_id`
+and `created_by_user_id` from the authenticated session; clients never provide
+either value. `p_reason` is required after trimming for validation, while the
+stored reason and optional notes preserve the user-entered values. The returned
+`uuid` identifies the created `AdoptionReturn`, whose `returned_at` is the
+execution time of the RPC.
 
 Preconditions:
 

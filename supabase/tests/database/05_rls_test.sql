@@ -1,4 +1,4 @@
--- ShelterFlow Phase 5: Row Level Security tests.
+-- Row Level Security tests.
 --
 -- These tests prove the policy contract for V1:
 --   * every public table has RLS enabled and forced on for the table owner;

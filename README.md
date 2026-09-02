@@ -142,4 +142,4 @@ src/
   providers/    Application-level providers
 ```
 
-The current `animals`, `candidates`, `evaluations`, `meetings`, `adoptions`, `followups`, and `today` feature folders support an interactive prototype whose state lives in memory. A shared in-memory store (`src/features/prototype-flow`) drives the screens; it is seeded with clearly fictitious data and reset on reload. Demo contacts use `example.com` addresses and must never represent real people. Additional feature folders will be introduced incrementally as their functionality is implemented.
+The current `animals`, `candidates`, `evaluations`, `meetings`, `adoptions`, `followups`, and `today` feature folders support an interactive prototype whose state lives in memory. A shared in-memory store (`src/features/prototype-flow`) drives the screens; it is seeded with clearly fictitious data and reset on reload. Demo contacts use `example.com` addresses and must never represent real people. Additional feature folders are added only when their functionality is needed.
