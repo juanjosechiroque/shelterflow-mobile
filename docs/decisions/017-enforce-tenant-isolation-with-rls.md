@@ -32,8 +32,9 @@ shelter, resolved by the single-purpose `SECURITY DEFINER` helper `public.auth_s
 
 - `public.auth_shelter_id()` bypasses RLS by design and must stay single-purpose, with `search_path`
   pinned and no privileges granted to `public` or `anon`.
-- Two shelters are required in fixtures so isolation can be proven, and the boundary is tested at
-  the database level (pgTAP) and against a real session (integration script).
+- The fixture set defines two shelters so isolation can be exercised by hand. The pgTAP and
+  real-session tests that previously asserted the boundary were removed
+  ([ADR-026](026-remove-local-supabase-test-stack.md)); policy changes are now verified by review.
 - Any new domain table is insecure until it enables RLS, forces it, and adds its policy.
 
 ## Related documentation
@@ -41,3 +42,4 @@ shelter, resolved by the single-purpose `SECURITY DEFINER` helper `public.auth_s
 - [Security model — Tenant isolation](../SECURITY.md#tenant-isolation)
 - [Architecture — Authorization](../ARCHITECTURE.md#authorization)
 - [ADR-002 — Single-shelter experience with shelter-scoped isolation](002-single-shelter-with-shelter-scoped-isolation.md)
+- [ADR-026 — Remove the local Supabase test stack and its Docker dependency](026-remove-local-supabase-test-stack.md)

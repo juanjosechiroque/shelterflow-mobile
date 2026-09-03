@@ -58,3 +58,4 @@ practical alternative belong in the canonical document they affect, not here.
 | ------------------------------------------------------------------- | -------------------------------------------------------------- | -------- |
 | [024](024-test-throughout-delivery.md)                              | Test throughout delivery                                       | Accepted |
 | [025](025-separate-canonical-documentation-from-execution-notes.md) | Separate canonical documentation from internal execution notes | Accepted |
+| [026](026-remove-local-supabase-test-stack.md)                      | Remove the local Supabase test stack and its Docker dependency | Accepted |

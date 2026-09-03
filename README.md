@@ -28,9 +28,9 @@ The full breakdown of implemented, planned, and deferred is in
 
 - Node.js 24 LTS recommended (`.nvmrc`)
 - npm 10 or newer
-- Docker (Docker Desktop for Mac or an equivalent Docker Engine) running locally, required only for
-  the local Supabase backend
 - Android Studio and an Android emulator, or a physical Android device with USB debugging enabled
+- A Supabase account with access to the linked hosted development project (backend for local
+  development; no local database or Docker is used)
 
 Expo SDK 57 requires Node.js 22.13 or newer. The project pins the recommended development line to
 Node.js 24 LTS while allowing compatible Node.js versions through the `engines` field.
@@ -68,62 +68,50 @@ npm run format:check
 npm test
 ```
 
-## Local Supabase backend
+## Supabase backend
 
-The project ships a reproducible local Supabase backend under `supabase/`. Docker must be running
-before any of these commands:
+Local development runs against the **linked hosted Supabase development project**. There is no
+local database and no Docker: the mobile app talks to the hosted project directly. Schema changes
+are versioned migrations in `supabase/migrations/`.
 
 ```bash
-npm run supabase:start       # start the local stack (migrations applied)
-npm run supabase:status      # show local service URLs and ports and keys
-npm run supabase:reset       # reset to migrations and reapply supabase/seed.sql
-npm run supabase:test        # run database tests (pgTAP) against the local database
-npm run supabase:test:rls    # run the real Auth + RLS integration test against the local stack
-npm run supabase:stop        # stop the local stack
+npm run supabase:push        # apply pending migrations to the linked hosted project
+npm run supabase:types       # regenerate src/lib/database.types.ts from the linked project
 ```
 
-Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in
-`supabase/seed.sql` and are reapplied by every reset. Run a reset only when migrations or seed data
-change, or when explicitly verifying reproducibility.
+Both commands use the Supabase CLI against the linked remote project (`supabase link` once, with a
+project ref and database password) and never start a local stack. Database-level tests (pgTAP) and
+the real-session RLS integration script were removed — see
+[ADR-026](docs/decisions/026-remove-local-supabase-test-stack.md). Automated tests are Jest only
+([Testing strategy](docs/ARCHITECTURE.md#testing-strategy)); Supabase responses are covered by
+faking the client in repository tests.
 
-### Local environment variables
+### Environment variables
 
 The mobile application reads two `EXPO_PUBLIC_*` variables for Supabase. Copy `.env.example` to
-`.env` and fill them from `npm run supabase:status`:
+`.env` and fill them from the hosted project's API settings:
 
 ```bash
 cp .env.example .env
-npm run supabase:status -o env   # print key/value pairs
 ```
 
-`EXPO_PUBLIC_SUPABASE_URL` is the API URL (default `http://127.0.0.1:54321`).
-`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the publishable key printed under "Authentication Keys".
+`EXPO_PUBLIC_SUPABASE_URL` is the hosted project's API URL.
+`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is its publishable (anon) key.
 The Supabase **secret** key is server-side only and must never be embedded in the mobile app — see
 [docs/SECURITY.md](docs/SECURITY.md#secrets).
 
-### Local fixtures and sign-in
+### Fixture data and sign-in
 
-A fresh `npm run supabase:reset` always produces the same two shelters, animals, candidates,
-evaluations, meetings, adoptions, follow-ups, and timeline events, plus two login-capable local
-users:
+The hosted development project's one-time, manually run fixture loader is
+[`supabase/hosted-dev-seed.sql`](supabase/hosted-dev-seed.sql); run it in that project's SQL
+Editor, never with `supabase db push`. It refuses to run unless the project has exactly one shelter
+named `Huellitas Peru` and an existing `admin@shelter.com` profile. It does not create users,
+shelters, Storage objects, or any credentials. Rerunning it updates its stable core records but
+deliberately preserves records created by manual tests.
 
-| Account                                        | Shelter          | Purpose                               |
-| ---------------------------------------------- | ---------------- | ------------------------------------- |
-| `admin@shelter.com` / `shelter2026`            | Huellitas Rescue | The account to sign in with locally   |
-| `rls-fixture@example.com` / `rls-fixture-2026` | Patitas Felices  | Reserved for the RLS integration test |
-
-**These are local development fixtures only.** They exist solely in the local stack, are clearly
-fictitious, and are never used in any other environment. Seed data uses invented names and
-`example.com` addresses.
-
-### Hosted development fixture data
-
-The linked hosted development project is intentionally separate from the local stack. Its one-time,
-manually run fixture loader is [`supabase/hosted-dev-seed.sql`](supabase/hosted-dev-seed.sql); run
-it in that project's SQL Editor, never with `supabase db push`. It refuses to run unless the project
-has exactly one shelter named `Huellitas Peru` and an existing `admin@shelter.com` profile. It does
-not create users, shelters, Storage objects, or any credentials. Rerunning it updates its stable
-core records but deliberately preserves records created by manual tests.
+Sign in with the `admin@shelter.com` account provisioned in that project. `supabase/seed.sql`
+remains as the reference definition of the deterministic two-shelter fixture set; it is no longer
+applied automatically.
 
 ## Application variants
 
@@ -148,7 +136,7 @@ translated automatically.
 
 ```text
 src/          Mobile application (see docs/ARCHITECTURE.md#source-organization)
-supabase/     Migrations, pgTAP tests, and deterministic local fixtures
+supabase/     Migrations and the reference fixture definitions
 docs/         Canonical product, domain, architecture, security, and decision records
 ```
 

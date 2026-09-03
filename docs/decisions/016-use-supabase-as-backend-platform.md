@@ -18,8 +18,9 @@ repository supports rather than a contemporaneous evaluation.
 Supabase is the V1 backend: Supabase Auth for identity, PostgreSQL for the domain schema and its
 constraints, Row Level Security for tenant isolation, `SECURITY DEFINER` PostgreSQL functions for
 atomic domain mutations, and Supabase Storage for images. The backend is defined by versioned
-migrations under `supabase/migrations/` and deterministic fixtures in `supabase/seed.sql`, so a
-local stack is reproducible with a single reset.
+migrations under `supabase/migrations/` and deterministic fixtures in `supabase/seed.sql`. Local
+development runs against the linked hosted development project rather than a local stack
+([ADR-026](026-remove-local-supabase-test-stack.md)).
 
 ## Alternatives considered
 
@@ -40,8 +41,8 @@ local stack is reproducible with a single reset.
   primary security controls (see [ADR-017](017-enforce-tenant-isolation-with-rls.md) and
   [ADR-018](018-client-read-only-atomic-mutations.md)).
 - No production table may depend on manual dashboard setup; every schema change is a migration.
-- The hosted development project is a separate environment from the local stack and is updated by
-  applying the same migrations.
+- The linked hosted development project is the backend for local development; migrations are applied
+  to it with `supabase db push` ([ADR-026](026-remove-local-supabase-test-stack.md)).
 - Migrating away from Supabase would mean replacing Auth and re-homing the RPCs, not rewriting the
   domain schema.
 
