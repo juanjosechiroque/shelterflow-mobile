@@ -2,65 +2,102 @@ import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { useAuth } from '@/features/auth/auth-provider';
+
 import { colors } from '@/constants/theme';
 import { CandidateStatusBadge } from '@/features/animals/components/candidate-status-badge';
-import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
-import {
-  selectAnimalById,
-  selectCandidateById,
-  selectEvaluationForCandidate,
-  canMarkDecisionPending,
-} from '@/features/prototype-flow/prototype-flow-selectors';
 import {
   getAnimalSexLabel,
   getAnimalSizeLabel,
   getAnimalSpeciesLabel,
   getCandidateStatusLabel,
 } from '@/features/animals/presenters';
-import { getCandidateSourceLabel } from './presenters';
+import { getCandidateSourceLabel } from '@/features/candidates/presenters';
 import { formatDate } from '@/i18n/format';
+
+import { useCandidateById } from './candidate-queries';
+import {
+  useBridgeEvaluatedToContactPending,
+  useMarkDecisionPending,
+} from './candidate-mutations';
 
 export function CandidateScreen() {
   const { t } = useTranslation();
-  const { state, commands } = usePrototypeFlow();
+  const { supabase, profile } = useAuth();
+
   const params = useLocalSearchParams<{ candidateId: string }>();
   const candidateId = Array.isArray(params.candidateId)
     ? params.candidateId[0]
     : params.candidateId;
-  const candidate = selectCandidateById(state, candidateId);
-  const animal = candidate
-    ? selectAnimalById(state, candidate.animalId)
-    : undefined;
-  const evaluation = candidate
-    ? selectEvaluationForCandidate(state, candidate.id)
-    : undefined;
+  const shelterId = profile?.shelterId;
 
-  if (!candidate || !animal) {
+  const {
+    data: candidate,
+    isLoading,
+    isError,
+    refetch,
+  } = useCandidateById(supabase, shelterId ?? '', candidateId ?? '');
+
+  const bridgeContact = useBridgeEvaluatedToContactPending(
+    supabase,
+    shelterId ?? '',
+    candidateId ?? '',
+  );
+  const markDecision = useMarkDecisionPending(
+    supabase,
+    shelterId ?? '',
+    candidateId ?? '',
+  );
+
+  if (!shelterId || !candidateId) {
     return (
-      <View style={styles.notFound}>
+      <View style={styles.stateContainer}>
         <Stack.Screen options={{ title: t('candidates.notFoundTitle') }} />
-        <Text accessibilityRole="header" style={styles.notFoundTitle}>
+        <Text accessibilityRole="header" style={styles.title}>
           {t('candidates.notFoundTitle')}
         </Text>
-        <Text style={styles.notFoundDescription}>
+        <Text style={styles.description}>
           {t('candidates.notFoundDescription')}
         </Text>
       </View>
     );
   }
 
-  const canConfirm = candidate.status === 'DECISION_PENDING';
-  const hasEvaluation = !!evaluation;
+  if (isLoading) {
+    return (
+      <View style={styles.stateContainer}>
+        <Stack.Screen options={{ title: t('candidates.loadingTitle') }} />
+        <Text style={styles.description}>{t('candidates.loading')}</Text>
+      </View>
+    );
+  }
+
+  if (isError || !candidate) {
+    return (
+      <View style={styles.stateContainer}>
+        <Stack.Screen options={{ title: t('candidates.notFoundTitle') }} />
+        <Text accessibilityRole="header" style={styles.title}>
+          {t('candidates.notFoundTitle')}
+        </Text>
+        <Text style={styles.description}>
+          {t('candidates.notFoundDescription')}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => refetch()}
+          style={({ pressed }) => [
+            styles.backButton,
+            pressed && styles.backButtonPressed,
+          ]}
+        >
+          <Text style={styles.backButtonText}>{t('common.retry')}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   const canContinueContact = candidate.status === 'EVALUATED';
-  const canMarkDecision = canMarkDecisionPending(state, candidate.id);
-
-  function handleContinueContact(candidateId: string) {
-    commands.continueContact(candidateId);
-  }
-
-  function handleMarkDecisionPending(candidateId: string) {
-    commands.markDecisionPending(candidateId);
-  }
+  const canMarkDecision = candidate.status === 'MEETING_SCHEDULED';
 
   return (
     <ScrollView
@@ -88,11 +125,11 @@ export function CandidateScreen() {
         <View style={styles.card}>
           <InfoRow
             label={t('candidates.animal')}
-            value={animal.name}
+            value={candidate.animal.name}
             hint={t('candidates.animalHint', {
-              species: getAnimalSpeciesLabel(t, animal.species),
-              sex: getAnimalSexLabel(t, animal.sex),
-              size: getAnimalSizeLabel(t, animal.size),
+              species: getAnimalSpeciesLabel(t, candidate.animal.species),
+              sex: getAnimalSexLabel(t, candidate.animal.sex),
+              size: getAnimalSizeLabel(t, candidate.animal.size),
             })}
           />
           <InfoRow
@@ -101,12 +138,9 @@ export function CandidateScreen() {
           />
           <InfoRow
             label={t('candidates.appliedOn')}
-            value={formatDate(
-              new Date(candidate.applicationDate + 'T12:00:00'),
-              {
-                dateStyle: 'medium',
-              },
-            )}
+            value={formatDate(new Date(candidate.created_at), {
+              dateStyle: 'medium',
+            })}
           />
           {candidate.person.email ? (
             <InfoRow
@@ -121,11 +155,11 @@ export function CandidateScreen() {
         </View>
       </View>
 
-      {candidate.person.notes ? (
+      {candidate.notes ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('candidates.notes')}</Text>
           <View style={styles.card}>
-            <Text style={styles.bodyText}>{candidate.person.notes}</Text>
+            <Text style={styles.bodyText}>{candidate.notes}</Text>
           </View>
         </View>
       ) : null}
@@ -139,11 +173,13 @@ export function CandidateScreen() {
               params: { candidateId: candidate.id },
             }}
             label={
-              hasEvaluation
+              candidate.status !== 'NEEDS_EVALUATION'
                 ? t('candidates.viewEvaluation')
                 : t('candidates.registerEvaluation')
             }
-            variant={hasEvaluation ? 'secondary' : 'primary'}
+            variant={
+              candidate.status === 'NEEDS_EVALUATION' ? 'primary' : 'secondary'
+            }
           />
           <ActionLink
             href={{
@@ -155,16 +191,18 @@ export function CandidateScreen() {
           {canContinueContact ? (
             <ActionButton
               label={t('candidates.continueContact')}
-              onPress={() => handleContinueContact(candidate.id)}
+              onPress={() => bridgeContact.mutate()}
+              disabled={bridgeContact.isPending}
             />
           ) : null}
           {canMarkDecision ? (
             <ActionButton
               label={t('candidates.markDecisionPending')}
-              onPress={() => handleMarkDecisionPending(candidate.id)}
+              onPress={() => markDecision.mutate()}
+              disabled={markDecision.isPending}
             />
           ) : null}
-          {canConfirm ? (
+          {candidate.status === 'DECISION_PENDING' ? (
             <ActionLink
               href={{
                 pathname: '/animals/candidate/[candidateId]/confirm-adoption',
@@ -175,17 +213,24 @@ export function CandidateScreen() {
             />
           ) : null}
         </View>
-        {!hasEvaluation ? (
-          <Text style={styles.hint}>{t('candidates.noEvaluationHint')}</Text>
-        ) : null}
-        {!canConfirm && !canContinueContact && !canMarkDecisionPending ? (
-          <Text style={styles.hint}>
-            {t('candidates.confirmHint', {
-              status: getCandidateStatusLabel(t, candidate.status),
-            })}
-          </Text>
-        ) : null}
       </View>
+
+      {bridgeContact.isError ? (
+        <Text style={styles.hint}>{t('candidates.contactError')}</Text>
+      ) : null}
+      {markDecision.isError ? (
+        <Text style={styles.hint}>{t('candidates.decisionError')}</Text>
+      ) : null}
+
+      {!canContinueContact &&
+      !canMarkDecision &&
+      candidate.status !== 'DECISION_PENDING' ? (
+        <Text style={styles.hint}>
+          {t('candidates.confirmHint', {
+            status: getCandidateStatusLabel(t, candidate.status),
+          })}
+        </Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -225,8 +270,7 @@ function ActionLink({
       style={({ pressed }) => [
         styles.action,
         isPrimary && styles.actionEmphasized,
-        pressed &&
-          (isPrimary ? styles.actionPressedEmphasized : styles.actionPressed),
+        pressed && styles.actionPressed,
       ]}
     >
       <Text
@@ -241,18 +285,23 @@ function ActionLink({
 function ActionButton({
   label,
   onPress,
+  disabled = false,
 }: {
   label: string;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.action,
         styles.actionEmphasized,
-        pressed && styles.actionPressedEmphasized,
+        pressed && styles.actionPressed,
+        disabled && styles.actionDisabled,
       ]}
     >
       <Text style={[styles.actionLabel, styles.actionLabelEmphasized]}>
@@ -274,6 +323,10 @@ const styles = StyleSheet.create({
     minHeight: 54,
     paddingHorizontal: 16,
   },
+  actionDisabled: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.surfaceMuted,
+  },
   actionEmphasized: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
@@ -290,9 +343,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionPressed: {
-    opacity: 0.7,
-  },
-  actionPressedEmphasized: {
     backgroundColor: colors.primaryPressed,
   },
   avatar: {
@@ -307,6 +357,23 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 24,
     fontWeight: '900',
+  },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    justifyContent: 'center',
+    marginTop: 24,
+    minHeight: 50,
+    paddingHorizontal: 20,
+  },
+  backButtonPressed: {
+    backgroundColor: colors.primaryPressed,
+  },
+  backButtonText: {
+    color: colors.surface,
+    fontSize: 16,
+    fontWeight: '800',
   },
   bodyText: {
     color: colors.text,
@@ -324,6 +391,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: 20,
     paddingBottom: 40,
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 8,
+    textAlign: 'center',
   },
   hero: {
     alignItems: 'center',
@@ -372,25 +446,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
   },
-  notFound: {
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    flex: 1,
-    justifyContent: 'center',
-    padding: 28,
-  },
-  notFoundDescription: {
-    color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  notFoundTitle: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '900',
-  },
   section: {
     marginTop: 24,
   },
@@ -399,5 +454,17 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '900',
     marginBottom: 12,
+  },
+  stateContainer: {
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    flex: 1,
+    justifyContent: 'center',
+    padding: 28,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '900',
   },
 });

@@ -6,7 +6,6 @@ import type {
   AnimalSpecies,
   AnimalStatus,
   CandidateStatus,
-  MockAnimal,
   MockTimelineEvent,
   TimelineEventType,
 } from './types';
@@ -116,10 +115,10 @@ export function getApproximateAgeLabel(
   });
 }
 
-export function filterAnimals(
-  animals: readonly MockAnimal[],
+export function filterAnimals<T extends { status: string }>(
+  animals: readonly T[],
   filter: AnimalFilter,
-): readonly MockAnimal[] {
+): readonly T[] {
   return filter === 'ALL'
     ? animals
     : animals.filter((animal) => animal.status === filter);
@@ -151,8 +150,10 @@ const timelineEventKeys: Record<
   | 'animals.timeline.events.animalReady'
   | 'animals.timeline.events.animalNotAvailable'
   | 'animals.timeline.events.candidateCreated'
+  | 'animals.timeline.events.contactPending'
   | 'animals.timeline.events.evaluationRecorded'
   | 'animals.timeline.events.meetingScheduled'
+  | 'animals.timeline.events.meetingCompleted'
   | 'animals.timeline.events.animalInProcess'
   | 'animals.timeline.events.decisionPending'
   | 'animals.timeline.events.adoptionConfirmed'
@@ -166,10 +167,12 @@ const timelineEventKeys: Record<
   ANIMAL_NOT_AVAILABLE: 'animals.timeline.events.animalNotAvailable',
   ANIMAL_READY: 'animals.timeline.events.animalReady',
   CANDIDATE_CREATED: 'animals.timeline.events.candidateCreated',
+  CONTACT_PENDING: 'animals.timeline.events.contactPending',
   DECISION_PENDING: 'animals.timeline.events.decisionPending',
   EVALUATION_RECORDED: 'animals.timeline.events.evaluationRecorded',
   FOLLOW_UPS_PLANNED: 'animals.timeline.events.followUpsPlanned',
   MEETING_SCHEDULED: 'animals.timeline.events.meetingScheduled',
+  MEETING_COMPLETED: 'animals.timeline.events.meetingCompleted',
   REEVALUATION_REQUIRED: 'animals.timeline.events.reevaluationRequired',
 };
 

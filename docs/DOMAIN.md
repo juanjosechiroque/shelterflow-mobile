@@ -378,7 +378,9 @@ ANIMAL_READY
 ANIMAL_NOT_AVAILABLE
 CANDIDATE_CREATED
 EVALUATION_RECORDED
+CONTACT_PENDING
 MEETING_SCHEDULED
+MEETING_COMPLETED
 ANIMAL_IN_PROCESS
 DECISION_PENDING
 ADOPTION_CONFIRMED
@@ -389,6 +391,8 @@ REEVALUATION_REQUIRED
 ```
 
 `FOLLOW_UP_COMPLETED` carries the recorded `outcome` in its `data` payload.
+Timeline payloads must contain only display-safe workflow metadata. Private notes,
+contact details, and other personally identifying data remain on their domain records.
 
 ## Domain invariants
 
@@ -410,6 +414,105 @@ REEVALUATION_REQUIRED
 ## Atomic domain operations
 
 Shelters and profiles are provisioned externally by the product owners; there is no account-creation operation in the mobile application.
+
+Every operation below runs as a single `SECURITY DEFINER` PostgreSQL function,
+derives `shelter_id` from the authenticated profile, validates shelter
+ownership of every referenced row, locks the rows it changes, and rolls back
+completely on any failure. Timeline events these operations create carry only
+display-safe workflow metadata; private notes stay on the domain record.
+
+### Record evaluation
+
+RPC contract:
+
+```text
+public.record_evaluation(
+  p_candidate_id uuid,
+  p_overall_fit text,
+  p_positive_factors text[],
+  p_concerns text[],
+  p_recommendation text,
+  p_notes text
+) returns uuid
+```
+
+Preconditions: `Candidate.status = NEEDS_EVALUATION`; the candidate and its
+animal belong to the authenticated shelter; `p_overall_fit` and
+`p_recommendation` hold controlled values. In one transaction it inserts the
+evaluation with `created_by_user_id = auth.uid()`, moves the candidate
+`NEEDS_EVALUATION → EVALUATED`, and records an `EVALUATION_RECORDED` timeline
+event on the animal. `p_notes` is stored only on the evaluation record.
+
+### Continue candidate contact
+
+RPC contract:
+
+```text
+public.bridge_evaluated_to_contact_pending(
+  p_candidate_id uuid
+) returns uuid
+```
+
+The explicit shelter decision that follows an evaluation. Precondition:
+`Candidate.status = EVALUATED`. It moves the candidate
+`EVALUATED → CONTACT_PENDING` and records a `CONTACT_PENDING` timeline event.
+A recommendation never advances the candidate on its own.
+
+### Schedule meeting
+
+RPC contract:
+
+```text
+public.schedule_meeting(
+  p_candidate_id uuid,
+  p_type text,
+  p_scheduled_at timestamptz,
+  p_notes text
+) returns uuid
+```
+
+Preconditions: `Candidate.status = CONTACT_PENDING`; the candidate, its animal,
+and the actor share one shelter; the animal is `READY` or `IN_PROCESS`; the
+candidate has no other `SCHEDULED` meeting (a partial unique index enforces
+this under concurrency). It creates the `SCHEDULED` meeting, moves the
+candidate `CONTACT_PENDING → MEETING_SCHEDULED`, moves the animal
+`READY → IN_PROCESS` when it was still `READY`, and records
+`MEETING_SCHEDULED` (and `ANIMAL_IN_PROCESS` when applicable) timeline events.
+`p_notes` is stored only on the meeting record.
+
+### Complete meeting
+
+RPC contract:
+
+```text
+public.complete_meeting(
+  p_meeting_id uuid,
+  p_result text,
+  p_notes text
+) returns uuid
+```
+
+Preconditions: the meeting is `SCHEDULED` and its candidate is
+`MEETING_SCHEDULED` in the authenticated shelter; `p_result` holds a
+controlled value. It records the result and notes on the meeting record,
+sets `status = COMPLETED`, and records a `MEETING_COMPLETED` timeline event.
+It does not advance the candidate — the decision step is explicit and
+separate. A second completion of the same meeting is rejected.
+
+### Mark decision pending
+
+RPC contract:
+
+```text
+public.mark_decision_pending(
+  p_candidate_id uuid
+) returns uuid
+```
+
+Preconditions: `Candidate.status = MEETING_SCHEDULED` in the authenticated
+shelter and at least one meeting for the candidate is `COMPLETED`. It moves
+the candidate `MEETING_SCHEDULED → DECISION_PENDING` and records a
+`DECISION_PENDING` timeline event.
 
 ### Confirm adoption
 

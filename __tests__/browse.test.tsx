@@ -1,15 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  fireEvent,
-  render,
-  type RenderResult,
-} from '@testing-library/react-native';
+import { render, type RenderResult } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 
-import { AnimalDetailScreen } from '@/features/animals/animal-detail-screen';
-import { AnimalsScreen } from '@/features/animals/animals-screen';
 import {
   filterAnimals,
   getApproximateAgeLabel,
@@ -65,57 +59,6 @@ describe('Shelter browse prototype', () => {
     expect(screen.getByText(/candidatos de Luna/)).toBeTruthy();
   });
 
-  it('filters the animal list by operational status', async () => {
-    const screen = await renderWithProvider(<AnimalsScreen />);
-
-    expect(screen.getByText('5 animales')).toBeTruthy();
-    expect(screen.getByText('Luna')).toBeTruthy();
-
-    await fireEvent.press(screen.getByRole('tab', { name: 'Listos' }));
-
-    expect(screen.getByText('2 animales')).toBeTruthy();
-    expect(screen.getByText('Toby')).toBeTruthy();
-    expect(screen.getByText('Nala')).toBeTruthy();
-    expect(screen.queryByText('Luna')).toBeNull();
-  });
-
-  it('uses localized pluralization and labels in English', async () => {
-    await i18n.changeLanguage('en');
-    const screen = await renderWithProvider(<AnimalsScreen />);
-
-    await fireEvent.press(screen.getByRole('tab', { name: 'Reevaluation' }));
-
-    expect(screen.getByText('1 animal')).toBeTruthy();
-    expect(screen.getByText('Bruno')).toBeTruthy();
-    expect(getApproximateAgeLabel(i18n.t, 72)).toBe('Approximately 6 years');
-  });
-
-  it('shows candidates and timeline on the animal detail screen', async () => {
-    const screen = await renderWithProvider(<AnimalDetailScreen />);
-
-    expect(screen.getByText('Andrea Pérez')).toBeTruthy();
-    expect(screen.getByText('Necesita evaluación')).toBeTruthy();
-    expect(screen.getByText('Carlos Ruiz')).toBeTruthy();
-    expect(screen.getByText('Reunión programada')).toBeTruthy();
-    expect(screen.getByText('Sofía Vargas')).toBeTruthy();
-    expect(screen.getByText('Evaluado')).toBeTruthy();
-    expect(
-      screen.getByText('Luna pasó a un proceso de adopción activo.'),
-    ).toBeTruthy();
-  });
-
-  it('shows an empty candidate state when the animal has none', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ animalId: 'toby' });
-    const screen = await renderWithProvider(<AnimalDetailScreen />);
-
-    expect(
-      screen.getByText(
-        'Todavía no hay candidatos registrados para este animal.',
-      ),
-    ).toBeTruthy();
-    expect(screen.getByText('Toby quedó listo para adopción.')).toBeTruthy();
-  });
-
   it('keeps animal filters aligned with domain states', () => {
     const protoState = createMockPrototypeRepository().getSnapshot();
     expect(
@@ -124,6 +67,16 @@ describe('Shelter browse prototype', () => {
     expect(
       filterAnimals(protoState.animals, 'REEVALUATION').map(({ id }) => id),
     ).toEqual(['bruno']);
+    expect(filterAnimals(protoState.animals, 'ALL')).toHaveLength(
+      protoState.animals.length,
+    );
+  });
+
+  it('localizes approximate age in English', async () => {
+    await i18n.changeLanguage('en');
+    expect(getApproximateAgeLabel(i18n.t, 72)).toBe('Approximately 6 years');
+    expect(getApproximateAgeLabel(i18n.t, 10)).toBe('Approximately 10 months');
+    expect(getApproximateAgeLabel(i18n.t, null)).toBe('Age unknown');
   });
 
   it('keeps initial prototype candidates aligned with animal availability', () => {

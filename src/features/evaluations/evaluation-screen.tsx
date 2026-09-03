@@ -1,5 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,76 +11,76 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/features/auth/auth-provider';
 
 import { colors } from '@/constants/theme';
 import { formatDate } from '@/i18n/format';
-import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
-import {
-  selectAnimalById,
-  selectCandidateById,
-  selectEvaluationForCandidate,
-  canRecordEvaluation,
-} from '@/features/prototype-flow/prototype-flow-selectors';
-import type {
-  MockEvaluation,
-  EvaluationOverallFit,
-  EvaluationRecommendation,
-} from '@/features/prototype-flow/types';
+
 import {
   getEvaluationFitLabel,
   getEvaluationRecommendationLabel,
 } from './presenters';
+import {
+  useEvaluationByCandidate,
+  useRecordEvaluationMutation,
+} from '@/features/evaluations/evaluation-queries';
+import type {
+  EvaluationOverallFit,
+  EvaluationRecommendation,
+} from '@/features/evaluations/types';
+import type { PersistedEvaluation } from './evaluation-repository';
 
 export function EvaluationScreen() {
   const { t } = useTranslation();
-  const { state } = usePrototypeFlow();
+  const { supabase, profile } = useAuth();
+
   const params = useLocalSearchParams<{ candidateId: string }>();
   const candidateId = Array.isArray(params.candidateId)
     ? params.candidateId[0]
     : params.candidateId;
-  const candidate = selectCandidateById(state, candidateId);
-  const animal = candidate
-    ? selectAnimalById(state, candidate.animalId)
-    : undefined;
-  const evaluation = selectEvaluationForCandidate(state, candidateId);
+  const shelterId = profile?.shelterId;
 
-  const title = candidate ? candidate.person.name : t('evaluations.title');
+  const evaluationQuery = useEvaluationByCandidate(
+    supabase,
+    shelterId ?? '',
+    candidateId ?? '',
+  );
 
-  if (!candidate || !animal) {
-    return (
-      <View style={styles.stateContainer}>
-        <Stack.Screen options={{ title }} />
-        <Text accessibilityRole="header" style={styles.title}>
-          {t('evaluations.emptyTitle')}
-        </Text>
-        <Text style={styles.description}>
-          {t('evaluations.emptyDescription')}
-        </Text>
-        <Link
-          href={{
-            pathname: '/animals/candidate/[candidateId]',
-            params: { candidateId },
-          }}
-          asChild
-        >
-          <Pressable
-            accessibilityRole="button"
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.backButtonPressed,
-            ]}
-          >
-            <Text style={styles.backButtonText}>
-              {t('evaluations.backToCandidate')}
-            </Text>
-          </Pressable>
-        </Link>
-      </View>
-    );
+  const [overallFit, setOverallFit] = useState<EvaluationOverallFit>('STRONG');
+  const [recommendation, setRecommendation] =
+    useState<EvaluationRecommendation>('CONTINUE');
+  const [positiveFactor, setPositiveFactor] = useState('');
+  const [positiveFactors, setPositiveFactors] = useState<string[]>([]);
+  const [concern, setConcern] = useState('');
+  const [concerns, setConcerns] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
+
+  const mutateRecordEvaluation = useRecordEvaluationMutation(
+    supabase,
+    shelterId ?? '',
+    candidateId ?? '',
+  );
+
+  const evaluation = evaluationQuery.data;
+  const showForm =
+    Boolean(shelterId && candidateId) &&
+    !evaluation &&
+    !evaluationQuery.isLoading &&
+    !evaluationQuery.isError;
+
+  function handleSubmit() {
+    if (positiveFactors.length === 0) return;
+
+    mutateRecordEvaluation.mutate({
+      overallFit,
+      positiveFactors,
+      concerns,
+      recommendation,
+      notes: notes.trim() || null,
+    });
   }
 
-  const showForm = !evaluation && canRecordEvaluation(state, candidateId);
+  const canSubmit = positiveFactors.length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -92,10 +93,54 @@ export function EvaluationScreen() {
       >
         <Stack.Screen options={{ title: t('evaluations.title') }} />
 
-        {evaluation ? (
+        {!shelterId || !candidateId ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>
+              {t('evaluations.emptyTitle')}
+            </Text>
+            <Text style={styles.muted}>
+              {t('evaluations.emptyDescription')}
+            </Text>
+          </View>
+        ) : evaluationQuery.isLoading ? (
+          <Text accessibilityRole="progressbar" style={styles.muted}>
+            {t('evaluations.loading')}
+          </Text>
+        ) : evaluationQuery.isError ? (
+          <View style={styles.card}>
+            <Text accessibilityRole="alert" style={styles.muted}>
+              {t('evaluations.loadError')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void evaluationQuery.refetch()}
+              style={styles.backButton}
+            >
+              <Text style={styles.backButtonText}>{t('common.retry')}</Text>
+            </Pressable>
+          </View>
+        ) : evaluation ? (
           <EvaluationSummary evaluation={evaluation} />
         ) : showForm ? (
-          <EvaluationForm candidateId={candidateId} />
+          <EvaluationForm
+            onSubmit={handleSubmit}
+            overallFit={overallFit}
+            setOverallFit={setOverallFit}
+            recommendation={recommendation}
+            setRecommendation={setRecommendation}
+            positiveFactors={positiveFactors}
+            setPositiveFactors={setPositiveFactors}
+            concern={concern}
+            setConcern={setConcern}
+            concerns={concerns}
+            setConcerns={setConcerns}
+            positiveFactor={positiveFactor}
+            setPositiveFactor={setPositiveFactor}
+            notes={notes}
+            setNotes={setNotes}
+            canSubmit={canSubmit}
+            isMutating={mutateRecordEvaluation.isPending}
+          />
         ) : (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>{t('evaluations.title')}</Text>
@@ -128,7 +173,11 @@ export function EvaluationScreen() {
   );
 }
 
-function EvaluationSummary({ evaluation }: { evaluation: MockEvaluation }) {
+function EvaluationSummary({
+  evaluation,
+}: {
+  evaluation: PersistedEvaluation;
+}) {
   const { t } = useTranslation();
 
   return (
@@ -144,7 +193,7 @@ function EvaluationSummary({ evaluation }: { evaluation: MockEvaluation }) {
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>{t('evaluations.recordedOn')}</Text>
           <Text style={styles.summaryValue}>
-            {formatDate(new Date(evaluation.recordedOn + 'T12:00:00'), {
+            {formatDate(new Date(evaluation.createdAt), {
               dateStyle: 'medium',
             })}
           </Text>
@@ -155,18 +204,22 @@ function EvaluationSummary({ evaluation }: { evaluation: MockEvaluation }) {
         <Text style={styles.sectionTitle}>
           {t('evaluations.positiveFactors')}
         </Text>
-        {evaluation.positiveFactors.map((factor) => (
-          <Text key={factor} style={styles.bullet}>
-            • {factor}
-          </Text>
-        ))}
+        {evaluation.positiveFactors.length > 0 ? (
+          evaluation.positiveFactors.map((factor: string) => (
+            <Text key={factor} style={styles.bullet}>
+              • {factor}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.muted}>{t('evaluations.noConcerns')}</Text>
+        )}
         <Text style={[styles.sectionTitle, styles.spacedTop]}>
           {t('evaluations.concerns')}
         </Text>
         {evaluation.concerns.length === 0 ? (
           <Text style={styles.muted}>{t('evaluations.noConcerns')}</Text>
         ) : (
-          evaluation.concerns.map((concern) => (
+          evaluation.concerns.map((concern: string) => (
             <Text key={concern} style={styles.bullet}>
               • {concern}
             </Text>
@@ -193,18 +246,44 @@ function EvaluationSummary({ evaluation }: { evaluation: MockEvaluation }) {
   );
 }
 
-function EvaluationForm({ candidateId }: { candidateId: string }) {
+function EvaluationForm({
+  onSubmit,
+  overallFit,
+  setOverallFit,
+  recommendation,
+  setRecommendation,
+  positiveFactors,
+  setPositiveFactors,
+  positiveFactor,
+  setPositiveFactor,
+  concern,
+  setConcern,
+  concerns,
+  setConcerns,
+  notes,
+  setNotes,
+  canSubmit,
+  isMutating,
+}: {
+  onSubmit: () => void;
+  overallFit: EvaluationOverallFit;
+  setOverallFit: (val: EvaluationOverallFit) => void;
+  recommendation: EvaluationRecommendation;
+  setRecommendation: (val: EvaluationRecommendation) => void;
+  positiveFactors: string[];
+  setPositiveFactors: Dispatch<SetStateAction<string[]>>;
+  positiveFactor: string;
+  setPositiveFactor: (val: string) => void;
+  concern: string;
+  setConcern: (val: string) => void;
+  concerns: string[];
+  setConcerns: Dispatch<SetStateAction<string[]>>;
+  notes: string;
+  setNotes: (val: string) => void;
+  canSubmit: boolean;
+  isMutating: boolean;
+}) {
   const { t } = useTranslation();
-  const { commands } = usePrototypeFlow();
-
-  const [overallFit, setOverallFit] = useState<EvaluationOverallFit>('STRONG');
-  const [recommendation, setRecommendation] =
-    useState<EvaluationRecommendation>('CONTINUE');
-  const [positiveFactor, setPositiveFactor] = useState('');
-  const [positiveFactors, setPositiveFactors] = useState<string[]>([]);
-  const [concern, setConcern] = useState('');
-  const [concerns, setConcerns] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
 
   function addPositiveFactor() {
     const trimmed = positiveFactor.trim();
@@ -212,10 +291,6 @@ function EvaluationForm({ candidateId }: { candidateId: string }) {
       setPositiveFactors((prev) => [...prev, trimmed]);
       setPositiveFactor('');
     }
-  }
-
-  function removePositiveFactor(factor: string) {
-    setPositiveFactors((prev) => prev.filter((f) => f !== factor));
   }
 
   function addConcern() {
@@ -229,22 +304,6 @@ function EvaluationForm({ candidateId }: { candidateId: string }) {
   function removeConcern(c: string) {
     setConcerns((prev) => prev.filter((item) => item !== c));
   }
-
-  function handleSubmit() {
-    if (positiveFactors.length === 0) return;
-
-    const evaluation: Omit<MockEvaluation, 'id' | 'recordedOn'> = {
-      candidateId,
-      overallFit,
-      positiveFactors,
-      concerns,
-      notes: notes.trim() || undefined,
-      recommendation,
-    };
-    commands.recordEvaluation(candidateId, evaluation);
-  }
-
-  const canSubmit = positiveFactors.length > 0;
 
   return (
     <View style={styles.card}>
@@ -287,33 +346,32 @@ function EvaluationForm({ candidateId }: { candidateId: string }) {
       {positiveFactors.map((factor) => (
         <Pressable
           key={factor}
-          onPress={() => removePositiveFactor(factor)}
+          onPress={() =>
+            setPositiveFactors((prev) => prev.filter((f) => f !== factor))
+          }
           style={styles.chip}
         >
           <Text style={styles.chipText}>{factor} ✕</Text>
         </Pressable>
       ))}
-      <View style={styles.inputRow}>
-        <TextInput
-          value={positiveFactor}
-          onChangeText={setPositiveFactor}
-          placeholder={t('evaluations.form.positiveFactorPlaceholder')}
-          placeholderTextColor={colors.textMuted}
-          style={styles.textInput}
-          onSubmitEditing={addPositiveFactor}
-          returnKeyType="done"
-        />
-        <Pressable
-          accessibilityRole="button"
-          onPress={addPositiveFactor}
-          style={({ pressed }) => [
-            styles.addButton,
-            pressed && styles.addButtonPressed,
-          ]}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </Pressable>
-      </View>
+      <TextInput
+        accessibilityLabel={t('evaluations.form.positiveFactors')}
+        onChangeText={setPositiveFactor}
+        placeholder={t('evaluations.form.positiveFactorPlaceholder')}
+        placeholderTextColor={colors.textMuted}
+        style={styles.textInput}
+        value={positiveFactor}
+      />
+      <Pressable
+        accessibilityRole="button"
+        onPress={addPositiveFactor}
+        style={({ pressed }) => [
+          styles.addButton,
+          pressed && styles.addButtonPressed,
+        ]}
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </Pressable>
 
       <Text style={styles.fieldLabel}>{t('evaluations.form.concerns')}</Text>
       {concerns.map((c) => (
@@ -321,27 +379,24 @@ function EvaluationForm({ candidateId }: { candidateId: string }) {
           <Text style={styles.chipText}>{c} ✕</Text>
         </Pressable>
       ))}
-      <View style={styles.inputRow}>
-        <TextInput
-          value={concern}
-          onChangeText={setConcern}
-          placeholder={t('evaluations.form.concernPlaceholder')}
-          placeholderTextColor={colors.textMuted}
-          style={styles.textInput}
-          onSubmitEditing={addConcern}
-          returnKeyType="done"
-        />
-        <Pressable
-          accessibilityRole="button"
-          onPress={addConcern}
-          style={({ pressed }) => [
-            styles.addButton,
-            pressed && styles.addButtonPressed,
-          ]}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </Pressable>
-      </View>
+      <TextInput
+        accessibilityLabel={t('evaluations.form.concerns')}
+        onChangeText={setConcern}
+        placeholder={t('evaluations.form.concernPlaceholder')}
+        placeholderTextColor={colors.textMuted}
+        style={styles.textInput}
+        value={concern}
+      />
+      <Pressable
+        accessibilityRole="button"
+        onPress={addConcern}
+        style={({ pressed }) => [
+          styles.addButton,
+          pressed && styles.addButtonPressed,
+        ]}
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </Pressable>
 
       <Text style={styles.fieldLabel}>{t('evaluations.notes')}</Text>
       <TextInput
@@ -398,9 +453,9 @@ function EvaluationForm({ candidateId }: { candidateId: string }) {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !canSubmit }}
-        disabled={!canSubmit}
-        onPress={handleSubmit}
+        accessibilityState={{ disabled: !canSubmit || isMutating }}
+        disabled={!canSubmit || isMutating}
+        onPress={onSubmit}
         style={({ pressed }) => [
           styles.submitButton,
           !canSubmit && styles.submitButtonDisabled,

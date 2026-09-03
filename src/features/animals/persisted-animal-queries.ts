@@ -4,19 +4,38 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   completeReevaluation,
   getAnimalById,
+  listAnimalsForShelter,
   listTimelineForAnimal,
   type CompleteReevaluationInput,
 } from '@/features/animals/persisted-animal-repository';
+import { getActiveAdoptionByAnimal } from '@/features/adoptions/active-adoption-repository';
 import { adoptionKeys } from '@/features/adoptions/active-adoption-queries';
 import { adoptionDecisionKeys } from '@/features/adoptions/adoption-queries';
 import type { Database } from '@/lib/database.types';
 
 export const animalKeys = {
+  all: (shelterId: string) => ['animals', shelterId] as const,
+  list: (shelterId: string) => ['animals', shelterId, 'list'] as const,
   detail: (shelterId: string, animalId: string) =>
     ['animals', shelterId, 'detail', animalId] as const,
   timeline: (shelterId: string, animalId: string) =>
     ['animals', shelterId, 'timeline', animalId] as const,
 };
+
+export function useAnimalsForShelter(
+  client: SupabaseClient<Database> | null,
+  shelterId: string | null,
+) {
+  return useQuery({
+    queryKey: animalKeys.list(shelterId ?? ''),
+    queryFn: () => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      if (!shelterId) return [];
+      return listAnimalsForShelter(client, shelterId);
+    },
+    enabled: client !== null && Boolean(shelterId),
+  });
+}
 
 export function useAnimalById(
   client: SupabaseClient<Database> | null,
@@ -77,5 +96,21 @@ export function useCompleteReevaluation(
         }),
       ]);
     },
+  });
+}
+
+export function useActiveAdoptionForAnimal(
+  client: SupabaseClient<Database> | null,
+  shelterId: string | null,
+  animalId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['adoptions', shelterId ?? '', 'animal', animalId ?? ''],
+    queryFn: () => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      if (!animalId) return null;
+      return getActiveAdoptionByAnimal(client, animalId);
+    },
+    enabled: client !== null && shelterId !== null && Boolean(animalId),
   });
 }

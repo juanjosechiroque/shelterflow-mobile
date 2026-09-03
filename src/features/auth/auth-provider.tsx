@@ -26,6 +26,7 @@ export interface AuthProfile {
   id: string;
   displayName: string;
   shelterId: string;
+  shelterName: string;
 }
 
 export interface AuthShelter {
@@ -151,6 +152,7 @@ export function AuthProvider({
         id: row.id,
         displayName: row.display_name,
         shelterId: row.shelter_id,
+        shelterName: embedded.name,
       });
       setShelter({
         id: embedded.id,

@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -8,77 +9,114 @@ import {
   Text,
   TextInput,
   View,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/constants/theme';
-import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
-import {
-  selectAnimalById,
-  selectCandidateById,
-  selectMeetingsForCandidate,
-  canScheduleMeeting,
-} from '@/features/prototype-flow/prototype-flow-selectors';
-import { isValidISODate } from '@/features/prototype-flow/date-utils';
-import type { MockMeeting } from '@/features/prototype-flow/types';
+import { useAuth } from '@/features/auth/auth-provider';
+import { useCandidateById } from '@/features/candidates/candidate-queries';
 import { formatDate } from '@/i18n/format';
+import {
+  useCompleteMeeting,
+  useMeetingsForCandidate,
+  useScheduleMeeting,
+} from './meeting-queries';
+import type { PersistedMeeting } from './meeting-repository';
 import {
   getMeetingResultLabel,
   getMeetingStatusLabel,
   getMeetingTypeLabel,
 } from './presenters';
-
-type MeetingType = MockMeeting['type'];
-type MeetingResult = MockMeeting['result'];
+import type { MeetingResult, MeetingType } from './types';
 
 export function MeetingsScreen() {
   const { t } = useTranslation();
-  const { state } = usePrototypeFlow();
+  const { supabase, profile } = useAuth();
   const params = useLocalSearchParams<{ candidateId: string }>();
   const candidateId = Array.isArray(params.candidateId)
     ? params.candidateId[0]
     : params.candidateId;
-  const candidate = selectCandidateById(state, candidateId);
-  const animal = candidate
-    ? selectAnimalById(state, candidate.animalId)
-    : undefined;
-  const meetings = selectMeetingsForCandidate(state, candidateId);
+  const shelterId = profile?.shelterId ?? '';
 
-  if (!candidate || !animal) {
+  const candidateQuery = useCandidateById(
+    supabase,
+    shelterId,
+    candidateId ?? '',
+  );
+  const meetingsQuery = useMeetingsForCandidate(
+    supabase,
+    shelterId,
+    candidateId ?? '',
+  );
+  const animalId = candidateQuery.data?.animal.id ?? '';
+  const scheduleMutation = useScheduleMeeting(
+    supabase,
+    shelterId,
+    candidateId ?? '',
+    animalId,
+  );
+  const completeMutation = useCompleteMeeting(
+    supabase,
+    shelterId,
+    candidateId ?? '',
+    animalId,
+  );
+
+  if (!candidateId || !shelterId) {
+    return <MissingState />;
+  }
+
+  if (candidateQuery.isLoading || meetingsQuery.isLoading) {
     return (
       <View style={styles.stateContainer}>
         <Stack.Screen options={{ title: t('meetings.title') }} />
-        <Text accessibilityRole="header" style={styles.title}>
-          {t('meetings.notFoundTitle')}
+        <Text accessibilityRole="progressbar" style={styles.subtitle}>
+          {t('meetings.loading')}
         </Text>
       </View>
     );
   }
 
-  const canSchedule = canScheduleMeeting(state, candidateId);
-  const scheduledMeetings = meetings.filter((m) => m.status === 'SCHEDULED');
-  const completedMeetings = meetings.filter((m) => m.status === 'COMPLETED');
+  if (candidateQuery.isError || meetingsQuery.isError || !candidateQuery.data) {
+    return (
+      <View style={styles.stateContainer}>
+        <Stack.Screen options={{ title: t('meetings.title') }} />
+        <Text accessibilityRole="alert" style={styles.subtitle}>
+          {t('meetings.loadError')}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            void candidateQuery.refetch();
+            void meetingsQuery.refetch();
+          }}
+          style={styles.retryButton}
+        >
+          <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const candidate = candidateQuery.data;
+  const meetings = meetingsQuery.data ?? [];
+  const canSchedule = candidate.status === 'CONTACT_PENDING';
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.flex}
     >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.container}>
         <Stack.Screen options={{ title: t('meetings.title') }} />
-
         <Text style={styles.subtitle}>
           {t('meetings.subtitle', {
             personName: candidate.person.name,
-            animalName: animal.name,
+            animalName: candidate.animal.name,
           })}
         </Text>
 
-        {meetings.length === 0 && !canSchedule ? (
+        {meetings.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>{t('meetings.emptyTitle')}</Text>
             <Text style={styles.emptyDescription}>
@@ -86,44 +124,55 @@ export function MeetingsScreen() {
             </Text>
           </View>
         ) : (
-          <>
-            {completedMeetings.map((meeting) => (
-              <MeetingCard
-                key={meeting.id}
-                meeting={meeting}
-                showComplete={false}
-              />
-            ))}
-            {scheduledMeetings.map((meeting) => (
-              <MeetingCard key={meeting.id} meeting={meeting} showComplete />
-            ))}
-          </>
+          meetings.map((meeting) => (
+            <MeetingCard
+              completeMutation={completeMutation}
+              key={meeting.id}
+              meeting={meeting}
+            />
+          ))
         )}
 
-        {canSchedule ? <ScheduleMeetingForm candidateId={candidateId} /> : null}
+        {canSchedule ? (
+          <ScheduleMeetingForm scheduleMutation={scheduleMutation} />
+        ) : null}
+
+        {scheduleMutation.isError || completeMutation.isError ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {t('meetings.mutationError')}
+          </Text>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+function MissingState() {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.stateContainer}>
+      <Stack.Screen options={{ title: t('meetings.title') }} />
+      <Text accessibilityRole="header" style={styles.emptyTitle}>
+        {t('meetings.notFoundTitle')}
+      </Text>
+    </View>
+  );
+}
+
 function MeetingCard({
+  completeMutation,
   meeting,
-  showComplete,
 }: {
-  meeting: MockMeeting;
-  showComplete: boolean;
+  completeMutation: ReturnType<typeof useCompleteMeeting>;
+  meeting: PersistedMeeting;
 }) {
   const { t } = useTranslation();
-  const { commands } = usePrototypeFlow();
   const [result, setResult] = useState<MeetingResult>('GOOD');
   const [notes, setNotes] = useState('');
-
-  function handleComplete() {
-    commands.completeMeeting(meeting.id, result, notes.trim() || undefined);
-  }
+  const canComplete = meeting.status === 'SCHEDULED';
 
   return (
-    <View key={meeting.id} style={styles.card}>
+    <View style={styles.card}>
       <View style={styles.cardTop}>
         <Text style={styles.type}>{getMeetingTypeLabel(t, meeting.type)}</Text>
         <Text style={styles.status}>
@@ -131,9 +180,7 @@ function MeetingCard({
         </Text>
       </View>
       <Text style={styles.date}>
-        {formatDate(new Date(meeting.scheduledOn + 'T12:00:00'), {
-          dateStyle: 'long',
-        })}
+        {formatDate(new Date(meeting.scheduledAt), { dateStyle: 'long' })}
       </Text>
       {meeting.result ? (
         <Text style={styles.result}>
@@ -143,63 +190,50 @@ function MeetingCard({
       ) : null}
       {meeting.notes ? <Text style={styles.notes}>{meeting.notes}</Text> : null}
 
-      {showComplete && meeting.status === 'SCHEDULED' ? (
+      {canComplete ? (
         <View style={styles.completeSection}>
           <Text style={styles.fieldLabel}>{t('meetings.form.result')}</Text>
           <View style={styles.radioGroup}>
-            {(
-              [
-                {
-                  value: 'STRONG_MATCH',
-                  label: t('meetings.results.strongMatch'),
-                },
-                { value: 'GOOD', label: t('meetings.results.good') },
-                { value: 'CONCERNS', label: t('meetings.results.concerns') },
-                {
-                  value: 'NOT_RECOMMENDED',
-                  label: t('meetings.results.notRecommended'),
-                },
-              ] as const
-            ).map((option) => (
+            {meetingResults.map((option) => (
               <Pressable
-                key={option.value}
                 accessibilityRole="radio"
-                accessibilityState={{ checked: result === option.value }}
-                onPress={() => setResult(option.value)}
+                accessibilityState={{ checked: result === option }}
+                key={option}
+                onPress={() => setResult(option)}
                 style={[
                   styles.radio,
-                  result === option.value && styles.radioSelected,
+                  result === option && styles.radioSelected,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.radioLabel,
-                    result === option.value && styles.radioLabelSelected,
-                  ]}
-                >
-                  {option.label}
+                <Text style={styles.radioLabel}>
+                  {getMeetingResultLabel(t, option)}
                 </Text>
               </Pressable>
             ))}
           </View>
           <TextInput
-            value={notes}
+            multiline
+            numberOfLines={2}
             onChangeText={setNotes}
             placeholder={t('meetings.form.notesPlaceholder')}
             placeholderTextColor={colors.textMuted}
             style={[styles.textInput, styles.textArea]}
-            multiline
-            numberOfLines={2}
+            value={notes}
           />
           <Pressable
             accessibilityRole="button"
-            onPress={handleComplete}
-            style={({ pressed }) => [
-              styles.completeButton,
-              pressed && styles.completeButtonPressed,
-            ]}
+            accessibilityState={{ disabled: completeMutation.isPending }}
+            disabled={completeMutation.isPending}
+            onPress={() =>
+              completeMutation.mutate({
+                meetingId: meeting.id,
+                result,
+                notes: notes.trim() || null,
+              })
+            }
+            style={styles.submitButton}
           >
-            <Text style={styles.completeButtonText}>
+            <Text style={styles.submitButtonText}>
               {t('meetings.form.completeAction')}
             </Text>
           </Pressable>
@@ -209,106 +243,113 @@ function MeetingCard({
   );
 }
 
-function ScheduleMeetingForm({ candidateId }: { candidateId: string }) {
+const meetingResults: readonly MeetingResult[] = [
+  'STRONG_MATCH',
+  'GOOD',
+  'CONCERNS',
+  'NOT_RECOMMENDED',
+];
+
+function ScheduleMeetingForm({
+  scheduleMutation,
+}: {
+  scheduleMutation: ReturnType<typeof useScheduleMeeting>;
+}) {
   const { t } = useTranslation();
-  const { commands } = usePrototypeFlow();
   const [type, setType] = useState<MeetingType>('MEET_AND_GREET');
   const [scheduledOn, setScheduledOn] = useState('');
   const [notes, setNotes] = useState('');
-
-  function handleSubmit() {
-    const trimmedDate = scheduledOn.trim();
-    if (!isValidISODate(trimmedDate)) return;
-
-    commands.scheduleMeeting(
-      candidateId,
-      type,
-      trimmedDate,
-      notes.trim() || undefined,
-    );
-    setScheduledOn('');
-    setNotes('');
-  }
-
   const dateValid = isValidISODate(scheduledOn.trim());
-  const canSubmit = dateValid;
+
+  function submit() {
+    if (!dateValid) return;
+    scheduleMutation.mutate(
+      {
+        type,
+        scheduledAt: new Date(
+          `${scheduledOn.trim()}T12:00:00.000Z`,
+        ).toISOString(),
+        notes: notes.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          setScheduledOn('');
+          setNotes('');
+        },
+      },
+    );
+  }
 
   return (
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>{t('meetings.form.title')}</Text>
-
       <Text style={styles.fieldLabel}>{t('meetings.form.type')}</Text>
       <View style={styles.radioGroup}>
-        {(
-          [
-            { value: 'INTERVIEW', label: t('meetings.types.interview') },
-            { value: 'VISIT', label: t('meetings.types.visit') },
-            {
-              value: 'MEET_AND_GREET',
-              label: t('meetings.types.meetAndGreet'),
-            },
-            { value: 'HOME_VISIT', label: t('meetings.types.homeVisit') },
-          ] as const
-        ).map((option) => (
+        {meetingTypes.map((option) => (
           <Pressable
-            key={option.value}
             accessibilityRole="radio"
-            accessibilityState={{ checked: type === option.value }}
-            onPress={() => setType(option.value)}
-            style={[
-              styles.radio,
-              type === option.value && styles.radioSelected,
-            ]}
+            accessibilityState={{ checked: type === option }}
+            key={option}
+            onPress={() => setType(option)}
+            style={[styles.radio, type === option && styles.radioSelected]}
           >
-            <Text
-              style={[
-                styles.radioLabel,
-                type === option.value && styles.radioLabelSelected,
-              ]}
-            >
-              {option.label}
+            <Text style={styles.radioLabel}>
+              {getMeetingTypeLabel(t, option)}
             </Text>
           </Pressable>
         ))}
       </View>
-
       <Text style={styles.fieldLabel}>{t('meetings.form.date')}</Text>
       <TextInput
-        value={scheduledOn}
+        keyboardType="numbers-and-punctuation"
         onChangeText={setScheduledOn}
         placeholder={t('meetings.form.datePlaceholder')}
         placeholderTextColor={colors.textMuted}
         style={styles.textInput}
-        keyboardType="numbers-and-punctuation"
+        value={scheduledOn}
       />
-
       <Text style={styles.fieldLabel}>{t('meetings.form.notes')}</Text>
       <TextInput
-        value={notes}
+        multiline
+        numberOfLines={2}
         onChangeText={setNotes}
         placeholder={t('meetings.form.notesPlaceholder')}
         placeholderTextColor={colors.textMuted}
         style={[styles.textInput, styles.textArea]}
-        multiline
-        numberOfLines={2}
+        value={notes}
       />
-
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: !canSubmit }}
-        disabled={!canSubmit}
-        onPress={handleSubmit}
-        style={({ pressed }) => [
-          styles.submitButton,
-          !canSubmit && styles.submitButtonDisabled,
-          pressed && styles.submitButtonPressed,
-        ]}
+        accessibilityState={{
+          disabled: !dateValid || scheduleMutation.isPending,
+        }}
+        disabled={!dateValid || scheduleMutation.isPending}
+        onPress={submit}
+        style={[styles.submitButton, !dateValid && styles.submitButtonDisabled]}
       >
         <Text style={styles.submitButtonText}>
           {t('meetings.form.scheduleAction')}
         </Text>
       </Pressable>
     </View>
+  );
+}
+
+const meetingTypes: readonly MeetingType[] = [
+  'INTERVIEW',
+  'VISIT',
+  'MEET_AND_GREET',
+  'HOME_VISIT',
+];
+
+function isValidISODate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 12);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
   );
 }
 
@@ -325,23 +366,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  completeButton: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    justifyContent: 'center',
-    marginTop: 12,
-    minHeight: 46,
-    paddingHorizontal: 16,
-  },
-  completeButtonPressed: {
-    backgroundColor: colors.primaryPressed,
-  },
-  completeButtonText: {
-    color: colors.surface,
-    fontSize: 15,
-    fontWeight: '800',
   },
   completeSection: {
     borderTopColor: colors.border,
@@ -373,11 +397,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 6,
   },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '800',
-  },
+  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '800' },
+  error: { color: colors.danger, fontSize: 15, marginTop: 4 },
   fieldLabel: {
     color: colors.text,
     fontSize: 14,
@@ -385,15 +406,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 12,
   },
-  flex: {
-    flex: 1,
-  },
-  notes: {
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 10,
-  },
+  flex: { flex: 1 },
+  notes: { color: colors.text, fontSize: 14, lineHeight: 21, marginTop: 10 },
   radio: {
     borderColor: colors.border,
     borderRadius: 10,
@@ -402,21 +416,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  radioGroup: {
-    gap: 0,
-  },
-  radioLabel: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  radioLabelSelected: {
-    color: colors.primary,
-    fontWeight: '800',
-  },
+  radioGroup: { gap: 0 },
+  radioLabel: { color: colors.text, fontSize: 15, fontWeight: '600' },
   radioSelected: {
-    borderColor: colors.primary,
     backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
   },
   result: {
     color: colors.primary,
@@ -424,6 +428,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 10,
   },
+  retryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  retryButtonText: { color: colors.surface, fontWeight: '800' },
   sectionTitle: {
     color: colors.text,
     fontSize: 17,
@@ -437,6 +449,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 28,
   },
+  status: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
   submitButton: {
     alignItems: 'center',
     backgroundColor: colors.primary,
@@ -446,33 +464,15 @@ const styles = StyleSheet.create({
     minHeight: 50,
     paddingHorizontal: 20,
   },
-  submitButtonDisabled: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  submitButtonPressed: {
-    backgroundColor: colors.primaryPressed,
-  },
-  submitButtonText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  status: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
+  submitButtonDisabled: { backgroundColor: colors.surfaceMuted },
+  submitButtonText: { color: colors.surface, fontSize: 16, fontWeight: '800' },
   subtitle: {
     color: colors.textMuted,
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 18,
   },
-  textArea: {
-    height: 64,
-    textAlignVertical: 'top',
-  },
+  textArea: { height: 64, textAlignVertical: 'top' },
   textInput: {
     borderColor: colors.border,
     borderRadius: 10,
@@ -483,14 +483,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  title: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: '900',
-  },
-  type: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '900',
-  },
+  type: { color: colors.text, fontSize: 17, fontWeight: '900' },
 });

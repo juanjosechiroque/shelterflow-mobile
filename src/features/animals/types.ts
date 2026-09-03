@@ -25,7 +25,9 @@ export type TimelineEventType =
   | 'ANIMAL_NOT_AVAILABLE'
   | 'CANDIDATE_CREATED'
   | 'EVALUATION_RECORDED'
+  | 'CONTACT_PENDING'
   | 'MEETING_SCHEDULED'
+  | 'MEETING_COMPLETED'
   | 'ANIMAL_IN_PROCESS'
   | 'DECISION_PENDING'
   | 'ADOPTION_CONFIRMED'
@@ -38,8 +40,8 @@ export interface MockAnimal {
   name: string;
   species: AnimalSpecies;
   sex: AnimalSex;
-  approximateAgeMonths: number | null;
   size: AnimalSize;
+  approximate_age_months: number | null;
   status: AnimalStatus;
   visualTone: 'forest' | 'sky' | 'sand' | 'rose';
 }

@@ -6,17 +6,17 @@ import {
   StyleSheet,
   Text,
   View,
+  RefreshControl,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@/features/auth/auth-provider';
 
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { ScreenHeader, StateView } from '@/components/ui';
-import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
-import { selectShelter } from '@/features/prototype-flow/prototype-flow-selectors';
-
 import { AnimalCard } from './components/animal-card';
 import { filterAnimals, type AnimalFilter } from './presenters';
+import { useAnimalsForShelter } from './persisted-animal-queries';
 
 const filters: readonly {
   value: AnimalFilter;
@@ -36,13 +36,50 @@ const filters: readonly {
 
 export function AnimalsScreen() {
   const { t } = useTranslation();
-  const { state } = usePrototypeFlow();
-  const shelter = selectShelter(state);
+  const { supabase, profile } = useAuth();
+
+  const shelterId = profile?.shelterId ?? null;
   const [selectedFilter, setSelectedFilter] = useState<AnimalFilter>('ALL');
+
+  const { data, isLoading, isError, isFetching, refetch } =
+    useAnimalsForShelter(supabase, shelterId);
+
   const visibleAnimals = useMemo(
-    () => filterAnimals(state.animals, selectedFilter),
-    [state.animals, selectedFilter],
+    () => filterAnimals(data ?? [], selectedFilter),
+    [data, selectedFilter],
   );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <View style={styles.stateWrapper}>
+          <Text accessibilityRole="progressbar" style={styles.stateText}>
+            {t('animals.loading')}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <View style={styles.stateWrapper}>
+          <StateView
+            title={t('animals.loadErrorTitle')}
+            description={t('animals.loadErrorDescription')}
+            tone="error"
+            primaryAction={{
+              label: t('animals.refresh'),
+              onPress: () => {
+                void refetch();
+              },
+            }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -62,7 +99,9 @@ export function AnimalsScreen() {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.shelterEyebrow}>{shelter.name}</Text>
+            <Text style={styles.shelterEyebrow}>
+              {profile?.shelterName ?? ''}
+            </Text>
             <View style={styles.headerBody}>
               <ScreenHeader
                 subtitle={t('animals.subtitle')}
@@ -111,6 +150,15 @@ export function AnimalsScreen() {
         }
         renderItem={({ item }) => <AnimalCard animal={item} />}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching}
+            onRefresh={() => {
+              void refetch();
+            }}
+            title={t('animals.refresh')}
+          />
+        }
       />
     </SafeAreaView>
   );
@@ -177,5 +225,14 @@ const styles = StyleSheet.create({
     ...typography.eyebrow,
     color: colors.primary,
     marginTop: spacing.xs,
+  },
+  stateText: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  stateWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
   },
 });

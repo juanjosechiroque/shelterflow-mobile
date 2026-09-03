@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next';
 
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { Card, PrimaryButton, SectionHeader, StateView } from '@/components/ui';
-import { useAuth } from '@/features/auth/auth-provider';
 import {
   useAnimalById,
   useAnimalTimeline,
+  useActiveAdoptionForAnimal,
 } from '@/features/animals/persisted-animal-queries';
-import { StatusBadge } from './components/status-badge';
-import { PersistedTimelineEventItem } from './components/persisted-timeline-event-item';
+import { useAuth } from '@/features/auth/auth-provider';
+import { useCandidatesByAnimal } from '@/features/candidates/candidate-queries';
 import {
   getAnimalSexLabel,
   getAnimalSizeLabel,
@@ -23,6 +23,9 @@ import type {
   AnimalSpecies,
   AnimalStatus,
 } from './types';
+import { StatusBadge } from './components/status-badge';
+import { PersistedTimelineEventItem } from './components/persisted-timeline-event-item';
+import { CandidateRow } from './components/candidate-row';
 
 const nextStepKeys: Record<
   AnimalStatus,
@@ -52,6 +55,16 @@ export function PersistedAnimalDetailScreen() {
 
   const animalQuery = useAnimalById(supabase, shelterId, animalId);
   const timelineQuery = useAnimalTimeline(supabase, shelterId, animalId);
+  const adoptionQuery = useActiveAdoptionForAnimal(
+    supabase,
+    shelterId,
+    animalId,
+  );
+  const candidatesQuery = useCandidatesByAnimal(
+    supabase,
+    shelterId ?? '',
+    animalId ?? '',
+  );
 
   if (animalQuery.isLoading) {
     return (
@@ -104,6 +117,8 @@ export function PersistedAnimalDetailScreen() {
   const status = animal.status as AnimalStatus;
   const timeline = timelineQuery.data ?? [];
   const showReevaluationAction = status === 'REEVALUATION';
+  const activeAdoption = adoptionQuery.data;
+  const showAdoptionLink = status === 'ADOPTED' && activeAdoption;
 
   return (
     <ScrollView
@@ -186,6 +201,50 @@ export function PersistedAnimalDetailScreen() {
         </View>
       ) : null}
 
+      {showAdoptionLink ? (
+        <View style={styles.section}>
+          <Link
+            href={{
+              pathname: '/adoptions/[adoptionId]',
+              params: { adoptionId: activeAdoption.id },
+            }}
+            asChild
+          >
+            <PrimaryButton
+              accessibilityLabel={t('animals.detail.reviewFollowUps')}
+              fullWidth
+              label={t('animals.detail.reviewFollowUps')}
+              onPress={() => undefined}
+            />
+          </Link>
+        </View>
+      ) : null}
+
+      <View style={styles.section}>
+        <SectionHeader title={t('animals.candidates.title')} />
+        {candidatesQuery.isLoading ? (
+          <Text accessibilityRole="progressbar" style={styles.timelineState}>
+            {t('animals.detail.candidatesLoading')}
+          </Text>
+        ) : candidatesQuery.isError ? (
+          <Text accessibilityRole="alert" style={styles.timelineError}>
+            {t('animals.detail.candidatesError')}
+          </Text>
+        ) : (candidatesQuery.data?.length ?? 0) === 0 ? (
+          <Card padding="comfortable" variant="subtle">
+            <Text style={styles.timelineEmpty}>
+              {t('animals.candidates.empty')}
+            </Text>
+          </Card>
+        ) : (
+          <Card padding="comfortable" variant="elevated">
+            {candidatesQuery.data?.map((candidate) => (
+              <CandidateRow candidate={candidate} key={candidate.id} />
+            ))}
+          </Card>
+        )}
+      </View>
+
       <View style={styles.section}>
         <SectionHeader title={t('animals.timeline.title')} />
 
@@ -204,7 +263,7 @@ export function PersistedAnimalDetailScreen() {
         {!timelineQuery.isLoading && !timelineQuery.isError ? (
           timeline.length === 0 ? (
             <Card padding="comfortable" variant="subtle">
-              <Text style={styles.timelineState}>
+              <Text style={styles.timelineEmpty}>
                 {t('animals.detail.timelineEmpty')}
               </Text>
             </Card>
@@ -226,36 +285,65 @@ export function PersistedAnimalDetailScreen() {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  tone?: 'default' | 'primary' | 'warning';
+}) {
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
+      <Text
+        style={[
+          styles.detailValue,
+          tone === 'primary' && styles.detailValuePrimary,
+          tone === 'warning' && styles.detailValueWarning,
+        ]}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: colors.background,
+    flexGrow: 1,
     paddingBottom: spacing['3xl'],
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
   },
   detailGrid: {
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   detailLabel: {
     ...typography.metaStrong,
     color: colors.textSubtle,
+    flex: 1,
     textTransform: 'uppercase',
   },
   detailRow: {
-    gap: spacing['2xs'],
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
     paddingVertical: spacing.xs,
   },
   detailValue: {
     ...typography.bodyStrong,
     color: colors.text,
+    flex: 2,
+    textAlign: 'right',
+  },
+  detailValuePrimary: {
+    color: colors.primary,
+  },
+  detailValueWarning: {
+    color: colors.warning,
   },
   hero: {
     alignItems: 'center',
@@ -268,31 +356,30 @@ const styles = StyleSheet.create({
   heroAvatar: {
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 28,
-    height: 72,
+    borderRadius: 32,
+    height: 64,
     justifyContent: 'center',
-    width: 72,
+    width: 64,
   },
   heroAvatarLabel: {
     color: colors.text,
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '900',
   },
   heroBadge: {
-    marginTop: spacing['2xs'],
+    marginTop: spacing.xs,
   },
   heroCopy: {
     flex: 1,
-    gap: spacing['2xs'],
   },
   heroMeta: {
-    ...typography.meta,
-    color: colors.textMuted,
+    ...typography.body,
+    color: colors.textSubtle,
+    marginTop: spacing['2xs'],
   },
   heroName: {
-    ...typography.display,
+    ...typography.title,
     color: colors.text,
-    fontSize: 24,
   },
   loading: {
     ...typography.body,
@@ -315,6 +402,10 @@ const styles = StyleSheet.create({
   stateContainer: {
     backgroundColor: colors.background,
     flex: 1,
+  },
+  timelineEmpty: {
+    ...typography.body,
+    color: colors.textMuted,
   },
   timelineError: {
     ...typography.body,

@@ -608,6 +608,10 @@ export type Database = {
         Returns: undefined
       }
       auth_shelter_id: { Args: never; Returns: string }
+      bridge_evaluated_to_contact_pending: {
+        Args: { p_candidate_id: string }
+        Returns: string
+      }
       complete_followup: {
         Args: { p_followup_id: string; p_notes: string; p_outcome: string }
         Returns: string
@@ -627,6 +631,29 @@ export type Database = {
       }
       return_adoption: {
         Args: { p_adoption_id: string; p_notes: string; p_reason: string }
+        Returns: string
+      }
+      complete_meeting: {
+        Args: { p_meeting_id: string; p_notes: string | null; p_result: string }
+        Returns: string
+      }
+      mark_decision_pending: {
+        Args: { p_candidate_id: string }
+        Returns: string
+      }
+      schedule_meeting: {
+        Args: { p_candidate_id: string; p_type: string; p_scheduled_at: string; p_notes: string | null }
+        Returns: string
+      }
+      record_evaluation: {
+        Args: {
+          p_candidate_id: string
+          p_concerns: string[]
+          p_notes: string | null
+          p_overall_fit: string
+          p_positive_factors: string[]
+          p_recommendation: string
+        }
         Returns: string
       }
     }

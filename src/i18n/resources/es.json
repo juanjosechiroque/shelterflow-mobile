@@ -60,6 +60,9 @@
     "subtitle": "Sigue el estado de cada proceso de adopción.",
     "results_one": "{{count}} animal",
     "results_other": "{{count}} animales",
+    "loading": "Cargando los animales…",
+    "loadErrorTitle": "No pudimos cargar los animales",
+    "loadErrorDescription": "Revisa tu conexión e inténtalo nuevamente.",
     "candidates": {
       "title": "Candidatos",
       "empty": "Todavía no hay candidatos registrados para este animal.",
@@ -83,15 +86,17 @@
         "animalReady": "{{animalName}} quedó listo para adopción.",
         "animalNotAvailable": "{{animalName}} ya no está disponible para adopción.",
         "candidateCreated": "{{personName}} se registró como candidato.",
-        "evaluationRecorded": "Se registró la evaluación de {{personName}}.",
-        "meetingScheduled": "Se programó una reunión con {{personName}}.",
+        "evaluationRecorded": "Se registró una evaluación.",
+        "meetingScheduled": "Se programó una reunión.",
         "animalInProcess": "{{animalName}} pasó a un proceso de adopción activo.",
         "decisionPending": "El proceso de {{personName}} quedó listo para una decisión.",
         "adoptionConfirmed": "Se confirmó la adopción con {{personName}}.",
         "followUpsPlanned": "Se planificaron los seguimientos de la adopción.",
         "followUpCompleted": "Se completó un seguimiento de la adopción.",
         "adoptionReturned": "La adopción con {{personName}} fue devuelta.",
-        "reevaluationRequired": "{{animalName}} requiere una reevaluación humana."
+        "reevaluationRequired": "{{animalName}} requiere una reevaluación humana.",
+        "contactPending": "El candidato quedó pendiente de contacto.",
+        "meetingCompleted": "Se completó una reunión."
       }
     },
     "filters": {
@@ -169,8 +174,11 @@
       "retry": "Reintentar",
       "timelineLoading": "Cargando la línea de tiempo…",
       "timelineError": "No pudimos cargar la línea de tiempo.",
-      "timelineEmpty": "Aún no hay eventos registrados en la línea de tiempo."
-    }
+      "timelineEmpty": "Aún no hay eventos registrados en la línea de tiempo.",
+      "candidatesLoading": "Cargando candidatos…",
+      "candidatesError": "No pudimos cargar los candidatos."
+    },
+    "refresh": "Actualizar"
   },
   "candidates": {
     "title": "Candidato",
@@ -199,7 +207,11 @@
       "unknown": "Desconocida"
     },
     "notFoundTitle": "Candidato no encontrado",
-    "notFoundDescription": "No pudimos encontrar este candidato."
+    "notFoundDescription": "No pudimos encontrar este candidato.",
+    "loadingTitle": "Cargando candidato",
+    "loading": "Cargando el candidato…",
+    "contactError": "No se pudo avanzar el contacto. Inténtalo nuevamente.",
+    "decisionError": "No se pudo marcar para decisión. Inténtalo nuevamente."
   },
   "evaluations": {
     "title": "Evaluación",
@@ -225,6 +237,8 @@
     },
     "emptyTitle": "Sin evaluación",
     "emptyDescription": "Este candidato todavía no tiene una evaluación registrada.",
+    "loading": "Cargando evaluación…",
+    "loadError": "No pudimos cargar la evaluación. Inténtalo nuevamente.",
     "backToCandidate": "Volver al candidato",
     "form": {
       "title": "Registrar evaluación",
@@ -244,6 +258,9 @@
     "subtitle": "Interacciones registradas con {{personName}} sobre {{animalName}}.",
     "resultLabel": "Resultado",
     "noResultHint": "Reunión completada sin resultado registrado.",
+    "loading": "Cargando reuniones…",
+    "loadError": "No pudimos cargar las reuniones. Inténtalo nuevamente.",
+    "mutationError": "No pudimos guardar la reunión. Inténtalo nuevamente.",
     "emptyTitle": "Sin reuniones",
     "emptyDescription": "Todavía no hay reuniones registradas para este candidato.",
     "types": {
@@ -485,5 +502,8 @@
       "configMissing": "La aplicación no está conectada a Supabase. Configura las variables de entorno locales.",
       "unknown": "No pudimos iniciar sesión. Inténtalo de nuevo."
     }
+  },
+  "common": {
+    "retry": "Reintentar"
   }
 }
