@@ -60,7 +60,8 @@
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset",
     "supabase:test": "supabase test db",
-    "supabase:test:rls": "node scripts/supabase-rls-test.mjs"
+    "supabase:test:rls": "node scripts/supabase-rls-test.mjs",
+    "supabase:test:storage": "node scripts/supabase-storage-test.mjs"
   },
   "private": true
 }
