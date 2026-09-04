@@ -4,9 +4,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   completeReevaluation,
   getAnimalById,
+  getAnimalPrimaryPhotoSignedUrl,
   listAnimalsForShelter,
   listTimelineForAnimal,
+  setAnimalPrimaryPhoto,
+  PRIMARY_PHOTO_SIGNED_URL_TTL_SECONDS,
   type CompleteReevaluationInput,
+  type SetAnimalPrimaryPhotoInput,
 } from '@/features/animals/persisted-animal-repository';
 import { getActiveAdoptionByAnimal } from '@/features/adoptions/active-adoption-repository';
 import { adoptionKeys } from '@/features/adoptions/active-adoption-queries';
@@ -20,6 +24,8 @@ export const animalKeys = {
     ['animals', shelterId, 'detail', animalId] as const,
   timeline: (shelterId: string, animalId: string) =>
     ['animals', shelterId, 'timeline', animalId] as const,
+  photoSignedUrl: (path: string) =>
+    ['animals', 'photo-signed-url', path] as const,
 };
 
 export function useAnimalsForShelter(
@@ -112,5 +118,45 @@ export function useActiveAdoptionForAnimal(
       return getActiveAdoptionByAnimal(client, animalId);
     },
     enabled: client !== null && shelterId !== null && Boolean(animalId),
+  });
+}
+
+export function useSetAnimalPrimaryPhoto(
+  client: SupabaseClient<Database> | null,
+  shelterId: string | null,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: SetAnimalPrimaryPhotoInput) => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      return setAnimalPrimaryPhoto(client, input);
+    },
+    onSuccess: async (_animalId, input) => {
+      await queryClient.invalidateQueries({
+        queryKey: animalKeys.detail(shelterId ?? '', input.animalId),
+      });
+    },
+  });
+}
+
+// Staleness is kept strictly shorter than the signed-URL TTL so a refetch
+// always obtains a fresh URL before the previous one can expire.
+const PRIMARY_PHOTO_SIGNED_URL_STALE_MS =
+  (PRIMARY_PHOTO_SIGNED_URL_TTL_SECONDS - 15 * 60) * 1000;
+
+export function useAnimalPrimaryPhotoSignedUrl(
+  client: SupabaseClient<Database> | null,
+  path: string | null,
+) {
+  return useQuery({
+    queryKey: animalKeys.photoSignedUrl(path ?? ''),
+    queryFn: () => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      if (!path) return null;
+      return getAnimalPrimaryPhotoSignedUrl(client, path);
+    },
+    enabled: client !== null && Boolean(path),
+    staleTime: PRIMARY_PHOTO_SIGNED_URL_STALE_MS,
   });
 }

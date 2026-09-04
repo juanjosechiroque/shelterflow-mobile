@@ -1,16 +1,42 @@
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
+import { useCallback, useRef, useState } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { colors, radii, spacing, typography } from '@/constants/theme';
-import { Card, PrimaryButton, SectionHeader, StateView } from '@/components/ui';
+import {
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  SectionHeader,
+  StateView,
+} from '@/components/ui';
+import {
+  captureImageWithCamera,
+  pickImageFromGallery,
+  uploadImageToStorage,
+  validateImage,
+  type ImageCaptureAsset,
+  type ImageCaptureOutcome,
+} from '@/features/animals/image-capture';
 import {
   useAnimalById,
+  useAnimalPrimaryPhotoSignedUrl,
   useAnimalTimeline,
   useActiveAdoptionForAnimal,
+  useSetAnimalPrimaryPhoto,
 } from '@/features/animals/persisted-animal-queries';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useCandidatesByAnimal } from '@/features/candidates/candidate-queries';
+import type { Database } from '@/lib/database.types';
 import {
   getAnimalSexLabel,
   getAnimalSizeLabel,
@@ -26,6 +52,132 @@ import type {
 import { StatusBadge } from './components/status-badge';
 import { PersistedTimelineEventItem } from './components/persisted-timeline-event-item';
 import { CandidateRow } from './components/candidate-row';
+
+type PhotoFlowStatus =
+  | { kind: 'idle' }
+  | { kind: 'uploading' }
+  | { kind: 'attaching' }
+  | {
+      kind: 'error';
+      reason: 'permission' | 'invalidType' | 'tooLarge' | 'upload' | 'attach';
+    };
+
+function usePrimaryPhotoFlow({
+  client,
+  shelterId,
+  animalId,
+}: {
+  client: SupabaseClient<Database> | null;
+  shelterId: string | null;
+  animalId: string;
+}) {
+  const { mutateAsync: setPrimaryPhoto } = useSetAnimalPrimaryPhoto(
+    client,
+    shelterId,
+  );
+  const [status, setStatus] = useState<PhotoFlowStatus>({ kind: 'idle' });
+  const pendingAssetRef = useRef<ImageCaptureAsset | null>(null);
+  const pendingPathRef = useRef<string | null>(null);
+
+  const attach = useCallback(
+    async (path: string) => {
+      pendingPathRef.current = path;
+      setStatus({ kind: 'attaching' });
+      try {
+        await setPrimaryPhoto({ animalId, path });
+        pendingPathRef.current = null;
+        pendingAssetRef.current = null;
+        setStatus({ kind: 'idle' });
+      } catch {
+        setStatus({ kind: 'error', reason: 'attach' });
+      }
+    },
+    [animalId, setPrimaryPhoto],
+  );
+
+  const upload = useCallback(
+    async (asset: ImageCaptureAsset) => {
+      if (!client || !shelterId) return;
+      pendingAssetRef.current = asset;
+      setStatus({ kind: 'uploading' });
+      try {
+        const path = await uploadImageToStorage(
+          client,
+          asset,
+          shelterId,
+          animalId,
+        );
+        await attach(path);
+      } catch {
+        setStatus({ kind: 'error', reason: 'upload' });
+      }
+    },
+    [attach, animalId, client, shelterId],
+  );
+
+  const handleOutcome = useCallback(
+    async (outcome: ImageCaptureOutcome) => {
+      if (outcome.status === 'cancelled') return;
+      if (outcome.status === 'permission_denied') {
+        setStatus({ kind: 'error', reason: 'permission' });
+        return;
+      }
+      const validation = validateImage(outcome.asset);
+      if (!validation.valid) {
+        setStatus({
+          kind: 'error',
+          reason:
+            validation.error === 'file_too_large' ? 'tooLarge' : 'invalidType',
+        });
+        return;
+      }
+      await upload(outcome.asset);
+    },
+    [upload],
+  );
+
+  const pickFromGallery = useCallback(async () => {
+    await handleOutcome(await pickImageFromGallery());
+  }, [handleOutcome]);
+
+  const captureWithCamera = useCallback(async () => {
+    await handleOutcome(await captureImageWithCamera());
+  }, [handleOutcome]);
+
+  const retry = useCallback(() => {
+    if (pendingPathRef.current) {
+      void attach(pendingPathRef.current);
+    } else if (pendingAssetRef.current) {
+      void upload(pendingAssetRef.current);
+    }
+  }, [attach, upload]);
+
+  return {
+    status,
+    isBusy: status.kind === 'uploading' || status.kind === 'attaching',
+    pickFromGallery,
+    captureWithCamera,
+    retry,
+  };
+}
+
+const photoErrorMessageKeys: Record<
+  Exclude<
+    PhotoFlowStatus,
+    { kind: 'idle' | 'uploading' | 'attaching' }
+  >['reason'],
+  | 'animals.detail.photo.permissionDenied'
+  | 'animals.detail.photo.invalidType'
+  | 'animals.detail.photo.tooLarge'
+  | 'animals.detail.photo.error'
+  | 'animals.detail.photo.attachError'
+> = {
+  permission: 'animals.detail.photo.permissionDenied',
+  invalidType: 'animals.detail.photo.invalidType',
+  tooLarge: 'animals.detail.photo.tooLarge',
+  upload: 'animals.detail.photo.error',
+  attach: 'animals.detail.photo.attachError',
+};
 
 const nextStepKeys: Record<
   AnimalStatus,
@@ -65,6 +217,16 @@ export function PersistedAnimalDetailScreen() {
     shelterId ?? '',
     animalId ?? '',
   );
+
+  const photoSignedUrlQuery = useAnimalPrimaryPhotoSignedUrl(
+    supabase,
+    animalQuery.data?.primaryPhotoPath ?? null,
+  );
+  const photoFlow = usePrimaryPhotoFlow({
+    client: supabase,
+    shelterId,
+    animalId: animalId ?? '',
+  });
 
   if (animalQuery.isLoading) {
     return (
@@ -129,9 +291,23 @@ export function PersistedAnimalDetailScreen() {
 
       <View style={styles.hero}>
         <View style={styles.heroAvatar}>
-          <Text style={styles.heroAvatarLabel}>
-            {animal.name.slice(0, 1).toUpperCase()}
-          </Text>
+          {animal.primaryPhotoPath && photoSignedUrlQuery.isLoading ? (
+            <View style={styles.heroAvatarPlaceholder}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : animal.primaryPhotoPath && photoSignedUrlQuery.data?.signedUrl ? (
+            <Image
+              contentFit="cover"
+              source={{ uri: photoSignedUrlQuery.data.signedUrl }}
+              style={styles.heroAvatarImage}
+            />
+          ) : (
+            <View style={styles.heroAvatarPlaceholder}>
+              <Text style={styles.heroAvatarLabel}>
+                {animal.name.slice(0, 1).toUpperCase()}
+              </Text>
+            </View>
+          )}
         </View>
         <View style={styles.heroCopy}>
           <Text accessibilityRole="header" style={styles.heroName}>
@@ -146,6 +322,46 @@ export function PersistedAnimalDetailScreen() {
             <StatusBadge status={status} />
           </View>
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.photoActions}>
+          <SecondaryButton
+            accessibilityLabel={t('animals.detail.photo.pickFromGallery')}
+            disabled={photoFlow.isBusy}
+            fullWidth={false}
+            label={t('animals.detail.photo.pickFromGallery')}
+            onPress={() => void photoFlow.pickFromGallery()}
+          />
+          <SecondaryButton
+            accessibilityLabel={t('animals.detail.photo.takePhoto')}
+            disabled={photoFlow.isBusy}
+            fullWidth={false}
+            label={t('animals.detail.photo.takePhoto')}
+            onPress={() => void photoFlow.captureWithCamera()}
+          />
+        </View>
+        {photoFlow.isBusy ? (
+          <Text accessibilityRole="progressbar" style={styles.photoStatus}>
+            {t('animals.detail.photo.uploading')}
+          </Text>
+        ) : null}
+        {photoFlow.status.kind === 'error' ? (
+          <View style={styles.photoErrorRow}>
+            <Text accessibilityRole="alert" style={styles.photoError}>
+              {t(photoErrorMessageKeys[photoFlow.status.reason])}
+            </Text>
+            {photoFlow.status.reason === 'upload' ||
+            photoFlow.status.reason === 'attach' ? (
+              <SecondaryButton
+                accessibilityLabel={t('animals.detail.retry')}
+                fullWidth={false}
+                label={t('animals.detail.retry')}
+                onPress={() => photoFlow.retry()}
+              />
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -361,10 +577,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 64,
   },
+  heroAvatarPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.surface,
+  },
+  heroAvatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
   heroAvatarLabel: {
     color: colors.text,
     fontSize: 28,
     fontWeight: '900',
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  photoStatus: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+  },
+  photoErrorRow: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  photoError: {
+    ...typography.body,
+    color: colors.danger,
   },
   heroBadge: {
     marginTop: spacing.xs,

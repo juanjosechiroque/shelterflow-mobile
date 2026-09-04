@@ -26,15 +26,19 @@ planned matters here, so the whole document uses these labels.
   and follow-ups through feature-local Supabase repositories and TanStack Query.
 - Atomic PostgreSQL operations for evaluation recording, contact advancement, meeting scheduling
   and completion, decision advancement, adoption confirmation, follow-up completion, adoption
-  return, and reevaluation.
+  return, reevaluation, and setting an animal's primary photo.
 - Row Level Security on every public domain table, with direct mobile-client table writes denied.
+- Private, shelter-scoped Supabase Storage bucket; the animal primary photo capture → upload →
+  attach → render path (camera/gallery picker, client-side validation, downscale, upload, signed-URL
+  rendering).
 - Spanish-first i18n with English support, and a persisted language preference.
 - Jest unit, component, structural, and repository tests. Database-level tests run against a local
   stack were removed with the local Supabase / Docker tooling ([ADR-026](decisions/026-remove-local-supabase-test-stack.md)).
 
 **Planned**
 
-- Supabase Storage buckets and the image upload workflow.
+- The adoption handover photo and follow-up photo upload workflows (same path as the animal primary
+  photo).
 - Native contact actions, local notifications, and follow-up deep links.
 - Network-resilience work beyond per-mutation loading and error states.
 - Error boundaries, structured error reporting, and redaction-enforced observability.
@@ -80,7 +84,7 @@ Supabase
 ├── PostgreSQL tables, constraints, and triggers
 ├── Row Level Security (reads)
 ├── SECURITY DEFINER functions / RPC (writes)
-└── Storage (planned)
+└── Storage (shelter-media bucket; animal primary photo path implemented)
 ```
 
 Reads go through RLS-protected queries. Writes go exclusively through RPCs
@@ -143,18 +147,22 @@ extraction.
 Dependencies are deliberately limited, and each one is present because implemented functionality
 needs it.
 
-| Dependency                                 | Purpose                                             |
-| ------------------------------------------ | --------------------------------------------------- |
-| Expo and React Native                      | SDK-managed cross-platform mobile runtime           |
-| Expo Router and Linking                    | File-based navigation and deep-link-ready routing   |
-| Expo Dev Client                            | Native development build compatible with SDK 57     |
-| Supabase JS client                         | Auth, RLS-protected reads, and RPC invocation       |
-| TanStack Query                             | Cached authenticated queries and mutation status    |
-| AsyncStorage                               | Session persistence and the selected UI language    |
-| i18next and react-i18next                  | Typed Spanish and English UI resources              |
-| React Native Screens and Safe Area Context | Native navigation primitives and safe screen layout |
-| Jest and React Native Testing Library      | Unit, component, and structural validation          |
-| TypeScript, ESLint, and Prettier           | Static types and consistent code quality            |
+| Dependency                                 | Purpose                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| Expo and React Native                      | SDK-managed cross-platform mobile runtime                         |
+| Expo Router and Linking                    | File-based navigation and deep-link-ready routing                 |
+| Expo Dev Client                            | Native development build compatible with SDK 57                   |
+| Expo Image Picker                          | Camera and gallery access for the animal photo flow               |
+| Expo Image                                 | Renders the animal's primary photo from a signed URL              |
+| Expo Image Manipulator                     | Downscales and re-encodes a picked photo before upload            |
+| Expo File System                           | Reads a local image file into an `ArrayBuffer` for Storage upload |
+| Supabase JS client                         | Auth, RLS-protected reads, and RPC invocation                     |
+| TanStack Query                             | Cached authenticated queries and mutation status                  |
+| AsyncStorage                               | Session persistence and the selected UI language                  |
+| i18next and react-i18next                  | Typed Spanish and English UI resources                            |
+| React Native Screens and Safe Area Context | Native navigation primitives and safe screen layout               |
+| Jest and React Native Testing Library      | Unit, component, and structural validation                        |
+| TypeScript, ESLint, and Prettier           | Static types and consistent code quality                          |
 
 ## State ownership
 
@@ -300,6 +308,7 @@ its preconditions and effects — is in
 | `public.return_adoption`                     | `(p_adoption_id uuid, p_reason text, p_notes text)`                                                                            | adoption return id |
 | `public.complete_followup`                   | `(p_followup_id uuid, p_outcome text, p_notes text)`                                                                           | follow-up id       |
 | `public.complete_reevaluation`               | `(p_animal_id uuid, p_next_status text)`                                                                                       | animal id          |
+| `public.set_animal_primary_photo`            | `(p_animal_id uuid, p_path text)`                                                                                              | animal id          |
 
 Every function:
 
@@ -310,7 +319,9 @@ Every function:
 - rejects a caller whose profile has no shelter;
 - locks the rows it mutates with `FOR UPDATE`, then validates every precondition inside the same
   transaction;
-- writes its own timeline events with display-safe metadata only;
+- writes its own timeline events with display-safe metadata only, **except
+  `set_animal_primary_photo`**, which inserts no `timeline_events` row because attaching a photo is
+  not a domain transition ([DOMAIN.md](DOMAIN.md#timelineevent));
 - raises a specific error the client can present, and rolls back completely.
 
 Concurrency rules that a single lock cannot express:
@@ -330,17 +341,28 @@ sequence of independent updates that could leave partial domain state.
 
 ### Storage
 
-**Implemented: bucket and shelter-scoped policies.** The private `shelter-media` bucket and the
-`storage.objects` Row Level Security policies are in place. Every object key follows the convention
-`<shelter_id>/<entity>/<entity_id>/<filename>`; the first path segment is the owning shelter. The
-four policies (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) compare that prefix with the caller's shelter
-resolved through `public.auth_shelter_id()`, so a user can only read or write objects under their
-own shelter. `anon` has no access.
+**Implemented: bucket, shelter-scoped policies, and the animal primary photo path.** The private
+`shelter-media` bucket and the `storage.objects` Row Level Security policies are in place. Every
+object key follows the convention `<shelter_id>/<entity>/<entity_id>/<filename>`; the first path
+segment is the owning shelter. The four policies (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) compare
+that prefix with the caller's shelter resolved through `public.auth_shelter_id()`, so a user can
+only read or write objects under their own shelter. `anon` has no access.
 
-**Planned.** The image upload UI, the binary upload preflight, the signed-URL read path, and the
-`set_animal_primary_photo` / `set_adoption_photo` / `set_followup_photo` attach RPCs are still
-pending. A database record must not claim a completed image attachment until the chosen upload
-workflow can recover safely from failure.
+The animal primary photo capture → upload → attach → render path is implemented:
+`src/features/animals/image-capture.ts` requests the relevant OS permission, opens the camera or
+gallery through `expo-image-picker`, validates the picked asset's MIME type and size client-side,
+downscales it to a maximum 1600px side and re-encodes it as JPEG at 0.7 quality through
+`expo-image-manipulator` (which also normalizes the uploaded content-type/extension), and reads the
+resulting file into an `ArrayBuffer` with `expo-file-system`'s `File.arrayBuffer()` before handing it
+to `SupabaseClient.storage.from('shelter-media').upload()`. This avoids the FormData/Blob path,
+which is unreliable for local `file://` URIs under Hermes. `persisted-animal-repository.ts` then
+calls `set_animal_primary_photo(p_animal_id, p_path)` with the exact uploaded path, and reads the
+photo back with `createSignedUrl(path, 3600)` (a 1-hour TTL); the TanStack Query read cache is kept
+stale-after 45 minutes, strictly shorter than the TTL. Replacing an existing photo does not delete
+the previous Storage object — see [SECURITY.md](SECURITY.md#sensitive-data).
+
+**Planned.** The same upload-then-attach path for the adoption handover photo
+(`set_adoption_photo`) and the follow-up photo (`set_followup_photo`) — phase 8, slices 8.3/8.4.
 
 ## Internationalization
 
@@ -360,7 +382,9 @@ considered when building components.
 Mobile capabilities stay behind feature-level adapters where platform behavior or failure handling
 matters:
 
-- image picker or camera _(planned)_;
+- image picker or camera _(implemented: `src/features/animals/image-capture.ts`, animal primary
+  photo only — feature-local per [ADR-021](decisions/021-keep-implementation-feature-local.md),
+  promoted to a shared module only when a second feature consumes it)_;
 - WhatsApp and telephone URL schemes _(planned)_;
 - local notifications, and push notifications later only if justified _(planned)_;
 - deep links into follow-up routes _(planned)_;

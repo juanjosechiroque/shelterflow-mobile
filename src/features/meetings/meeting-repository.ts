@@ -75,7 +75,9 @@ export async function scheduleMeeting(
     p_candidate_id: input.candidateId,
     p_type: input.type,
     p_scheduled_at: input.scheduledAt,
-    p_notes: input.notes,
+    // See recordEvaluation in evaluation-repository.ts: the generated type
+    // omits `| null` for this text param, but the function accepts null.
+    p_notes: input.notes as string,
   });
 
   if (error) throw error;
@@ -90,7 +92,7 @@ export async function completeMeeting(
   const { data, error } = await client.rpc('complete_meeting', {
     p_meeting_id: input.meetingId,
     p_result: input.result,
-    p_notes: input.notes,
+    p_notes: input.notes as string,
   });
 
   if (error) throw error;

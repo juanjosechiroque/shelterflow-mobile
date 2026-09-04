@@ -76,7 +76,12 @@ export async function recordEvaluation(
     p_positive_factors: input.positiveFactors,
     p_concerns: input.concerns,
     p_recommendation: input.recommendation,
-    p_notes: input.notes,
+    // The generated RPC arg type omits `| null` for a `text` parameter with
+    // no SQL default, even though the function accepts and stores null.
+    // `?? undefined` is not safe here: PostgREST would drop the key from the
+    // request body and fail to resolve the function (no default for
+    // p_notes). Keep the real null value; only the TS type is wrong.
+    p_notes: input.notes as string,
   });
 
   if (error) throw error;

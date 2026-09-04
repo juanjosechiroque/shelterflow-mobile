@@ -82,6 +82,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           imageWidth: 76,
         },
       ],
+      [
+        'expo-image-picker',
+        {
+          photosPermission:
+            'Allow $(PRODUCT_NAME) to access your photos to set an animal photo.',
+          cameraPermission:
+            'Allow $(PRODUCT_NAME) to access your camera to take an animal photo.',
+          microphonePermission: false,
+        },
+      ],
+      'expo-image',
     ],
     experiments: {
       typedRoutes: true,
