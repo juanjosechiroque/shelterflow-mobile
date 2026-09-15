@@ -2,7 +2,13 @@
 
 ShelterFlow is a Spanish-first React Native application for small animal shelters and independent rescuers. It supports the operational adoption journey after a candidate has already been shortlisted: evaluation, meeting, decision, adoption, and post-adoption follow-up.
 
-The repository is currently in Phase 0: project foundation. Business workflows and Supabase are intentionally out of scope for this phase.
+The repository currently contains the mobile foundation and the canonical adoption domain model. Business workflows and Supabase persistence have not been implemented yet.
+
+## Product scope
+
+ShelterFlow begins after a shelter has already shortlisted a person for an animal. It manages evaluation, meaningful meetings, adoption decisions, adoption confirmation, follow-ups, and returned-adoption history.
+
+V1 deliberately excludes initial application forms, generic CRM functionality, veterinary records, inventory, donations, volunteers, accounting, internal messaging, and public pet browsing. These boundaries keep the application focused on the animal's adoption journey.
 
 ## Requirements
 
@@ -78,6 +84,15 @@ The initial dependencies are intentionally limited:
 | TypeScript, ESLint, and Prettier           | Static types and consistent code quality            |
 
 Server-state, authentication, database, and business-domain dependencies remain out of scope for Phase 0.
+
+## Documentation
+
+Public engineering documentation is intentionally concise:
+
+- [Domain model](docs/DOMAIN.md)
+- [Architecture](docs/ARCHITECTURE.md)
+
+The domain model and architecture are maintained with the code because implementation correctness depends on them. Detailed planning notes remain local and are not part of the public repository.
 
 ## Continuous integration
 

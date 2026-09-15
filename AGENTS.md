@@ -7,15 +7,13 @@
 - When an increment is ready, report automated checks, provide manual validation steps, and suggest an English commit message.
 - Keep increments small, coherent, and reviewable.
 
-## Required context
+## Required canonical context
 
 Read these files before implementing business features once they exist:
 
-- `docs/PRODUCT.md`
+- `README.md`
 - `docs/DOMAIN.md`
 - `docs/ARCHITECTURE.md`
-- `docs/ROADMAP.md`
-- `docs/DECISIONS.md`
 
 For Expo implementation, use the exact SDK documentation matching the installed version. This project currently uses Expo SDK 57:
 
@@ -26,7 +24,7 @@ For Expo implementation, use the exact SDK documentation matching the installed 
 - Work on one roadmap phase or vertical slice at a time.
 - Do not implement future roadmap features unless explicitly requested.
 - Do not introduce a dependency without explaining why it is needed.
-- Do not create generic CRM concepts such as Lead, Opportunity, Activity, or Task unless `PRODUCT.md` explicitly requires them.
+- Do not create generic CRM concepts such as Lead, Opportunity, Activity, or Task unless the public product scope is explicitly updated.
 - Do not create veterinary, medication, volunteer, donation, accounting, or inventory functionality.
 
 ## Domain and data
