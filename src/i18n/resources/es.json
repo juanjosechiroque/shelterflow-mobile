@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "ShelterFlow"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "settings": "Configuración"
+  },
+  "foundation": {
+    "eyebrow": "FASE 0",
+    "title": "La base de ShelterFlow está lista",
+    "description": "Una aplicación móvil para acompañar cada adopción desde la evaluación hasta el seguimiento.",
+    "settingsAction": "Configurar idioma"
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": {
+      "title": "Idioma",
+      "description": "El idioma seleccionado se conservará para la próxima vez que abras la aplicación.",
+      "saveError": "No pudimos guardar el idioma. Inténtalo nuevamente.",
+      "spanish": "Español",
+      "english": "English"
+    }
+  }
+}
