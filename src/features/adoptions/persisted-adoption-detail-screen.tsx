@@ -1,18 +1,38 @@
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
+import { useCallback, useRef, useState } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { colors, spacing, typography } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 import {
   Card,
   PrimaryButton,
   ScreenHeader,
+  SecondaryButton,
   SectionHeader,
   StateView,
 } from '@/components/ui';
 import {
+  captureImageWithCamera,
+  pickImageFromGallery,
+  uploadImageToStorage,
+  validateImage,
+  type ImageCaptureAsset,
+  type ImageCaptureOutcome,
+} from '@/lib/image-capture';
+import {
   useAdoptionById,
   useAdoptionFollowups,
+  useAdoptionPhotoSignedUrl,
+  useSetAdoptionPhoto,
 } from '@/features/adoptions/active-adoption-queries';
 import { useAuth } from '@/features/auth/auth-provider';
 import {
@@ -21,6 +41,177 @@ import {
   getFollowupStatusLabel,
 } from '@/features/adoptions/labels';
 import { formatDate } from '@/i18n/format';
+import type { Database } from '@/lib/database.types';
+
+type PhotoFlowStatus =
+  | { kind: 'idle' }
+  | { kind: 'uploading' }
+  | { kind: 'attaching' }
+  | {
+      kind: 'error';
+      reason: 'permission' | 'invalidType' | 'tooLarge' | 'upload' | 'attach';
+    };
+
+function useHandoverPhotoFlow({
+  client,
+  shelterId,
+  adoptionId,
+}: {
+  client: SupabaseClient<Database> | null;
+  shelterId: string | null;
+  adoptionId: string;
+}) {
+  const { mutateAsync: setAdoptionPhoto } = useSetAdoptionPhoto(
+    client,
+    shelterId,
+  );
+  const [status, setStatus] = useState<PhotoFlowStatus>({ kind: 'idle' });
+  const pendingAssetRef = useRef<ImageCaptureAsset | null>(null);
+  const pendingPathRef = useRef<string | null>(null);
+  const isSelectingRef = useRef(false);
+  const isUploadingRef = useRef(false);
+  const isAttachingRef = useRef(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+
+  const attach = useCallback(
+    async (path: string) => {
+      if (isAttachingRef.current) return;
+      isAttachingRef.current = true;
+      pendingPathRef.current = path;
+      setStatus({ kind: 'attaching' });
+      try {
+        await setAdoptionPhoto({ adoptionId, path });
+        pendingPathRef.current = null;
+        pendingAssetRef.current = null;
+        setStatus({ kind: 'idle' });
+      } catch {
+        setStatus({ kind: 'error', reason: 'attach' });
+      } finally {
+        isAttachingRef.current = false;
+      }
+    },
+    [adoptionId, setAdoptionPhoto],
+  );
+
+  const upload = useCallback(
+    async (asset: ImageCaptureAsset) => {
+      if (
+        !client ||
+        !shelterId ||
+        isUploadingRef.current ||
+        isAttachingRef.current
+      ) {
+        return;
+      }
+      isUploadingRef.current = true;
+      pendingPathRef.current = null;
+      pendingAssetRef.current = asset;
+      setStatus({ kind: 'uploading' });
+      try {
+        const path = await uploadImageToStorage(
+          client,
+          asset,
+          shelterId,
+          'adoptions',
+          adoptionId,
+        );
+        await attach(path);
+      } catch {
+        setStatus({ kind: 'error', reason: 'upload' });
+      } finally {
+        isUploadingRef.current = false;
+      }
+    },
+    [attach, adoptionId, client, shelterId],
+  );
+
+  const handleOutcome = useCallback(
+    async (outcome: ImageCaptureOutcome) => {
+      if (outcome.status === 'cancelled') return;
+      if (outcome.status === 'permission_denied') {
+        setStatus({ kind: 'error', reason: 'permission' });
+        return;
+      }
+      const validation = validateImage(outcome.asset);
+      if (!validation.valid) {
+        setStatus({
+          kind: 'error',
+          reason:
+            validation.error === 'file_too_large' ? 'tooLarge' : 'invalidType',
+        });
+        return;
+      }
+      await upload(outcome.asset);
+    },
+    [upload],
+  );
+
+  const runPicker = useCallback(
+    async (pick: () => Promise<ImageCaptureOutcome>) => {
+      if (
+        isSelectingRef.current ||
+        isUploadingRef.current ||
+        isAttachingRef.current
+      ) {
+        return;
+      }
+      isSelectingRef.current = true;
+      setIsSelecting(true);
+      try {
+        await handleOutcome(await pick());
+      } finally {
+        isSelectingRef.current = false;
+        setIsSelecting(false);
+      }
+    },
+    [handleOutcome],
+  );
+
+  const pickFromGallery = useCallback(
+    async () => runPicker(pickImageFromGallery),
+    [runPicker],
+  );
+
+  const captureWithCamera = useCallback(
+    async () => runPicker(captureImageWithCamera),
+    [runPicker],
+  );
+
+  const retry = useCallback(() => {
+    if (pendingPathRef.current) {
+      void attach(pendingPathRef.current);
+    } else if (pendingAssetRef.current) {
+      void upload(pendingAssetRef.current);
+    }
+  }, [attach, upload]);
+
+  return {
+    status,
+    isBusy:
+      isSelecting || status.kind === 'uploading' || status.kind === 'attaching',
+    pickFromGallery,
+    captureWithCamera,
+    retry,
+  };
+}
+
+const photoErrorMessageKeys: Record<
+  Exclude<
+    PhotoFlowStatus,
+    { kind: 'idle' | 'uploading' | 'attaching' }
+  >['reason'],
+  | 'adoptions.detail.photo.permissionDenied'
+  | 'adoptions.detail.photo.invalidType'
+  | 'adoptions.detail.photo.tooLarge'
+  | 'adoptions.detail.photo.error'
+  | 'adoptions.detail.photo.attachError'
+> = {
+  permission: 'adoptions.detail.photo.permissionDenied',
+  invalidType: 'adoptions.detail.photo.invalidType',
+  tooLarge: 'adoptions.detail.photo.tooLarge',
+  upload: 'adoptions.detail.photo.error',
+  attach: 'adoptions.detail.photo.attachError',
+};
 
 export function PersistedAdoptionDetailScreen() {
   const { t } = useTranslation();
@@ -32,6 +223,16 @@ export function PersistedAdoptionDetailScreen() {
   const shelterId = profile?.shelterId ?? null;
   const adoptionQuery = useAdoptionById(supabase, shelterId, adoptionId);
   const followupsQuery = useAdoptionFollowups(supabase, shelterId, adoptionId);
+
+  const photoSignedUrlQuery = useAdoptionPhotoSignedUrl(
+    supabase,
+    adoptionQuery.data?.adoptionPhotoPath ?? null,
+  );
+  const photoFlow = useHandoverPhotoFlow({
+    client: supabase,
+    shelterId,
+    adoptionId: adoptionId ?? '',
+  });
 
   if (adoptionQuery.isLoading) {
     return <Stack.Screen options={{ title: t('adoptions.detail.title') }} />;
@@ -113,6 +314,66 @@ export function PersistedAdoptionDetailScreen() {
             })}
           />
         </Card>
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader title={t('adoptions.detail.handoverPhoto')} />
+        <Card padding="comfortable" variant="elevated">
+          {adoption.adoptionPhotoPath && photoSignedUrlQuery.isLoading ? (
+            <View style={styles.photoPlaceholder}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : adoption.adoptionPhotoPath &&
+            photoSignedUrlQuery.data?.signedUrl ? (
+            <Image
+              contentFit="cover"
+              source={{ uri: photoSignedUrlQuery.data.signedUrl }}
+              style={styles.photoImage}
+            />
+          ) : (
+            <Text style={styles.noPhotoText}>
+              {t('adoptions.detail.noPhoto')}
+            </Text>
+          )}
+        </Card>
+        <View style={styles.photoActions}>
+          <SecondaryButton
+            accessibilityLabel={t('adoptions.detail.photo.pickFromGallery')}
+            disabled={photoFlow.isBusy}
+            fullWidth={false}
+            label={t('adoptions.detail.photo.pickFromGallery')}
+            onPress={() => void photoFlow.pickFromGallery()}
+          />
+          <SecondaryButton
+            accessibilityLabel={t('adoptions.detail.photo.takePhoto')}
+            disabled={photoFlow.isBusy}
+            fullWidth={false}
+            label={t('adoptions.detail.photo.takePhoto')}
+            onPress={() => void photoFlow.captureWithCamera()}
+          />
+        </View>
+        {photoFlow.isBusy ? (
+          <Text accessibilityRole="progressbar" style={styles.photoStatus}>
+            {t('adoptions.detail.photo.uploading')}
+          </Text>
+        ) : null}
+        {photoFlow.status.kind === 'error' ? (
+          <View style={styles.photoErrorRow}>
+            <Text accessibilityRole="alert" style={styles.photoError}>
+              {t(photoErrorMessageKeys[photoFlow.status.reason])}
+            </Text>
+            {photoFlow.status.reason === 'upload' ||
+            photoFlow.status.reason === 'attach' ? (
+              <SecondaryButton
+                accessibilityLabel={t('adoptions.detail.retry')}
+                disabled={photoFlow.isBusy}
+                fullWidth={false}
+                label={t('adoptions.detail.retry')}
+                onPress={() => photoFlow.retry()}
+              />
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       {adoption.handoverNotes ? (
@@ -401,9 +662,42 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.lg,
   },
+  noPhotoText: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
   notesCopy: {
     ...typography.body,
     color: colors.text,
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  photoError: {
+    ...typography.body,
+    color: colors.danger,
+  },
+  photoErrorRow: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  photoImage: {
+    borderRadius: radii.md,
+    height: 200,
+    width: '100%',
+  },
+  photoPlaceholder: {
+    alignItems: 'center',
+    height: 200,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  photoStatus: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
   },
   returnedDescription: {
     ...typography.body,

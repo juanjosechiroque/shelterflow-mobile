@@ -1,6 +1,6 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,7 +8,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
+import { useCallback, useRef, useState } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import {
@@ -16,11 +19,23 @@ import {
   PrimaryButton,
   ScreenHeader,
   SecondaryButton,
+  SectionHeader,
   StateView,
 } from '@/components/ui';
 import {
+  captureImageWithCamera,
+  pickImageFromGallery,
+  uploadImageToStorage,
+  validateImage,
+  type ImageCaptureAsset,
+  type ImageCaptureOutcome,
+} from '@/lib/image-capture';
+import {
   useAdoptionById,
+  useAdoptionFollowups,
   useCompleteFollowup,
+  useFollowupPhotoSignedUrl,
+  useSetFollowupPhoto,
 } from '@/features/adoptions/active-adoption-queries';
 import { useAuth } from '@/features/auth/auth-provider';
 import {
@@ -28,6 +43,202 @@ import {
   getFollowupOutcomeLabel,
   type FollowupOutcome,
 } from '@/features/adoptions/labels';
+import type { Database } from '@/lib/database.types';
+
+type PhotoFlowStatus =
+  | { kind: 'idle' }
+  | { kind: 'uploading' }
+  | { kind: 'attaching' }
+  | {
+      kind: 'error';
+      reason:
+        | 'permission'
+        | 'invalidType'
+        | 'tooLarge'
+        | 'upload'
+        | 'attach'
+        | 'adoptionNotActive'
+        | 'followupCancelled';
+    };
+
+function useFollowupPhotoFlow({
+  client,
+  shelterId,
+  followupId,
+  adoptionId,
+}: {
+  client: SupabaseClient<Database> | null;
+  shelterId: string | null;
+  followupId: string;
+  adoptionId: string;
+}) {
+  const { mutateAsync: setFollowupPhoto } = useSetFollowupPhoto(
+    client,
+    shelterId,
+  );
+  const [status, setStatus] = useState<PhotoFlowStatus>({ kind: 'idle' });
+  const pendingAssetRef = useRef<ImageCaptureAsset | null>(null);
+  const pendingPathRef = useRef<string | null>(null);
+  const isSelectingRef = useRef(false);
+  const isUploadingRef = useRef(false);
+  const isAttachingRef = useRef(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+
+  const attach = useCallback(
+    async (path: string) => {
+      if (isAttachingRef.current) return;
+      isAttachingRef.current = true;
+      pendingPathRef.current = path;
+      setStatus({ kind: 'attaching' });
+      try {
+        await setFollowupPhoto({ followupId, adoptionId, path });
+        pendingPathRef.current = null;
+        pendingAssetRef.current = null;
+        setStatus({ kind: 'idle' });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'object' && error !== null && 'message' in error
+              ? String(error.message)
+              : String(error);
+        if (message.includes('Adoption must be in ACTIVE status')) {
+          setStatus({ kind: 'error', reason: 'adoptionNotActive' });
+        } else if (message.includes('Follow-up cannot be cancelled')) {
+          setStatus({ kind: 'error', reason: 'followupCancelled' });
+        } else {
+          setStatus({ kind: 'error', reason: 'attach' });
+        }
+      } finally {
+        isAttachingRef.current = false;
+      }
+    },
+    [adoptionId, followupId, setFollowupPhoto],
+  );
+
+  const upload = useCallback(
+    async (asset: ImageCaptureAsset) => {
+      if (
+        !client ||
+        !shelterId ||
+        isUploadingRef.current ||
+        isAttachingRef.current
+      ) {
+        return;
+      }
+      isUploadingRef.current = true;
+      pendingPathRef.current = null;
+      pendingAssetRef.current = asset;
+      setStatus({ kind: 'uploading' });
+      try {
+        const path = await uploadImageToStorage(
+          client,
+          asset,
+          shelterId,
+          'followups',
+          followupId,
+        );
+        await attach(path);
+      } catch {
+        setStatus({ kind: 'error', reason: 'upload' });
+      } finally {
+        isUploadingRef.current = false;
+      }
+    },
+    [attach, followupId, client, shelterId],
+  );
+
+  const handleOutcome = useCallback(
+    async (outcome: ImageCaptureOutcome) => {
+      if (outcome.status === 'cancelled') return;
+      if (outcome.status === 'permission_denied') {
+        setStatus({ kind: 'error', reason: 'permission' });
+        return;
+      }
+      const validation = validateImage(outcome.asset);
+      if (!validation.valid) {
+        setStatus({
+          kind: 'error',
+          reason:
+            validation.error === 'file_too_large' ? 'tooLarge' : 'invalidType',
+        });
+        return;
+      }
+      await upload(outcome.asset);
+    },
+    [upload],
+  );
+
+  const runPicker = useCallback(
+    async (pick: () => Promise<ImageCaptureOutcome>) => {
+      if (
+        isSelectingRef.current ||
+        isUploadingRef.current ||
+        isAttachingRef.current
+      ) {
+        return;
+      }
+      isSelectingRef.current = true;
+      setIsSelecting(true);
+      try {
+        await handleOutcome(await pick());
+      } finally {
+        isSelectingRef.current = false;
+        setIsSelecting(false);
+      }
+    },
+    [handleOutcome],
+  );
+
+  const pickFromGallery = useCallback(
+    async () => runPicker(pickImageFromGallery),
+    [runPicker],
+  );
+
+  const captureWithCamera = useCallback(
+    async () => runPicker(captureImageWithCamera),
+    [runPicker],
+  );
+
+  const retry = useCallback(() => {
+    if (pendingPathRef.current) {
+      void attach(pendingPathRef.current);
+    } else if (pendingAssetRef.current) {
+      void upload(pendingAssetRef.current);
+    }
+  }, [attach, upload]);
+
+  return {
+    status,
+    isBusy:
+      isSelecting || status.kind === 'uploading' || status.kind === 'attaching',
+    pickFromGallery,
+    captureWithCamera,
+    retry,
+  };
+}
+
+const photoErrorMessageKeys: Record<
+  Exclude<
+    PhotoFlowStatus,
+    { kind: 'idle' | 'uploading' | 'attaching' }
+  >['reason'],
+  | 'adoptions.completeFollowup.photo.permissionDenied'
+  | 'adoptions.completeFollowup.photo.invalidType'
+  | 'adoptions.completeFollowup.photo.tooLarge'
+  | 'adoptions.completeFollowup.photo.error'
+  | 'adoptions.completeFollowup.photo.attachError'
+  | 'adoptions.completeFollowup.photo.adoptionNotActive'
+  | 'adoptions.completeFollowup.photo.followupCancelled'
+> = {
+  permission: 'adoptions.completeFollowup.photo.permissionDenied',
+  invalidType: 'adoptions.completeFollowup.photo.invalidType',
+  tooLarge: 'adoptions.completeFollowup.photo.tooLarge',
+  upload: 'adoptions.completeFollowup.photo.error',
+  attach: 'adoptions.completeFollowup.photo.attachError',
+  adoptionNotActive: 'adoptions.completeFollowup.photo.adoptionNotActive',
+  followupCancelled: 'adoptions.completeFollowup.photo.followupCancelled',
+};
 
 export function CompleteFollowupScreen() {
   const { t } = useTranslation();
@@ -45,7 +256,20 @@ export function CompleteFollowupScreen() {
   const shelterId = profile?.shelterId ?? null;
 
   const adoptionQuery = useAdoptionById(supabase, shelterId, adoptionId);
+  const followupsQuery = useAdoptionFollowups(supabase, shelterId, adoptionId);
   const completeMutation = useCompleteFollowup(supabase, shelterId);
+
+  const currentFollowup = followupsQuery.data?.find((f) => f.id === followupId);
+  const followupPhotoQuery = useFollowupPhotoSignedUrl(
+    supabase,
+    currentFollowup?.photoPath ?? null,
+  );
+  const photoFlow = useFollowupPhotoFlow({
+    client: supabase,
+    shelterId,
+    followupId: followupId ?? '',
+    adoptionId: adoptionId ?? '',
+  });
 
   const submissionStartedRef = useRef(false);
   const [outcome, setOutcome] = useState<FollowupOutcome | null>(null);
@@ -153,6 +377,68 @@ export function CompleteFollowupScreen() {
           })}
           title={t('adoptions.completeFollowup.title')}
         />
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader title={t('adoptions.completeFollowup.photoTitle')} />
+        <Card padding="comfortable" variant="elevated">
+          {currentFollowup?.photoPath && followupPhotoQuery.isLoading ? (
+            <View style={styles.photoPlaceholder}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : currentFollowup?.photoPath &&
+            followupPhotoQuery.data?.signedUrl ? (
+            <Image
+              contentFit="cover"
+              source={{ uri: followupPhotoQuery.data.signedUrl }}
+              style={styles.photoImage}
+            />
+          ) : (
+            <Text style={styles.noPhotoText}>
+              {t('adoptions.completeFollowup.noPhoto')}
+            </Text>
+          )}
+        </Card>
+        <View style={styles.photoActions}>
+          <SecondaryButton
+            accessibilityLabel={t(
+              'adoptions.completeFollowup.photo.pickFromGallery',
+            )}
+            disabled={photoFlow.isBusy}
+            fullWidth={false}
+            label={t('adoptions.completeFollowup.photo.pickFromGallery')}
+            onPress={() => void photoFlow.pickFromGallery()}
+          />
+          <SecondaryButton
+            accessibilityLabel={t('adoptions.completeFollowup.photo.takePhoto')}
+            disabled={photoFlow.isBusy}
+            fullWidth={false}
+            label={t('adoptions.completeFollowup.photo.takePhoto')}
+            onPress={() => void photoFlow.captureWithCamera()}
+          />
+        </View>
+        {photoFlow.isBusy ? (
+          <Text accessibilityRole="progressbar" style={styles.photoStatus}>
+            {t('adoptions.completeFollowup.photo.uploading')}
+          </Text>
+        ) : null}
+        {photoFlow.status.kind === 'error' ? (
+          <View style={styles.photoErrorRow}>
+            <Text accessibilityRole="alert" style={styles.photoError}>
+              {t(photoErrorMessageKeys[photoFlow.status.reason])}
+            </Text>
+            {photoFlow.status.reason === 'upload' ||
+            photoFlow.status.reason === 'attach' ? (
+              <SecondaryButton
+                accessibilityLabel={t('common.retry')}
+                disabled={photoFlow.isBusy}
+                fullWidth={false}
+                label={t('common.retry')}
+                onPress={() => photoFlow.retry()}
+              />
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -287,6 +573,10 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     textAlignVertical: 'top',
   },
+  noPhotoText: {
+    ...typography.body,
+    color: colors.textMuted,
+  },
   outcomeList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -314,6 +604,35 @@ const styles = StyleSheet.create({
   outcomeOptionSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+  },
+  photoActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  photoError: {
+    ...typography.body,
+    color: colors.danger,
+  },
+  photoErrorRow: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  photoImage: {
+    borderRadius: radii.md,
+    height: 200,
+    width: '100%',
+  },
+  photoPlaceholder: {
+    alignItems: 'center',
+    height: 200,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  photoStatus: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
   },
   section: {
     marginTop: spacing.md,

@@ -26,7 +26,7 @@ import {
   validateImage,
   type ImageCaptureAsset,
   type ImageCaptureOutcome,
-} from '@/features/animals/image-capture';
+} from '@/lib/image-capture';
 import {
   useAnimalById,
   useAnimalPrimaryPhotoSignedUrl,
@@ -78,9 +78,15 @@ function usePrimaryPhotoFlow({
   const [status, setStatus] = useState<PhotoFlowStatus>({ kind: 'idle' });
   const pendingAssetRef = useRef<ImageCaptureAsset | null>(null);
   const pendingPathRef = useRef<string | null>(null);
+  const isSelectingRef = useRef(false);
+  const isUploadingRef = useRef(false);
+  const isAttachingRef = useRef(false);
+  const [isSelecting, setIsSelecting] = useState(false);
 
   const attach = useCallback(
     async (path: string) => {
+      if (isAttachingRef.current) return;
+      isAttachingRef.current = true;
       pendingPathRef.current = path;
       setStatus({ kind: 'attaching' });
       try {
@@ -90,6 +96,8 @@ function usePrimaryPhotoFlow({
         setStatus({ kind: 'idle' });
       } catch {
         setStatus({ kind: 'error', reason: 'attach' });
+      } finally {
+        isAttachingRef.current = false;
       }
     },
     [animalId, setPrimaryPhoto],
@@ -97,7 +105,16 @@ function usePrimaryPhotoFlow({
 
   const upload = useCallback(
     async (asset: ImageCaptureAsset) => {
-      if (!client || !shelterId) return;
+      if (
+        !client ||
+        !shelterId ||
+        isUploadingRef.current ||
+        isAttachingRef.current
+      ) {
+        return;
+      }
+      isUploadingRef.current = true;
+      pendingPathRef.current = null;
       pendingAssetRef.current = asset;
       setStatus({ kind: 'uploading' });
       try {
@@ -105,11 +122,14 @@ function usePrimaryPhotoFlow({
           client,
           asset,
           shelterId,
+          'animals',
           animalId,
         );
         await attach(path);
       } catch {
         setStatus({ kind: 'error', reason: 'upload' });
+      } finally {
+        isUploadingRef.current = false;
       }
     },
     [attach, animalId, client, shelterId],
@@ -136,13 +156,36 @@ function usePrimaryPhotoFlow({
     [upload],
   );
 
-  const pickFromGallery = useCallback(async () => {
-    await handleOutcome(await pickImageFromGallery());
-  }, [handleOutcome]);
+  const runPicker = useCallback(
+    async (pick: () => Promise<ImageCaptureOutcome>) => {
+      if (
+        isSelectingRef.current ||
+        isUploadingRef.current ||
+        isAttachingRef.current
+      ) {
+        return;
+      }
+      isSelectingRef.current = true;
+      setIsSelecting(true);
+      try {
+        await handleOutcome(await pick());
+      } finally {
+        isSelectingRef.current = false;
+        setIsSelecting(false);
+      }
+    },
+    [handleOutcome],
+  );
 
-  const captureWithCamera = useCallback(async () => {
-    await handleOutcome(await captureImageWithCamera());
-  }, [handleOutcome]);
+  const pickFromGallery = useCallback(
+    async () => runPicker(pickImageFromGallery),
+    [runPicker],
+  );
+
+  const captureWithCamera = useCallback(
+    async () => runPicker(captureImageWithCamera),
+    [runPicker],
+  );
 
   const retry = useCallback(() => {
     if (pendingPathRef.current) {
@@ -154,7 +197,8 @@ function usePrimaryPhotoFlow({
 
   return {
     status,
-    isBusy: status.kind === 'uploading' || status.kind === 'attaching',
+    isBusy:
+      isSelecting || status.kind === 'uploading' || status.kind === 'attaching',
     pickFromGallery,
     captureWithCamera,
     retry,
@@ -355,6 +399,7 @@ export function PersistedAnimalDetailScreen() {
             photoFlow.status.reason === 'attach' ? (
               <SecondaryButton
                 accessibilityLabel={t('animals.detail.retry')}
+                disabled={photoFlow.isBusy}
                 fullWidth={false}
                 label={t('animals.detail.retry')}
                 onPress={() => photoFlow.retry()}

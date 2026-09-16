@@ -686,8 +686,16 @@ export type Database = {
         }
         Returns: string
       }
+      set_adoption_photo: {
+        Args: { p_adoption_id: string; p_path: string }
+        Returns: string
+      }
       set_animal_primary_photo: {
         Args: { p_animal_id: string; p_path: string }
+        Returns: string
+      }
+      set_followup_photo: {
+        Args: { p_followup_id: string; p_path: string }
         Returns: string
       }
     }

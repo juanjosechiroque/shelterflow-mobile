@@ -360,6 +360,7 @@
       "candidate": "Candidato",
       "adoptionDate": "Fecha de adopción",
       "handoverNotes": "Notas de entrega",
+      "handoverPhoto": "Foto de entrega",
       "handoverNotesEmpty": "No se registraron notas de entrega.",
       "followups": {
         "title": "Seguimientos",
@@ -374,6 +375,17 @@
         "unavailable": "Este seguimiento solo se puede completar mientras esté pendiente.",
         "cancelledReturn": "Cancelado por devolución de la adopción."
       },
+      "photo": {
+        "pickFromGallery": "Seleccionar de galería",
+        "takePhoto": "Tomar foto",
+        "uploading": "Subiendo foto…",
+        "error": "No pudimos subir la foto. Inténtalo nuevamente.",
+        "attachError": "No pudimos guardar la foto. Inténtalo nuevamente.",
+        "permissionDenied": "No tenemos permiso para acceder a la cámara o la galería. Habilítalo en la configuración del dispositivo.",
+        "invalidType": "Ese archivo no es una imagen compatible (JPEG, PNG o WEBP).",
+        "tooLarge": "La imagen supera el tamaño máximo permitido (10 MB)."
+      },
+      "noPhoto": "Sin foto",
       "return": {
         "trigger": "Registrar retorno",
         "registeredTitle": "Retorno registrado",
@@ -398,7 +410,21 @@
       "missingOutcome": "Selecciona un resultado para habilitar la acción.",
       "cancel": "Cancelar",
       "notFoundTitle": "Seguimiento no disponible",
-      "notFoundDescription": "No encontramos este seguimiento en tu refugio."
+      "notFoundDescription": "No encontramos este seguimiento en tu refugio.",
+      "photoTitle": "Foto del seguimiento",
+      "noPhoto": "Sin foto",
+      "photo": {
+        "pickFromGallery": "Seleccionar de galería",
+        "takePhoto": "Tomar foto",
+        "uploading": "Subiendo foto…",
+        "error": "No pudimos subir la foto. Inténtalo nuevamente.",
+        "attachError": "No pudimos guardar la foto. Inténtalo nuevamente.",
+        "permissionDenied": "No tenemos permiso para acceder a la cámara o la galería. Habilítalo en la configuración del dispositivo.",
+        "invalidType": "Ese archivo no es una imagen compatible (JPEG, PNG o WEBP).",
+        "tooLarge": "La imagen supera el tamaño máximo permitido (10 MB).",
+        "adoptionNotActive": "La adopción ya no está activa. No se puede adjuntar foto a este seguimiento.",
+        "followupCancelled": "Este seguimiento fue cancelado y no puede recibir fotos."
+      }
     },
     "return": {
       "title": "Registrar retorno",

@@ -17,6 +17,12 @@ import {
   getAnimalPrimaryPhotoSignedUrl,
   setAnimalPrimaryPhoto,
 } from '@/features/animals/persisted-animal-repository';
+import {
+  setAdoptionPhoto,
+  setFollowupPhoto,
+  getAdoptionPhotoSignedUrl,
+  getFollowupPhotoSignedUrl,
+} from '@/features/adoptions/active-adoption-repository';
 import type { Database } from '@/lib/database.types';
 
 type Result = { data: unknown; error: unknown };
@@ -419,5 +425,146 @@ describe('persisted-animal-repository primary photo', () => {
     await expect(getAnimalPrimaryPhotoSignedUrl(client, path)).rejects.toEqual({
       message: 'not found',
     });
+  });
+});
+
+describe('persisted-adoption-repository adoption photo', () => {
+  const adoptionId = '00000000-0000-4000-8000-000000000801';
+  const path = `${shelterId}/adoptions/${adoptionId}/11111111-1111-4111-8111-111111111111.jpg`;
+
+  it('sends the exact path passed in, not a derived value', async () => {
+    const { client, rpcMock } = createClient({
+      rpc: { set_adoption_photo: { data: adoptionId, error: null } },
+    });
+
+    const id = await setAdoptionPhoto(client, { adoptionId, path });
+
+    expect(id).toBe(adoptionId);
+    expect(rpcMock).toHaveBeenCalledWith('set_adoption_photo', {
+      p_adoption_id: adoptionId,
+      p_path: path,
+    });
+  });
+
+  it('surfaces the RPC error', async () => {
+    const { client } = createClient({
+      rpc: {
+        set_adoption_photo: {
+          data: null,
+          error: {
+            message: 'Adoption is not available in the authenticated shelter',
+          },
+        },
+      },
+    });
+
+    await expect(
+      setAdoptionPhoto(client, { adoptionId, path }),
+    ).rejects.toEqual({
+      message: 'Adoption is not available in the authenticated shelter',
+    });
+  });
+
+  it('rejects when the RPC returns no id', async () => {
+    const { client } = createClient({
+      rpc: { set_adoption_photo: { data: null, error: null } },
+    });
+
+    await expect(
+      setAdoptionPhoto(client, { adoptionId, path }),
+    ).rejects.toThrow('supabase_rpc_result_missing');
+  });
+
+  it('returns the path and the signed URL from getAdoptionPhotoSignedUrl', async () => {
+    const { client, createSignedUrlMock } = createClient({
+      storage: {
+        createSignedUrl: {
+          data: { signedUrl: 'https://example.supabase.co/signed/abc' },
+          error: null,
+        },
+      },
+    });
+
+    const result = await getAdoptionPhotoSignedUrl(client, path);
+
+    expect(result).toEqual({
+      path,
+      signedUrl: 'https://example.supabase.co/signed/abc',
+    });
+    expect(result.path).not.toContain('http');
+    expect(createSignedUrlMock).toHaveBeenCalledWith(path, 60 * 60);
+  });
+});
+
+describe('persisted-adoption-repository followup photo', () => {
+  const followupId = '00000000-0000-4000-8000-000000000905';
+  const adoptionId = '00000000-0000-4000-8000-000000000801';
+  const path = `${shelterId}/followups/${followupId}/11111111-1111-4111-8111-111111111111.jpg`;
+
+  it('sends the exact path passed in, not a derived value', async () => {
+    const { client, rpcMock } = createClient({
+      rpc: { set_followup_photo: { data: followupId, error: null } },
+    });
+
+    const id = await setFollowupPhoto(client, {
+      followupId,
+      adoptionId,
+      path,
+    });
+
+    expect(id).toBe(followupId);
+    expect(rpcMock).toHaveBeenCalledWith('set_followup_photo', {
+      p_followup_id: followupId,
+      p_path: path,
+    });
+  });
+
+  it('surfaces the RPC error', async () => {
+    const { client } = createClient({
+      rpc: {
+        set_followup_photo: {
+          data: null,
+          error: {
+            message: 'Follow-up is not available in the authenticated shelter',
+          },
+        },
+      },
+    });
+
+    await expect(
+      setFollowupPhoto(client, { followupId, adoptionId, path }),
+    ).rejects.toEqual({
+      message: 'Follow-up is not available in the authenticated shelter',
+    });
+  });
+
+  it('rejects when the RPC returns no id', async () => {
+    const { client } = createClient({
+      rpc: { set_followup_photo: { data: null, error: null } },
+    });
+
+    await expect(
+      setFollowupPhoto(client, { followupId, adoptionId, path }),
+    ).rejects.toThrow('supabase_rpc_result_missing');
+  });
+
+  it('returns the path and the signed URL from getFollowupPhotoSignedUrl', async () => {
+    const { client, createSignedUrlMock } = createClient({
+      storage: {
+        createSignedUrl: {
+          data: { signedUrl: 'https://example.supabase.co/signed/def' },
+          error: null,
+        },
+      },
+    });
+
+    const result = await getFollowupPhotoSignedUrl(client, path);
+
+    expect(result).toEqual({
+      path,
+      signedUrl: 'https://example.supabase.co/signed/def',
+    });
+    expect(result.path).not.toContain('http');
+    expect(createSignedUrlMock).toHaveBeenCalledWith(path, 60 * 60);
   });
 });

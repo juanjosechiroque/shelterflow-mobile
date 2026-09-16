@@ -360,6 +360,7 @@
       "candidate": "Candidate",
       "adoptionDate": "Adoption date",
       "handoverNotes": "Handover notes",
+      "handoverPhoto": "Handover photo",
       "handoverNotesEmpty": "No handover notes were recorded.",
       "followups": {
         "title": "Follow-ups",
@@ -374,6 +375,17 @@
         "unavailable": "This follow-up can only be completed while it is pending.",
         "cancelledReturn": "Cancelled because the adoption was returned."
       },
+      "photo": {
+        "pickFromGallery": "Pick from gallery",
+        "takePhoto": "Take photo",
+        "uploading": "Uploading photo…",
+        "error": "We couldn't upload the photo. Try again.",
+        "attachError": "We couldn't save the photo. Try again.",
+        "permissionDenied": "We don't have permission to access the camera or gallery. Enable it in device settings.",
+        "invalidType": "That file isn't a supported image (JPEG, PNG, or WEBP).",
+        "tooLarge": "The image is larger than the maximum allowed size (10 MB)."
+      },
+      "noPhoto": "No photo set",
       "return": {
         "trigger": "Record return",
         "registeredTitle": "Return recorded",
@@ -398,7 +410,21 @@
       "missingOutcome": "Select an outcome to enable the action.",
       "cancel": "Cancel",
       "notFoundTitle": "Follow-up unavailable",
-      "notFoundDescription": "We couldn't find this follow-up in your shelter."
+      "notFoundDescription": "We couldn't find this follow-up in your shelter.",
+      "photoTitle": "Follow-up photo",
+      "noPhoto": "No photo set",
+      "photo": {
+        "pickFromGallery": "Pick from gallery",
+        "takePhoto": "Take photo",
+        "uploading": "Uploading photo…",
+        "error": "We couldn't upload the photo. Try again.",
+        "attachError": "We couldn't save the photo. Try again.",
+        "permissionDenied": "We don't have permission to access the camera or gallery. Enable it in device settings.",
+        "invalidType": "That file isn't a supported image (JPEG, PNG, or WEBP).",
+        "tooLarge": "The image is larger than the maximum allowed size (10 MB).",
+        "adoptionNotActive": "The adoption is no longer active. A photo cannot be attached to this follow-up.",
+        "followupCancelled": "This follow-up was cancelled and cannot receive photos."
+      }
     },
     "return": {
       "title": "Record return",

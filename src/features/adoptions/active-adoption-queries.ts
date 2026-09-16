@@ -4,13 +4,20 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   completeFollowup,
   getAdoptionById,
+  getAdoptionPhotoSignedUrl,
+  getFollowupPhotoSignedUrl,
   listActiveAdoptions,
   listFollowupsForAdoption,
   returnAdoption,
+  setAdoptionPhoto,
+  setFollowupPhoto,
   type CompleteFollowupInput,
   type ReturnAdoptionInput,
+  type SetAdoptionPhotoInput,
+  type SetFollowupPhotoInput,
 } from '@/features/adoptions/active-adoption-repository';
 import { adoptionDecisionKeys } from '@/features/adoptions/adoption-queries';
+import { PHOTO_SIGNED_URL_TTL_SECONDS } from '@/lib/image-capture';
 import type { Database } from '@/lib/database.types';
 
 export const adoptionKeys = {
@@ -19,6 +26,10 @@ export const adoptionKeys = {
   followups: (shelterId: string, adoptionId: string) =>
     ['adoptions', shelterId, 'followups', adoptionId] as const,
   list: (shelterId: string) => ['adoptions', shelterId, 'list'] as const,
+  photoSignedUrl: (path: string) =>
+    ['adoptions', 'photo-signed-url', path] as const,
+  followupPhotoSignedUrl: (path: string) =>
+    ['adoptions', 'followup-photo-signed-url', path] as const,
 };
 
 export function useActiveAdoptions(
@@ -121,5 +132,84 @@ export function useReturnAdoption(
         }),
       ]);
     },
+  });
+}
+
+export function useSetAdoptionPhoto(
+  client: SupabaseClient<Database> | null,
+  shelterId: string | null,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: SetAdoptionPhotoInput) => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      return setAdoptionPhoto(client, input);
+    },
+    onSuccess: async (_adoptionId, input) => {
+      await queryClient.invalidateQueries({
+        queryKey: adoptionKeys.detail(shelterId ?? '', input.adoptionId),
+      });
+    },
+  });
+}
+
+export function useSetFollowupPhoto(
+  client: SupabaseClient<Database> | null,
+  shelterId: string | null,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: SetFollowupPhotoInput) => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      return setFollowupPhoto(client, input);
+    },
+    onSuccess: async (_followupId, input) => {
+      // A follow-up photo affects both the adoption detail and its follow-up list.
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: adoptionKeys.detail(shelterId ?? '', input.adoptionId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: adoptionKeys.followups(shelterId ?? '', input.adoptionId),
+        }),
+      ]);
+    },
+  });
+}
+
+const PHOTO_SIGNED_URL_STALE_MS =
+  (PHOTO_SIGNED_URL_TTL_SECONDS - 15 * 60) * 1000;
+
+export function useAdoptionPhotoSignedUrl(
+  client: SupabaseClient<Database> | null,
+  path: string | null,
+) {
+  return useQuery({
+    queryKey: adoptionKeys.photoSignedUrl(path ?? ''),
+    queryFn: () => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      if (!path) return null;
+      return getAdoptionPhotoSignedUrl(client, path);
+    },
+    enabled: client !== null && Boolean(path),
+    staleTime: PHOTO_SIGNED_URL_STALE_MS,
+  });
+}
+
+export function useFollowupPhotoSignedUrl(
+  client: SupabaseClient<Database> | null,
+  path: string | null,
+) {
+  return useQuery({
+    queryKey: adoptionKeys.followupPhotoSignedUrl(path ?? ''),
+    queryFn: () => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      if (!path) return null;
+      return getFollowupPhotoSignedUrl(client, path);
+    },
+    enabled: client !== null && Boolean(path),
+    staleTime: PHOTO_SIGNED_URL_STALE_MS,
   });
 }

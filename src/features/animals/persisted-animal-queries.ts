@@ -8,13 +8,13 @@ import {
   listAnimalsForShelter,
   listTimelineForAnimal,
   setAnimalPrimaryPhoto,
-  PRIMARY_PHOTO_SIGNED_URL_TTL_SECONDS,
   type CompleteReevaluationInput,
   type SetAnimalPrimaryPhotoInput,
 } from '@/features/animals/persisted-animal-repository';
 import { getActiveAdoptionByAnimal } from '@/features/adoptions/active-adoption-repository';
 import { adoptionKeys } from '@/features/adoptions/active-adoption-queries';
 import { adoptionDecisionKeys } from '@/features/adoptions/adoption-queries';
+import { PHOTO_SIGNED_URL_TTL_SECONDS } from '@/lib/image-capture';
 import type { Database } from '@/lib/database.types';
 
 export const animalKeys = {
@@ -143,7 +143,7 @@ export function useSetAnimalPrimaryPhoto(
 // Staleness is kept strictly shorter than the signed-URL TTL so a refetch
 // always obtains a fresh URL before the previous one can expire.
 const PRIMARY_PHOTO_SIGNED_URL_STALE_MS =
-  (PRIMARY_PHOTO_SIGNED_URL_TTL_SECONDS - 15 * 60) * 1000;
+  (PHOTO_SIGNED_URL_TTL_SECONDS - 15 * 60) * 1000;
 
 export function useAnimalPrimaryPhotoSignedUrl(
   client: SupabaseClient<Database> | null,

@@ -1,12 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/lib/database.types';
+import { getPhotoSignedUrl } from '@/lib/image-capture';
 
 export interface AdoptionRecord {
   id: string;
   status: string;
   adoptionDate: string;
   handoverNotes: string | null;
+  adoptionPhotoPath: string | null;
   animal: {
     id: string;
     name: string;
@@ -29,6 +31,7 @@ export interface AdoptionFollowupRecord {
   status: string;
   outcome: string | null;
   notes: string | null;
+  photoPath: string | null;
   completedAt: string | null;
   cancelledAt: string | null;
   cancellationReason: string | null;
@@ -39,6 +42,7 @@ interface AdoptionRow {
   status: string;
   adoption_date: string;
   handover_notes: string | null;
+  adoption_photo_path: string | null;
   animal_id: string;
   animals:
     | {
@@ -74,6 +78,7 @@ interface FollowupRow {
   status: string;
   outcome: string | null;
   notes: string | null;
+  photo_path: string | null;
   completed_at: string | null;
   cancelled_at: string | null;
   cancellation_reason: string | null;
@@ -95,6 +100,7 @@ function toAdoptionRecord(row: AdoptionRow): AdoptionRecord | null {
     status: row.status,
     adoptionDate: row.adoption_date,
     handoverNotes: row.handover_notes,
+    adoptionPhotoPath: row.adoption_photo_path,
     animal: {
       id: animal.id,
       name: animal.name,
@@ -119,6 +125,7 @@ function toFollowupRecord(row: FollowupRow): AdoptionFollowupRecord {
     status: row.status,
     outcome: row.outcome,
     notes: row.notes,
+    photoPath: row.photo_path,
     completedAt: row.completed_at,
     cancelledAt: row.cancelled_at,
     cancellationReason: row.cancellation_reason,
@@ -126,10 +133,10 @@ function toFollowupRecord(row: FollowupRow): AdoptionFollowupRecord {
 }
 
 const adoptionFields =
-  'id, status, adoption_date, handover_notes, animal_id, animals ( id, name, status ), candidate_id, candidates ( id, status, person_id, people ( id, name ) )';
+  'id, status, adoption_date, handover_notes, adoption_photo_path, animal_id, animals ( id, name, status ), candidate_id, candidates ( id, status, person_id, people ( id, name ) )';
 
 const followupFields =
-  'id, adoption_id, due_date, status, outcome, notes, completed_at, cancelled_at, cancellation_reason';
+  'id, adoption_id, due_date, status, outcome, notes, photo_path, completed_at, cancelled_at, cancellation_reason';
 
 export async function listActiveAdoptions(
   client: SupabaseClient<Database>,
@@ -234,4 +241,57 @@ export async function returnAdoption(
   if (error) throw error;
   if (data === null) throw new Error('supabase_rpc_result_missing');
   return data;
+}
+
+export interface SetAdoptionPhotoInput {
+  adoptionId: string;
+  path: string;
+}
+
+export async function setAdoptionPhoto(
+  client: SupabaseClient<Database>,
+  input: SetAdoptionPhotoInput,
+): Promise<string> {
+  const { data, error } = await client.rpc('set_adoption_photo', {
+    p_adoption_id: input.adoptionId,
+    p_path: input.path,
+  });
+
+  if (error) throw error;
+  if (data === null) throw new Error('supabase_rpc_result_missing');
+  return data;
+}
+
+export interface SetFollowupPhotoInput {
+  followupId: string;
+  adoptionId: string;
+  path: string;
+}
+
+export async function setFollowupPhoto(
+  client: SupabaseClient<Database>,
+  input: SetFollowupPhotoInput,
+): Promise<string> {
+  const { data, error } = await client.rpc('set_followup_photo', {
+    p_followup_id: input.followupId,
+    p_path: input.path,
+  });
+
+  if (error) throw error;
+  if (data === null) throw new Error('supabase_rpc_result_missing');
+  return data;
+}
+
+export async function getAdoptionPhotoSignedUrl(
+  client: SupabaseClient<Database>,
+  path: string,
+): Promise<{ path: string; signedUrl: string }> {
+  return getPhotoSignedUrl(client, path);
+}
+
+export async function getFollowupPhotoSignedUrl(
+  client: SupabaseClient<Database>,
+  path: string,
+): Promise<{ path: string; signedUrl: string }> {
+  return getPhotoSignedUrl(client, path);
 }

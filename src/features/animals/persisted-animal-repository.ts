@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database, Json } from '@/lib/database.types';
+import {
+  getPhotoSignedUrl,
+  PHOTO_SIGNED_URL_TTL_SECONDS,
+} from '@/lib/image-capture';
 
 export interface PersistedAnimal {
   id: string;
@@ -156,27 +160,10 @@ export async function setAnimalPrimaryPhoto(
   return data;
 }
 
-// Signed-URL TTL decided for this slice: 1 hour, matching the "short-lived"
-// read-time access rule. The read query's staleness (persisted-animal-queries.ts)
-// is kept strictly shorter than this TTL so a refetch always requests a new URL
-// before the previous one expires.
-export const PRIMARY_PHOTO_SIGNED_URL_TTL_SECONDS = 60 * 60;
-
 export async function getAnimalPrimaryPhotoSignedUrl(
   client: SupabaseClient<Database>,
   path: string,
-  ttl: number = PRIMARY_PHOTO_SIGNED_URL_TTL_SECONDS,
+  ttl: number = PHOTO_SIGNED_URL_TTL_SECONDS,
 ): Promise<{ path: string; signedUrl: string }> {
-  // path is a storage object path (e.g. "shelter_id/animals/animal_id/uuid.ext")
-  // never contains "http" - it's a storage path, not a URL
-  const { data, error } = await client.storage
-    .from('shelter-media')
-    .createSignedUrl(path, ttl);
-
-  if (error) throw error;
-  if (!data?.signedUrl) {
-    throw new Error('Failed to generate signed URL');
-  }
-
-  return { path, signedUrl: data.signedUrl };
+  return getPhotoSignedUrl(client, path, ttl);
 }

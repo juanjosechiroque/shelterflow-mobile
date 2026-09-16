@@ -33,11 +33,20 @@ jest.mock('@/features/auth/auth-provider', () => ({
   useAuth: jest.fn(),
 }));
 
-jest.mock('@/features/animals/image-capture', () => ({
+jest.mock('@/lib/image-capture', () => ({
   pickImageFromGallery: jest.fn(),
   captureImageWithCamera: jest.fn(),
   uploadImageToStorage: jest.fn(),
   validateImage: jest.fn(() => ({ valid: true })),
+  getPhotoSignedUrl: jest.fn(async (client, path, ttl = 3600) => {
+    const { data, error } = await client.storage
+      .from('shelter-media')
+      .createSignedUrl(path, ttl);
+    if (error) throw error;
+    if (!data?.signedUrl) throw new Error('Failed to generate signed URL');
+    return { path, signedUrl: data.signedUrl };
+  }),
+  PHOTO_SIGNED_URL_TTL_SECONDS: 3600,
 }));
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
@@ -49,7 +58,7 @@ const {
   captureImageWithCamera,
   uploadImageToStorage,
   validateImage,
-} = jest.requireMock('@/features/animals/image-capture') as {
+} = jest.requireMock('@/lib/image-capture') as {
   pickImageFromGallery: jest.Mock;
   captureImageWithCamera: jest.Mock;
   uploadImageToStorage: jest.Mock;
