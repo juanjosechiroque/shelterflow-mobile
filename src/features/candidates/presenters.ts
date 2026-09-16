@@ -1,5 +1,7 @@
 import type { TFunction } from 'i18next';
 
+import type { ContactChannel } from './contact-actions';
+import type { ContactOutcome } from './local-contact-log';
 import type { CandidateSource } from './types';
 
 const sourceKeys: Record<
@@ -25,4 +27,33 @@ export function getCandidateSourceLabel(
     return t(sourceKeys[source as CandidateSource]);
   }
   return source ?? t(sourceKeys.UNKNOWN);
+}
+
+const contactOutcomeKeys: Record<
+  ContactOutcome,
+  | 'candidates.contact.outcomes.reached'
+  | 'candidates.contact.outcomes.noAnswer'
+  | 'candidates.contact.outcomes.wrongNumber'
+  | 'candidates.contact.outcomes.callbackRequested'
+> = {
+  CALLBACK_REQUESTED: 'candidates.contact.outcomes.callbackRequested',
+  NO_ANSWER: 'candidates.contact.outcomes.noAnswer',
+  REACHED: 'candidates.contact.outcomes.reached',
+  WRONG_NUMBER: 'candidates.contact.outcomes.wrongNumber',
+};
+
+export function getContactOutcomeLabel(
+  t: TFunction,
+  outcome: ContactOutcome,
+): string {
+  return t(contactOutcomeKeys[outcome]);
+}
+
+export function getContactChannelLabel(
+  t: TFunction,
+  channel: ContactChannel,
+): string {
+  return channel === 'whatsapp'
+    ? t('candidates.contact.whatsapp')
+    : t('candidates.contact.call');
 }

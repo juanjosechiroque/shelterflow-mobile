@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   FlatList,
   Pressable,
@@ -14,9 +14,25 @@ import { useAuth } from '@/features/auth/auth-provider';
 
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import { ScreenHeader, StateView } from '@/components/ui';
+import { usePersistedState } from '@/hooks/use-persisted-state';
 import { AnimalCard } from './components/animal-card';
 import { filterAnimals, type AnimalFilter } from './presenters';
 import { useAnimalsForShelter } from './persisted-animal-queries';
+
+const animalFilters: readonly AnimalFilter[] = [
+  'ALL',
+  'READY',
+  'IN_PROCESS',
+  'ADOPTED',
+  'REEVALUATION',
+];
+
+function isAnimalFilter(value: unknown): value is AnimalFilter {
+  return (
+    typeof value === 'string' &&
+    (animalFilters as readonly string[]).includes(value)
+  );
+}
 
 const filters: readonly {
   value: AnimalFilter;
@@ -39,7 +55,12 @@ export function AnimalsScreen() {
   const { supabase, profile } = useAuth();
 
   const shelterId = profile?.shelterId ?? null;
-  const [selectedFilter, setSelectedFilter] = useState<AnimalFilter>('ALL');
+  const { value: selectedFilter, setValue: setSelectedFilter } =
+    usePersistedState<AnimalFilter>(
+      'shelterflow.ui.animalsFilter',
+      'ALL',
+      isAnimalFilter,
+    );
 
   const { data, isLoading, isError, isFetching, refetch } =
     useAnimalsForShelter(supabase, shelterId);

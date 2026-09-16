@@ -33,13 +33,24 @@ planned matters here, so the whole document uses these labels.
   path (camera/gallery picker, client-side validation, downscale, upload, signed-URL rendering) for
   animal primary photos, adoption handover photos, and follow-up photos.
 - Spanish-first i18n with English support, and a persisted language preference.
+- Native contact actions on the candidate detail: normalized telephone and WhatsApp links opened
+  through a feature-local adapter, with the user explicitly recording the contact outcome into a
+  clearly local device store (no backend persistence yet).
+- Local follow-up reminders through an official Expo SDK 57 notifications adapter, with
+  scheduled-reminder metadata persisted locally, duplicate prevention, cancellation, and deep links
+  into the follow-up completion route from foreground, background, and cold start.
+- A mockable connectivity adapter with a visible offline/cached/refreshing banner, recoverable
+  evaluation-form drafts, a persisted animals filter, and duplicate-submission prevention.
 - Jest unit, component, structural, and repository tests. Database-level tests run against a local
   stack were removed with the local Supabase / Docker tooling ([ADR-026](decisions/026-remove-local-supabase-test-stack.md)).
 
 **Planned**
 
-- Native contact actions, local notifications, and follow-up deep links.
-- Network-resilience work beyond per-mutation loading and error states.
+- Contact outcomes persisted to the backend; the local contact log is device-only.
+- Push notifications and any server-triggered reminder, which stay deferred until a real requirement
+  appears.
+- Full offline-first synchronization and any operation queue; the current work is per-screen
+  connectivity awareness, drafts, and preferences.
 - Error boundaries, structured error reporting, and redaction-enforced observability.
 - EAS preview and production builds.
 
@@ -120,10 +131,11 @@ src/
     adoptions/      Confirmation, adoption detail, returns, follow-up completion
     animals/        Animal list and detail, timeline presentation, reevaluation
     auth/           Session provider, login, auth loading
-    candidates/     Candidate detail, queries, mutations
+    candidates/     Candidate detail, contact actions, queries, mutations
     evaluations/    Evaluation form, queries, presenters
     followups/      Follow-up presentation
     meetings/       Meeting scheduling and completion
+    notifications/  Local follow-up reminders and deep-link routing
     today/          Actionable work overview
     prototype-flow/ Legacy in-memory walkthrough (not target architecture)
   components/       Truly shared presentation components
@@ -155,9 +167,11 @@ needs it.
 | Expo Image                                 | Renders persisted photos from short-lived signed URLs             |
 | Expo Image Manipulator                     | Downscales and re-encodes a picked photo before upload            |
 | Expo File System                           | Reads a local image file into an `ArrayBuffer` for Storage upload |
+| Expo Notifications                         | Local follow-up reminder scheduling and permission handling       |
+| Expo Network                               | Connectivity detection for offline and recovery states            |
 | Supabase JS client                         | Auth, RLS-protected reads, and RPC invocation                     |
 | TanStack Query                             | Cached authenticated queries and mutation status                  |
-| AsyncStorage                               | Session persistence and the selected UI language                  |
+| AsyncStorage                               | Session, language, UI preference, draft, and reminder metadata    |
 | i18next and react-i18next                  | Typed Spanish and English UI resources                            |
 | React Native Screens and Safe Area Context | Native navigation primitives and safe screen layout               |
 | Jest and React Native Testing Library      | Unit, component, and structural validation                        |
@@ -189,8 +203,11 @@ backend operation succeeds.
 
 ### Persisted local preferences
 
-AsyncStorage holds small device-local values: the Supabase session and the selected language. It is
-not a substitute for shelter domain persistence.
+AsyncStorage holds small device-local values: the Supabase session, the selected language, the
+persisted animals filter, recoverable form drafts, and scheduled reminder metadata. It is not a
+substitute for shelter domain persistence, and it must never hold signed URLs or tokens. The
+TanStack Query cache is deliberately not persisted, so no server value outlives the session on
+device.
 
 ### Global client state
 
@@ -390,13 +407,25 @@ matters:
 - image picker or camera _(implemented: `src/lib/image-capture.ts`, shared across animal primary
   photo, adoption handover photo, and follow-up photo — promoted from feature-local per
   [ADR-021](decisions/021-keep-implementation-feature-local.md))_;
-- WhatsApp and telephone URL schemes _(planned)_;
-- local notifications, and push notifications later only if justified _(planned)_;
-- deep links into follow-up routes _(planned)_;
+- WhatsApp and telephone URL schemes _(implemented: `src/features/candidates/contact-actions.ts`
+  normalizes the number and checks `canOpenURL` before opening; the contact outcome the user
+  records afterwards lives in `src/features/candidates/local-contact-log.ts`, a clearly local
+  device store until a backend entity exists)_;
+- local notifications, and push notifications later only if justified _(local implemented:
+  `src/lib/local-notifications.ts` wraps Expo Notifications, persists scheduled-reminder metadata,
+  and prevents duplicates; push remains planned)_;
+- deep links into follow-up routes _(implemented:
+  `src/features/notifications/notification-response-provider.tsx` routes a tapped reminder from
+  foreground, background, and cold start, ignoring invalid payloads and leaving a missing or
+  unavailable follow-up to the destination screen)_;
+- connectivity state _(implemented: `src/lib/connectivity.ts` plus
+  `src/providers/connectivity-provider.tsx`, wired to TanStack Query's online manager so queries
+  pause offline and resume when the connection returns)_;
 - session persistence _(implemented)_.
 
 Opening an external URL records only that ShelterFlow attempted to open it. It never proves that a
-call connected or a message was sent.
+call connected or a message was sent, and the UI never presents an opened application as a
+successful contact; the user must record the outcome explicitly.
 
 ## Error and network behavior
 
@@ -408,6 +437,13 @@ ShelterFlow is not offline-first, but meaningful mutations must provide:
   a repeated transition rather than applying it twice;
 - input preservation for recoverable form failures;
 - a clear distinction between cached data and confirmed server state.
+
+Connectivity is observed through a small mockable adapter and surfaced by `NetworkStatusBanner`,
+which distinguishes offline, cached, refreshing, and refresh-failed states. Reads retry once
+automatically because they are idempotent; mutations never retry automatically, and a manual retry
+is offered only where the action is safe. The only local persistence is preferences, recoverable
+evaluation drafts, the contact log, and reminder metadata — never the query cache, a signed URL, or
+a token.
 
 Complex synchronization queues are out of scope unless real requirements demonstrate their need.
 

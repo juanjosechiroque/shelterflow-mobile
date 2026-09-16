@@ -14,6 +14,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import {
   Card,
+  NetworkStatusBanner,
   PrimaryButton,
   ScreenHeader,
   SecondaryButton,
@@ -35,6 +36,7 @@ import {
   useSetAdoptionPhoto,
 } from '@/features/adoptions/active-adoption-queries';
 import { useAuth } from '@/features/auth/auth-provider';
+import { FollowupReminderControl } from '@/features/notifications/components/followup-reminder-control';
 import {
   getAdoptionStatusLabel,
   getFollowupOutcomeLabel,
@@ -282,6 +284,15 @@ export function PersistedAdoptionDetailScreen() {
     >
       <Stack.Screen options={{ title: t('adoptions.detail.title') }} />
 
+      <NetworkStatusBanner
+        hasData={Boolean(adoption)}
+        isError={adoptionQuery.isError}
+        isFetching={adoptionQuery.isFetching}
+        onRetry={() => {
+          void adoptionQuery.refetch();
+        }}
+      />
+
       <View style={styles.header}>
         <ScreenHeader
           subtitle={`${adoption.candidate.person.name} · ${adoption.animal.name}`}
@@ -489,6 +500,16 @@ export function PersistedAdoptionDetailScreen() {
                   <Text style={styles.followupUnavailableHint}>
                     {t('adoptions.detail.followups.unavailable')}
                   </Text>
+                ) : null}
+
+                {isActive && isPending ? (
+                  <FollowupReminderControl
+                    adoptionId={adoption.id}
+                    animalName={adoption.animal.name}
+                    dueDate={followup.dueDate}
+                    followupId={followup.id}
+                    personName={adoption.candidate.person.name}
+                  />
                 ) : null}
               </View>
             );

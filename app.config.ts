@@ -93,6 +93,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       'expo-image',
+      [
+        'expo-notifications',
+        {
+          color: '#1F6B45',
+          defaultChannel: 'followups',
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,

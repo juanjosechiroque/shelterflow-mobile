@@ -1,5 +1,7 @@
 export { Card } from './Card';
 export type { CardProps } from './Card';
+export { NetworkStatusBanner } from './NetworkStatusBanner';
+export type { NetworkStatusBannerProps } from './NetworkStatusBanner';
 export { PrimaryButton } from './PrimaryButton';
 export { ScreenHeader } from './ScreenHeader';
 export type { ScreenHeaderProps } from './ScreenHeader';
