@@ -178,6 +178,43 @@ describe('local notification adapter', () => {
     expect(await recovered.listScheduledReminders()).toEqual([]);
   });
 
+  it('cancels the native reminder when persisting its metadata fails', async () => {
+    const { storage, map } = createStorage();
+    const native = createNative();
+    (storage.setItem as jest.Mock).mockRejectedValueOnce(
+      new Error('storage full'),
+    );
+    const adapter = createLocalNotificationAdapter({ native, storage });
+
+    await expect(
+      adapter.scheduleFollowupReminder(scheduleInput),
+    ).resolves.toEqual({ status: 'error', message: 'storage full' });
+
+    expect(native.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
+      'notif-1',
+    );
+    expect(native.scheduled.size).toBe(0);
+    expect(map.has(NOTIFICATION_STORAGE_KEY)).toBe(false);
+    expect(await adapter.listScheduledReminders()).toEqual([]);
+  });
+
+  it('lets a failed reminder be retried without leaving duplicates', async () => {
+    const { storage } = createStorage();
+    const native = createNative();
+    (storage.setItem as jest.Mock).mockRejectedValueOnce(
+      new Error('storage full'),
+    );
+    const adapter = createLocalNotificationAdapter({ native, storage });
+
+    await adapter.scheduleFollowupReminder(scheduleInput);
+    const retry = await adapter.scheduleFollowupReminder(scheduleInput);
+
+    expect(retry.status).toBe('scheduled');
+    expect(native.scheduleNotificationAsync).toHaveBeenCalledTimes(2);
+    expect(await adapter.listScheduledReminders()).toHaveLength(1);
+    expect(native.scheduled.size).toBe(1);
+  });
+
   it('persists only reminder metadata, never URLs or tokens', async () => {
     const { adapter, map } = createAdapter();
 

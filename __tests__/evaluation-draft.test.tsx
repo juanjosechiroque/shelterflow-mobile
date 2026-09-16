@@ -94,7 +94,9 @@ async function renderScreen(
 const draft = {
   overallFit: 'POSSIBLE' as const,
   recommendation: 'MORE_INFORMATION' as const,
+  positiveFactor: '',
   positiveFactors: ['Casa estable'],
+  concern: '',
   concerns: [],
   notes: 'Borrador pendiente',
 };
@@ -137,6 +139,20 @@ describe('EvaluationScreen draft persistence', () => {
     expect(
       await evaluationDraftStore.load(evaluationDraftKey(candidateId)),
     ).toEqual(draft);
+  });
+
+  it('restores text typed but not yet added with the + button', async () => {
+    await evaluationDraftStore.save(evaluationDraftKey(candidateId), {
+      ...draft,
+      positiveFactor: 'Paciencia con niños',
+      concern: 'Sin jardín',
+    });
+    const client = createClient({ data: null, error: { message: 'down' } });
+
+    const screen = await renderScreen(<EvaluationScreen />, client);
+
+    expect(await screen.findByDisplayValue('Paciencia con niños')).toBeTruthy();
+    expect(await screen.findByDisplayValue('Sin jardín')).toBeTruthy();
   });
 
   it('discards a restored draft and clears local storage', async () => {

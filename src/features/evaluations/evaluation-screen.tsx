@@ -90,7 +90,9 @@ export function EvaluationScreen() {
         if (draft) {
           setOverallFit(draft.overallFit);
           setRecommendation(draft.recommendation);
+          setPositiveFactor(draft.positiveFactor ?? '');
           setPositiveFactors(draft.positiveFactors);
+          setConcern(draft.concern ?? '');
           setConcerns(draft.concerns);
           setNotes(draft.notes);
           setDraftRestored(true);
@@ -109,6 +111,8 @@ export function EvaluationScreen() {
   const hasDraftContent =
     positiveFactors.length > 0 ||
     concerns.length > 0 ||
+    positiveFactor.trim().length > 0 ||
+    concern.trim().length > 0 ||
     notes.trim().length > 0 ||
     overallFit !== 'STRONG' ||
     recommendation !== 'CONTINUE';
@@ -121,7 +125,9 @@ export function EvaluationScreen() {
       .save(evaluationDraftKey(candidateId), {
         overallFit,
         recommendation,
+        positiveFactor,
         positiveFactors,
+        concern,
         concerns,
         notes,
       })
@@ -133,7 +139,9 @@ export function EvaluationScreen() {
     hasDraftContent,
     overallFit,
     recommendation,
+    positiveFactor,
     positiveFactors,
+    concern,
     concerns,
     notes,
   ]);
@@ -144,7 +152,9 @@ export function EvaluationScreen() {
       .catch(() => undefined);
     setOverallFit('STRONG');
     setRecommendation('CONTINUE');
+    setPositiveFactor('');
     setPositiveFactors([]);
+    setConcern('');
     setConcerns([]);
     setNotes('');
     setDraftRestored(false);
@@ -166,6 +176,8 @@ export function EvaluationScreen() {
       {
         onSuccess: () => {
           submissionStartedRef.current = false;
+          setPositiveFactor('');
+          setConcern('');
           void evaluationDraftStore
             .clear(evaluationDraftKey(candidateId ?? ''))
             .catch(() => undefined);

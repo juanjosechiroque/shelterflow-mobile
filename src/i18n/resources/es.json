@@ -248,7 +248,9 @@
       "selectOutcome": "Selecciona un resultado para habilitar el guardado.",
       "savedTitle": "Resultado del contacto guardado",
       "savedDescription": "Guardado localmente en este dispositivo. La sincronización con el servidor aún está pendiente.",
-      "saveError": "No pudimos guardar el resultado del contacto. Inténtalo nuevamente."
+      "saveError": "No pudimos guardar el resultado del contacto. Inténtalo nuevamente.",
+      "historyTitle": "Historial de contacto",
+      "historyEmpty": "Todavía no registraste resultados de contacto en este dispositivo."
     }
   },
   "evaluations": {

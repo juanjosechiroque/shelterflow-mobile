@@ -224,7 +224,19 @@ export function createLocalNotificationAdapter({
           dueDate: input.dueDate,
           scheduledAt: now.toISOString(),
         };
-        await writeStored([...reminders, reminder]);
+        try {
+          await writeStored([...reminders, reminder]);
+        } catch (error) {
+          // The native reminder exists but its metadata does not. Cancel the
+          // orphan so a retry can schedule it again instead of leaving a
+          // notification we cannot list or cancel.
+          try {
+            await native.cancelScheduledNotificationAsync(notificationId);
+          } catch {
+            // Best-effort compensation; the metadata failure is still reported.
+          }
+          return { status: 'error', message: toMessage(error) };
+        }
         return { status: 'scheduled', reminder };
       } catch (error) {
         return { status: 'error', message: toMessage(error) };
