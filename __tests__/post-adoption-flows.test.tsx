@@ -9,6 +9,7 @@ import type { ReactElement } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useLocalSearchParams } from 'expo-router';
 
+import { animalKeys } from '@/features/animals/animal-query-keys';
 import {
   listActiveAdoptions,
   getAdoptionById,
@@ -771,6 +772,9 @@ describe('Persisted adoption detail and follow-up flows', () => {
       });
       expect(invalidateQueries).toHaveBeenCalledWith({
         queryKey: adoptionDecisionKeys.list(shelterId),
+      });
+      expect(invalidateQueries).toHaveBeenCalledWith({
+        queryKey: animalKeys.all(shelterId),
       });
     });
 

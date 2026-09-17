@@ -512,6 +512,9 @@ describe('Persisted reevaluation flow', () => {
         queryKey: animalKeys.timeline(shelterId, animalId),
       });
       expect(invalidateQueries).toHaveBeenCalledWith({
+        queryKey: animalKeys.list(shelterId),
+      });
+      expect(invalidateQueries).toHaveBeenCalledWith({
         queryKey: adoptionKeys.list(shelterId),
       });
       expect(invalidateQueries).toHaveBeenCalledWith({

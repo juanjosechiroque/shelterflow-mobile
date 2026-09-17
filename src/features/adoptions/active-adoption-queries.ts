@@ -17,6 +17,7 @@ import {
   type SetFollowupPhotoInput,
 } from '@/features/adoptions/active-adoption-repository';
 import { adoptionDecisionKeys } from '@/features/adoptions/adoption-queries';
+import { animalKeys } from '@/features/animals/animal-query-keys';
 import { PHOTO_SIGNED_URL_TTL_SECONDS } from '@/lib/image-capture';
 import type { Database } from '@/lib/database.types';
 
@@ -129,6 +130,12 @@ export function useReturnAdoption(
         }),
         queryClient.invalidateQueries({
           queryKey: adoptionDecisionKeys.list(shelterId ?? ''),
+        }),
+        // The return moves the animal to REEVALUATION and appends its timeline,
+        // so any mounted animal detail/list must refetch too, not just the
+        // adoption read models.
+        queryClient.invalidateQueries({
+          queryKey: animalKeys.all(shelterId ?? ''),
         }),
       ]);
     },
