@@ -35,24 +35,6 @@ import type { Database } from '@/lib/database.types';
 import { ConnectivityProvider } from '@/providers/connectivity-provider';
 import i18n from '@/i18n';
 
-/**
- * End-to-end regression for the persisted non-happy path
- * (DOMAIN.md#complete-return-path): ACTIVE adoption + ADOPTED animal ->
- * return_adoption -> RETURNED adoption + REEVALUATION animal with pending
- * follow-ups cancelled -> complete_reevaluation -> READY or NOT_AVAILABLE,
- * with the previous candidate, adoption, follow-ups, and timeline still
- * visible.
- *
- * The fake Supabase client is stateful: it models the documented effects of
- * the two Phase 7 RPCs so the client contract can be traversed as one journey.
- * It is NOT a proof of Postgres atomicity or RLS; those are verified by
- * reviewing the migrations ([ADR-026]). This test only proves the client
- * reads back and renders the documented post-conditions, sends the exact RPC
- * payloads, and keeps a retryable form when an RPC fails.
- *
- * [ADR-026]: docs/decisions/026-remove-local-supabase-test-stack.md
- */
-
 jest.mock('expo-router', () => {
   const React = require('react');
   const router = { push: jest.fn(), replace: jest.fn() };
@@ -473,7 +455,6 @@ describe('Return → reevaluation persisted path', () => {
       const { client, mocks } = createJourneyClient(state);
       const queryClient = createTestQueryClient();
 
-      // 1. The adoption starts ACTIVE with one completed and one pending follow-up.
       const adoptionDetail = await renderWithClient(
         <PersistedAdoptionDetailScreen />,
         client,
@@ -488,7 +469,6 @@ describe('Return → reevaluation persisted path', () => {
         adoptionDetail.screen.getByText(/Mia is settling in well/),
       ).toBeTruthy();
 
-      // 2. Register the return through the persisted return screen.
       const returnScreen = await renderWithClient(
         <ReturnAdoptionScreen />,
         client,
@@ -507,9 +487,6 @@ describe('Return → reevaluation persisted path', () => {
         await returnScreen.screen.findByText('Retorno registrado'),
       ).toBeTruthy();
 
-      // 3. The already-mounted adoption detail refetches to the documented
-      //    post-return state: RETURNED, pending follow-up cancelled, completed
-      //    follow-up and the candidate still visible.
       expect(await adoptionDetail.screen.findByText('Devuelta')).toBeTruthy();
       expect(
         await adoptionDetail.screen.findByText(
@@ -539,8 +516,6 @@ describe('Return → reevaluation persisted path', () => {
         }),
       ).toBeTruthy();
 
-      // 4. The animal detail keeps the candidate and the whole timeline,
-      //    including the two new return events.
       const animalDetail = await renderWithClient(
         <PersistedAnimalDetailScreen />,
         client,
@@ -571,7 +546,6 @@ describe('Return → reevaluation persisted path', () => {
         }),
       ).toBeNull();
 
-      // 5. Complete the reevaluation with READY.
       const reevaluationScreen = await renderWithClient(
         <PersistedReevaluationScreen />,
         client,
@@ -598,8 +572,6 @@ describe('Return → reevaluation persisted path', () => {
         await reevaluationScreen.screen.findByText('Reevaluación completada'),
       ).toBeTruthy();
 
-      // 6. The animal detail refetches to READY and still shows the full
-      //    history, the candidate, and the new readiness event.
       expect(
         await animalDetail.screen.findByText('Mia quedó listo para adopción.'),
       ).toBeTruthy();
@@ -720,8 +692,6 @@ describe('Return → reevaluation persisted path', () => {
         expect(state.adoption.status).toBe('RETURNED');
       });
 
-      // The mounted animal detail was not remounted; it must refetch because
-      // the return invalidates the animal's read models.
       expect(await animalDetail.screen.findByText('Reevaluación')).toBeTruthy();
       expect(
         await animalDetail.screen.findByText(
@@ -769,8 +739,6 @@ describe('Return → reevaluation persisted path', () => {
         ),
       ).toBeTruthy();
 
-      // No half state: the client did not invalidate or mutate anything, and
-      // the adoption detail still shows the ACTIVE adoption.
       expect(invalidateQueries).not.toHaveBeenCalled();
       expect(state.adoption.status).toBe('ACTIVE');
       expect(state.animal.status).toBe('ADOPTED');
@@ -784,7 +752,6 @@ describe('Return → reevaluation persisted path', () => {
         }),
       ).toBeTruthy();
 
-      // The reason and the acknowledgement survived, so retrying is possible.
       expect(
         returnScreen.screen.getByLabelText('Motivo del retorno').props.value,
       ).toBe('Cambio de hogar del adoptante.');
@@ -823,7 +790,6 @@ describe('Return → reevaluation persisted path', () => {
       const state = createJourneyState();
       const { client, controls, mocks } = createJourneyClient(state);
 
-      // Reach the return path first, then fail the reevaluation.
       const returnScreen = await renderWithClient(
         <ReturnAdoptionScreen />,
         client,
@@ -936,7 +902,6 @@ describe('Return → reevaluation persisted path', () => {
         screen.getByRole('button', { name: 'Registrar retorno' }),
       );
 
-      // The mutation is paused, not lost, and no RPC is sent while offline.
       expect(mocks.rpc).not.toHaveBeenCalled();
       expect(screen.getByLabelText('Motivo del retorno').props.value).toBe(
         'Cambio de hogar',
@@ -1046,7 +1011,6 @@ describe('Return → reevaluation persisted path', () => {
       const state = createJourneyState();
       const { client, controls, mocks } = createJourneyClient(state);
 
-      // The animal must be in REEVALUATION before the RPC is accepted.
       state.animal.status = 'REEVALUATION';
       const id = await completeReevaluation(client, {
         animalId,

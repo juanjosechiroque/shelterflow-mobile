@@ -7,18 +7,6 @@ import {
   parseFollowupNotificationPayload,
 } from './notification-deep-link';
 
-/**
- * Routes notification taps to the follow-up completion screen.
- *
- * Foreground and background taps arrive through the response listener; a cold
- * start is recovered once with `getLastNotificationResponseAsync`. A response
- * identifier navigates at most once per session. A recovered cold-start
- * response with a valid payload is always cleared from the native module, even
- * when the listener already handled the same identifier first, so it cannot be
- * replayed on a later mount. Invalid payloads are ignored, and a follow-up that
- * no longer exists or is unavailable is handled by the destination screen.
- */
-
 export interface NotificationResponseEvent {
   identifier: string;
   data: unknown;

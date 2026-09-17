@@ -11,7 +11,6 @@ import {
   type CompleteReevaluationInput,
   type SetAnimalPrimaryPhotoInput,
 } from '@/features/animals/persisted-animal-repository';
-import { getActiveAdoptionByAnimal } from '@/features/adoptions/active-adoption-repository';
 import { adoptionKeys } from '@/features/adoptions/active-adoption-queries';
 import { adoptionDecisionKeys } from '@/features/adoptions/adoption-queries';
 import { animalKeys } from '@/features/animals/animal-query-keys';
@@ -97,22 +96,6 @@ export function useCompleteReevaluation(
         }),
       ]);
     },
-  });
-}
-
-export function useActiveAdoptionForAnimal(
-  client: SupabaseClient<Database> | null,
-  shelterId: string | null,
-  animalId: string | undefined,
-) {
-  return useQuery({
-    queryKey: ['adoptions', shelterId ?? '', 'animal', animalId ?? ''],
-    queryFn: () => {
-      if (!client) throw new Error('supabase_client_unavailable');
-      if (!animalId) return null;
-      return getActiveAdoptionByAnimal(client, animalId);
-    },
-    enabled: client !== null && shelterId !== null && Boolean(animalId),
   });
 }
 

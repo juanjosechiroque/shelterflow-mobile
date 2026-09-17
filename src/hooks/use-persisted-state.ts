@@ -1,12 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/**
- * Small UI preference that survives an application restart.
- *
- * Intended for lightweight, non-sensitive UI state such as a selected filter.
- * It is not a domain store and must never hold signed URLs or tokens.
- */
+// Not a domain store — callers must never persist signed URLs or tokens
+// through this hook.
 export function usePersistedState<T>(
   key: string,
   initialValue: T,

@@ -1,14 +1,5 @@
 import * as Network from 'expo-network';
 
-/**
- * Connectivity adapter.
- *
- * Screens and providers read connectivity through this seam so the offline and
- * recovery behavior is mockable in tests without a native network stack.
- * `unknown` is treated as "not offline": the app prefers to attempt a request
- * and surface the real failure rather than block on a guess.
- */
-
 export type ConnectivityStatus = 'online' | 'offline' | 'unknown';
 
 export interface ConnectivityAdapter {
@@ -25,6 +16,8 @@ export function mapNetworkState(state: NetworkStateLike): ConnectivityStatus {
   if (state.isConnected === false) return 'offline';
   if (state.isInternetReachable === false) return 'offline';
   if (state.isConnected === true) return 'online';
+  // Treated as "not offline": prefer attempting the request and surfacing
+  // the real failure over blocking on a guess.
   return 'unknown';
 }
 

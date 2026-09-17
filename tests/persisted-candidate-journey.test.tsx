@@ -277,6 +277,23 @@ describe('Persisted CandidateScreen', () => {
       params: { candidateId },
     });
   });
+
+  it('routes a decision-pending candidate to the persisted confirmation screen, not the prototype one', async () => {
+    const { client } = createClient({
+      tables: {
+        candidates: { data: candidateRow('DECISION_PENDING'), error: null },
+      },
+    });
+    const { screen } = await renderScreen(<CandidateScreen />, client);
+
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Confirmar adopción' }),
+    );
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/adoptions/confirm/[candidateId]',
+      params: { candidateId },
+    });
+  });
 });
 
 describe('Persisted EvaluationScreen', () => {
@@ -337,7 +354,6 @@ describe('Persisted EvaluationScreen', () => {
       });
     });
 
-    // The form stays available when the RPC returns no id.
     expect(
       screen.getByRole('button', { name: 'Guardar evaluación' }),
     ).toBeTruthy();

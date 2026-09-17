@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   completeFollowup,
+  getActiveAdoptionByAnimal,
   getAdoptionById,
   getAdoptionPhotoSignedUrl,
   getFollowupPhotoSignedUrl,
@@ -32,6 +33,22 @@ export const adoptionKeys = {
   followupPhotoSignedUrl: (path: string) =>
     ['adoptions', 'followup-photo-signed-url', path] as const,
 };
+
+export function useActiveAdoptionForAnimal(
+  client: SupabaseClient<Database> | null,
+  shelterId: string | null,
+  animalId: string | undefined,
+) {
+  return useQuery({
+    queryKey: ['adoptions', shelterId ?? '', 'animal', animalId ?? ''],
+    queryFn: () => {
+      if (!client) throw new Error('supabase_client_unavailable');
+      if (!animalId) return null;
+      return getActiveAdoptionByAnimal(client, animalId);
+    },
+    enabled: client !== null && shelterId !== null && Boolean(animalId),
+  });
+}
 
 export function useActiveAdoptions(
   client: SupabaseClient<Database> | null,

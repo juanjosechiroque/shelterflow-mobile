@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  fireEvent,
   render,
   waitFor,
   type RenderResult,
@@ -9,14 +8,12 @@ import type { ReactElement } from 'react';
 import { useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 
-import { AdoptionConfirmationScreen } from '@/features/adoptions/adoption-confirmation-screen';
 import { FollowUpsScreen } from '@/features/followups/followups-screen';
 import { fixedClock } from '@/features/prototype-flow/clock';
 import { createMockPrototypeRepository } from '@/features/prototype-flow/mock-repository';
 import {
   PrototypeFlowProvider,
   usePrototypeFlow,
-  type PrototypeFlowCommands,
 } from '@/features/prototype-flow/prototype-flow-provider';
 import {
   selectAnimalById,
@@ -46,54 +43,10 @@ async function renderWithProvider(ui: ReactElement): Promise<RenderResult> {
   );
 }
 
-function DispatchBeforeRender({
-  setup,
-  children,
-}: {
-  setup: (commands: PrototypeFlowCommands) => void;
-  children: ReactElement;
-}) {
-  const { commands } = usePrototypeFlow();
-  useEffect(() => {
-    setup(commands);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return <>{children}</>;
-}
-
-describe('Prototype adoption confirmation and follow-ups', () => {
+describe('Prototype follow-ups and shared workflow state', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
     await i18n.changeLanguage('es');
-  });
-
-  it('confirms an adoption for a candidate in decision status', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-carlos' });
-    const screen = await renderWithProvider(
-      <DispatchBeforeRender
-        setup={(commands) => {
-          commands.completeMeeting('luna-carlos-meeting', 'GOOD');
-          commands.markDecisionPending('luna-carlos');
-        }}
-      >
-        <AdoptionConfirmationScreen />
-      </DispatchBeforeRender>,
-    );
-
-    const confirmButton = await screen.findByRole('button', {
-      name: 'Confirmar adopción',
-    });
-    await fireEvent.press(confirmButton);
-
-    expect(await screen.findByText('Adopción confirmada')).toBeTruthy();
-  });
-
-  it('does not allow confirming adoption before decision status', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-andrea' });
-    const screen = await renderWithProvider(<AdoptionConfirmationScreen />);
-
-    expect(screen.getByText('Luna')).toBeTruthy();
-    expect(screen.getByText('Andrea Pérez')).toBeTruthy();
   });
 
   it('shows follow-ups for an adopted animal', async () => {

@@ -28,7 +28,7 @@ Remove the local Supabase stack from development and testing entirely.
 - Keep `supabase/migrations/` unchanged and `supabase/seed.sql` as the reference fixture
   definition; `supabase/hosted-dev-seed.sql` stays the manually run loader for the hosted project.
 - Automated tests are Jest only. Supabase responses are covered by faking the client in repository
-  tests (the pattern already in `__tests__/persisted-repositories.test.ts`).
+  tests (the pattern already in `tests/persisted-repositories.test.ts`).
 
 ## Alternatives considered
 

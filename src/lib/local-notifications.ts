@@ -1,16 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
-/**
- * Local follow-up reminders.
- *
- * This adapter wraps the official Expo SDK 57 notifications module and keeps
- * the metadata of what was scheduled in local storage, so a reminder can be
- * listed, identified, and cancelled without a backend. A scheduled
- * notification is never reported as delivered: it is only reported as
- * scheduled. No signed URLs or tokens are persisted here.
- */
-
 export const FOLLOWUP_REMINDER_TYPE = 'followup_reminder';
 export const FOLLOWUP_REMINDER_CHANNEL_ID = 'followups';
 export const NOTIFICATION_STORAGE_KEY = 'shelterflow.notifications.followups';
@@ -25,6 +15,9 @@ export interface FollowupReminder {
 
 export type ReminderPermission = 'granted' | 'denied' | 'undetermined';
 
+// A scheduled notification is never reported as delivered, only as
+// scheduled — there is no 'delivered' status because nothing here can know
+// whether the OS actually showed it.
 export type ScheduleFollowupReminderResult =
   | { status: 'scheduled'; reminder: FollowupReminder }
   | { status: 'already_scheduled'; reminder: FollowupReminder }
@@ -102,11 +95,9 @@ function toPermission(status: string): ReminderPermission {
   return 'undetermined';
 }
 
-/**
- * Resolves a `YYYY-MM-DD` due date to 09:00 local time. Returns `null` when
- * the value is malformed or already in the past, so a reminder is never
- * scheduled for a time that already passed.
- */
+// Resolves a `YYYY-MM-DD` due date to 09:00 local time. Returns null when
+// the value is malformed or already in the past, so a reminder is never
+// scheduled for a time that already passed.
 export function resolveReminderDate(dueDate: string, now: Date): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dueDate);
   if (!match) return null;
@@ -144,10 +135,8 @@ export function createLocalNotificationAdapter({
     await storage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(reminders));
   }
 
-  /**
-   * Drops stored metadata whose native notification no longer exists, so a
-   * reminder the OS removed cannot block scheduling a new one.
-   */
+  // Drops stored metadata whose native notification no longer exists, so a
+  // reminder the OS removed cannot block scheduling a new one.
   async function reconcile(): Promise<FollowupReminder[]> {
     const stored = await readStored();
     if (stored.length === 0) return stored;

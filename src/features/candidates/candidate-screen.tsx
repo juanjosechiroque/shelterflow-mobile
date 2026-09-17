@@ -221,7 +221,7 @@ export function CandidateScreen() {
           {candidate.status === 'DECISION_PENDING' ? (
             <ActionLink
               href={{
-                pathname: '/animals/candidate/[candidateId]/confirm-adoption',
+                pathname: '/adoptions/confirm/[candidateId]',
                 params: { candidateId: candidate.id },
               }}
               label={t('candidates.confirmAdoption')}

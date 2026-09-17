@@ -1,30 +1,19 @@
 import { Linking } from 'react-native';
 
-/**
- * Native contact actions for a candidate's phone number.
- *
- * Opening an external application only records that ShelterFlow attempted to
- * open a URL. It never proves that a call connected or a message was sent, so
- * callers must ask the user to record the contact outcome explicitly.
- */
-
 export type ContactChannel = 'phone' | 'whatsapp';
 
 export interface NormalizedPhoneNumber {
-  /** Digits only, without a leading plus. Used for `wa.me` links. */
+  // Digits only, without a leading plus. Used for `wa.me` links.
   digits: string;
-  /** Dialable value that preserves a leading plus when the source had one. */
+  // Dialable value that preserves a leading plus when the source had one.
   dialable: string;
 }
 
 const MIN_DIGITS = 7;
 const MAX_DIGITS = 15;
 
-/**
- * Accepts only values made of digits, spaces, and the usual separators, then
- * reduces them to a dialable form. Returns `null` for anything unusable so the
- * UI can disable the action instead of building a broken link.
- */
+// Returns null for anything unusable so the UI can disable the action
+// instead of building a broken link.
 export function normalizePhoneNumber(
   raw: string | null | undefined,
 ): NormalizedPhoneNumber | null {
@@ -76,10 +65,8 @@ function toMessage(error: unknown): string {
   return String(error);
 }
 
-/**
- * Checks whether the platform can handle the URL and only then opens it, so an
- * unsupported scheme is reported instead of rejecting at `openURL` time.
- */
+// Checks whether the platform can handle the URL and only then opens it, so
+// an unsupported scheme is reported instead of rejecting at `openURL` time.
 export async function openContactUrl(
   url: string,
   linking: LinkingLike = Linking,

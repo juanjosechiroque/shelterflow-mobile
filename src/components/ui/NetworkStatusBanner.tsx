@@ -6,21 +6,15 @@ import { useConnectivity } from '@/providers/connectivity-provider';
 import { SecondaryButton } from './SecondaryButton';
 
 export interface NetworkStatusBannerProps {
-  /** True when the screen is showing data it already has (cached or confirmed). */
+  // True when the screen is showing data it already has (cached or confirmed).
   hasData?: boolean;
   isFetching?: boolean;
   isError?: boolean;
   onRetry?: () => void;
 }
 
-/**
- * Communicates the network and cache state without pretending that cached
- * data is confirmed server state. Renders nothing when online and settled.
- *
- * - offline: the device has no connection.
- * - cached: an error occurred but previously loaded data is still shown.
- * - refreshing: a background or manual refresh is in flight over shown data.
- */
+// Never implies cached data is confirmed server state. Renders nothing when
+// online and settled.
 export function NetworkStatusBanner({
   hasData = false,
   isFetching = false,

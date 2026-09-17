@@ -470,18 +470,22 @@ linting, formatting, and tests are never disabled to make a change pass.
 
 ### Structural regression guards
 
-Some defects are structural rather than behavioral: they come from file layout or JSX shape, and a
-normal test cannot reach them. These guards exist because each one corresponds to a real failure
-that reached a device.
+Some defects are structural rather than behavioral: they come from file layout, JSX shape, or an
+import crossing a boundary the code review process is expected to catch by eye. Most of these
+guards exist because a real failure already reached a device; the feature-boundary guard instead
+encodes a documented rule ([ADR-021](decisions/021-keep-implementation-feature-local.md)) as a
+check instead of leaving it to review alone — and caught one real, pre-existing violation the
+first time it ran.
 
 | Guard                                  | Prevents                                                                                                                                                                            |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `__tests__/route-structure.test.ts`    | A dynamic route file (`[x].tsx`) coexisting with a sibling directory `[x]/`, which Expo Router cannot map to the same segment                                                       |
-| `__tests__/link-aschild-style.test.ts` | An array-literal `style` on a direct child of `<Link asChild>`, which makes expo-router throw at render time; the detector skips JSX whitespace instead of assuming the first child |
-| `__tests__/mock-import-guard.test.ts`  | Any production file other than `mock-repository.ts` importing a `mock-*` data module                                                                                                |
+| `tests/route-structure.test.ts`        | A dynamic route file (`[x].tsx`) coexisting with a sibling directory `[x]/`, which Expo Router cannot map to the same segment                                                       |
+| `tests/link-aschild-style.test.ts`     | An array-literal `style` on a direct child of `<Link asChild>`, which makes expo-router throw at render time; the detector skips JSX whitespace instead of assuming the first child |
+| `tests/mock-import-guard.test.ts`      | Any production file other than `mock-repository.ts` importing a `mock-*` data module                                                                                                |
+| `tests/feature-boundary-guard.test.ts` | One feature importing another feature's `*-repository.ts` or `*-screen.tsx` directly instead of its query-key, type, or component exports                                           |
 
 Guard tests that inspect the file system or use the TypeScript compiler API need Node globals, so
-type contexts are split: `tsconfig.json` excludes `__tests__` and `jest.setup.ts` to keep the
+type contexts are split: `tsconfig.json` excludes `tests` and `jest.setup.ts` to keep the
 application free of Node types, and `tsconfig.test.json` extends it with `jest` and `node`. The
 `typecheck` script runs both.
 
