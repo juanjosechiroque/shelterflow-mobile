@@ -43,12 +43,19 @@ const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 const { useAuth } = jest.requireMock('@/features/auth/auth-provider') as {
   useAuth: jest.Mock;
 };
-const { pickImageFromGallery, uploadImageToStorage, validateImage } =
-  jest.requireMock('@/lib/image-capture') as {
-    pickImageFromGallery: jest.Mock;
-    uploadImageToStorage: jest.Mock;
-    validateImage: jest.Mock;
-  };
+const {
+  captureImageWithCamera,
+  getPhotoSignedUrl,
+  pickImageFromGallery,
+  uploadImageToStorage,
+  validateImage,
+} = jest.requireMock('@/lib/image-capture') as {
+  captureImageWithCamera: jest.Mock;
+  getPhotoSignedUrl: jest.Mock;
+  pickImageFromGallery: jest.Mock;
+  uploadImageToStorage: jest.Mock;
+  validateImage: jest.Mock;
+};
 
 const shelterId = '00000000-0000-4000-8000-000000000001';
 const adoptionId = '00000000-0000-4000-8000-000000000091';
@@ -375,5 +382,196 @@ describe('Persisted adoption photo sections', () => {
       ),
     ).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Reintentar' })).toBeNull();
+  });
+
+  it('completes the handover photo flow via the camera', async () => {
+    const path = `${shelterId}/adoptions/${adoptionId}/camera.jpeg`;
+    captureImageWithCamera.mockResolvedValue({
+      status: 'success',
+      asset: pickedAsset,
+    });
+    uploadImageToStorage.mockResolvedValue(path);
+    const { client, mocks } = createClient({
+      set_adoption_photo: { data: adoptionId, error: null },
+    });
+
+    const screen = await renderWithClient(
+      <PersistedAdoptionDetailScreen />,
+      client,
+    );
+    await screen.findByText('Sin foto');
+    await fireEvent.press(screen.getByRole('button', { name: 'Tomar foto' }));
+
+    await waitFor(() => {
+      expect(mocks.rpc).toHaveBeenCalledWith('set_adoption_photo', {
+        p_adoption_id: adoptionId,
+        p_path: path,
+      });
+    });
+    expect(pickImageFromGallery).not.toHaveBeenCalled();
+  });
+
+  it('completes the follow-up photo flow via the camera', async () => {
+    mockedUseLocalSearchParams.mockReturnValue({ adoptionId, followupId });
+    const path = `${shelterId}/followups/${followupId}/camera.jpeg`;
+    captureImageWithCamera.mockResolvedValue({
+      status: 'success',
+      asset: pickedAsset,
+    });
+    uploadImageToStorage.mockResolvedValue(path);
+    const { client, mocks } = createClient({
+      set_followup_photo: { data: followupId, error: null },
+    });
+
+    const screen = await renderWithClient(<CompleteFollowupScreen />, client);
+    await screen.findByText('Sin foto');
+    await fireEvent.press(screen.getByRole('button', { name: 'Tomar foto' }));
+
+    await waitFor(() => {
+      expect(mocks.rpc).toHaveBeenCalledWith('set_followup_photo', {
+        p_followup_id: followupId,
+        p_path: path,
+      });
+    });
+    expect(pickImageFromGallery).not.toHaveBeenCalled();
+  });
+
+  it('replacing an existing handover photo fetches a signed URL for the new path', async () => {
+    getPhotoSignedUrl.mockImplementation(
+      async (
+        signedUrlClient: SupabaseClient<Database>,
+        path: string,
+        ttl = 3600,
+      ) => {
+        const { data, error } = await signedUrlClient.storage
+          .from('shelter-media')
+          .createSignedUrl(path, ttl);
+        if (error) throw error;
+        if (!data?.signedUrl) throw new Error('Failed to generate signed URL');
+        return { path, signedUrl: data.signedUrl };
+      },
+    );
+    let currentPhotoPath: string | null =
+      `${shelterId}/adoptions/${adoptionId}/old.jpeg`;
+    const newPath = `${shelterId}/adoptions/${adoptionId}/new.jpeg`;
+
+    const adoptionDetailMaybeSingle = jest.fn(() =>
+      Promise.resolve({
+        data: { ...adoptionRow, adoption_photo_path: currentPhotoPath },
+        error: null,
+      }),
+    );
+    const followupListOrder = jest.fn(() =>
+      Promise.resolve({ data: [followupRow], error: null }),
+    );
+    const from = jest.fn((table: string) => {
+      if (table === 'adoptions') {
+        return {
+          select: jest.fn(() => ({
+            eq: jest.fn(() => ({ maybeSingle: adoptionDetailMaybeSingle })),
+          })),
+        };
+      }
+      if (table === 'followups') {
+        return {
+          select: jest.fn(() => ({
+            eq: jest.fn(() => ({ order: followupListOrder })),
+          })),
+        };
+      }
+      throw new Error(`unexpected table: ${table}`);
+    });
+    const rpc = jest.fn((name: string) => {
+      if (name === 'set_adoption_photo') {
+        currentPhotoPath = newPath;
+        return Promise.resolve({ data: adoptionId, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    const createSignedUrlMock = jest.fn((path: string) =>
+      Promise.resolve({
+        data: { signedUrl: `https://signed.example.com/${path}` },
+        error: null,
+      }),
+    );
+    const client = {
+      from,
+      rpc,
+      storage: {
+        from: jest.fn(() => ({ createSignedUrl: createSignedUrlMock })),
+      },
+    } as unknown as SupabaseClient<Database>;
+
+    pickImageFromGallery.mockResolvedValue({
+      status: 'success',
+      asset: pickedAsset,
+    });
+    uploadImageToStorage.mockResolvedValue(newPath);
+
+    const screen = await renderWithClient(
+      <PersistedAdoptionDetailScreen />,
+      client,
+    );
+
+    await waitFor(() => {
+      expect(createSignedUrlMock).toHaveBeenCalledWith(
+        `${shelterId}/adoptions/${adoptionId}/old.jpeg`,
+        3600,
+      );
+    });
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Seleccionar de galería' }),
+    );
+
+    await waitFor(() => {
+      expect(rpc).toHaveBeenCalledWith('set_adoption_photo', {
+        p_adoption_id: adoptionId,
+        p_path: newPath,
+      });
+    });
+
+    await waitFor(() => {
+      expect(createSignedUrlMock).toHaveBeenCalledWith(newPath, 3600);
+    });
+  });
+
+  it('does not start a second follow-up upload while one is already in flight', async () => {
+    mockedUseLocalSearchParams.mockReturnValue({ adoptionId, followupId });
+    pickImageFromGallery.mockResolvedValue({
+      status: 'success',
+      asset: pickedAsset,
+    });
+    let resolveUpload!: (path: string) => void;
+    uploadImageToStorage.mockReturnValue(
+      new Promise<string>((resolve) => {
+        resolveUpload = resolve;
+      }),
+    );
+    const { client } = createClient({
+      set_followup_photo: { data: followupId, error: null },
+    });
+
+    const screen = await renderWithClient(<CompleteFollowupScreen />, client);
+    await screen.findByText('Sin foto');
+    const galleryButton = screen.getByRole('button', {
+      name: 'Seleccionar de galería',
+    });
+    await fireEvent.press(galleryButton);
+    await waitFor(() => {
+      expect(uploadImageToStorage).toHaveBeenCalledTimes(1);
+    });
+
+    await fireEvent.press(galleryButton);
+    await fireEvent.press(screen.getByRole('button', { name: 'Tomar foto' }));
+
+    expect(pickImageFromGallery).toHaveBeenCalledTimes(1);
+    expect(captureImageWithCamera).not.toHaveBeenCalled();
+    expect(uploadImageToStorage).toHaveBeenCalledTimes(1);
+
+    resolveUpload(`${shelterId}/followups/${followupId}/photo.jpeg`);
+    await waitFor(() => {
+      expect(uploadImageToStorage).toHaveBeenCalledTimes(1);
+    });
   });
 });
