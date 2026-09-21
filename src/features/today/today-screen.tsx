@@ -6,8 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
 import { mockShelter } from '@/features/animals/mock-animals';
-
-import { mockTodayTasks, type MockTodayTask } from './mock-tasks';
+import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
+import { selectTodayTasks } from '@/features/prototype-flow/prototype-flow-selectors';
+import type { MockTodayTask } from '@/features/prototype-flow/types';
 
 const taskToneStyles: Record<
   MockTodayTask['tone'],
@@ -50,8 +51,30 @@ function getTaskHint(t: TFunction, task: MockTodayTask): string {
   }
 }
 
+function taskHref(task: MockTodayTask):
+  | { pathname: '/animals/[animalId]'; params: { animalId: string } }
+  | {
+      pathname: '/animals/followups/[animalId]';
+      params: { animalId: string };
+    } {
+  if (task.kind === 'followups') {
+    return {
+      pathname: '/animals/followups/[animalId]',
+      params: { animalId: task.animalId },
+    };
+  }
+  return {
+    pathname: '/animals/[animalId]',
+    params: { animalId: task.animalId },
+  };
+}
+
 export function TodayScreen() {
   const { t } = useTranslation();
+  const { state } = usePrototypeFlow();
+  const todayTasks = selectTodayTasks(state);
+
+  const tasks: MockTodayTask[] = todayTasks;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -88,18 +111,12 @@ export function TodayScreen() {
         </View>
 
         <View style={styles.taskList}>
-          {mockTodayTasks.map((task) => {
+          {tasks.map((task) => {
             const tone = taskToneStyles[task.tone];
+            const href = taskHref(task);
 
             return (
-              <Link
-                href={{
-                  pathname: '/animals/[animalId]',
-                  params: { animalId: task.animalId },
-                }}
-                key={task.id}
-                asChild
-              >
+              <Link href={href} key={task.id} asChild>
                 <Pressable
                   accessibilityRole="button"
                   style={({ pressed }) => [

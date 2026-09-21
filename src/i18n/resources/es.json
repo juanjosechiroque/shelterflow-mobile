@@ -161,8 +161,11 @@
     "notes": "Notas",
     "actions": "Acciones",
     "viewEvaluation": "Ver evaluación",
+    "registerEvaluation": "Registrar evaluación",
     "viewMeetings": "Ver reuniones",
     "confirmAdoption": "Confirmar adopción",
+    "continueContact": "Continuar contacto",
+    "markDecisionPending": "Marcar para decisión",
     "confirmHint": "La confirmación está disponible solo cuando el proceso está en estado {{status}}.",
     "noEvaluationHint": "Este candidato todavía no tiene una evaluación registrada.",
     "sourceLabels": {
@@ -199,7 +202,19 @@
     },
     "emptyTitle": "Sin evaluación",
     "emptyDescription": "Este candidato todavía no tiene una evaluación registrada.",
-    "backToCandidate": "Volver al candidato"
+    "backToCandidate": "Volver al candidato",
+    "form": {
+      "title": "Registrar evaluación",
+      "overallFit": "Ajuste general",
+      "positiveFactors": "Factores positivos",
+      "positiveFactorPlaceholder": "Ej. Experiencia con perros",
+      "concerns": "Preocupaciones",
+      "concernPlaceholder": "Ej. Sin acceso a jardín",
+      "notes": "Notas",
+      "notesPlaceholder": "Observaciones adicionales",
+      "recommendation": "Recomendación",
+      "submit": "Guardar evaluación"
+    }
   },
   "meetings": {
     "title": "Reuniones",
@@ -226,6 +241,16 @@
       "concerns": "Con preocupaciones",
       "notRecommended": "No recomendada"
     },
+    "form": {
+      "title": "Programar una reunión",
+      "type": "Tipo",
+      "date": "Fecha (AAAA-MM-DD)",
+      "notes": "Notas",
+      "notesPlaceholder": "Observaciones de la reunión",
+      "scheduleAction": "Programar reunión",
+      "result": "Resultado",
+      "completeAction": "Completar reunión"
+    },
     "notFoundTitle": "Candidato no encontrado"
   },
   "adoptions": {
@@ -242,6 +267,7 @@
       "warning": "Al confirmar, la adopción quedará registrada y los otros candidatos quedarán sin seleccionar. Esta acción se realiza de forma atómica en el servidor.",
       "successTitle": "Adopción confirmada",
       "successDescription": "La adopción del animal quedó registrada. Ahora puedes revisar y completar los seguimientos.",
+      "viewFollowUps": "Ver seguimientos",
       "done": "Listo"
     },
     "notFoundTitle": "Candidato no encontrado"
@@ -265,7 +291,12 @@
       "interventionRequired": "Requiere intervención"
     },
     "noAdoptionTitle": "Sin adopción activa",
-    "noAdoptionDescription": "Este animal no tiene una adopción activa para mostrar seguimientos."
+    "noAdoptionDescription": "Este animal no tiene una adopción activa para mostrar seguimientos.",
+    "form": {
+      "outcome": "Resultado",
+      "notesPlaceholder": "Observaciones del seguimiento",
+      "completeAction": "Completar seguimiento"
+    }
   },
   "settings": {
     "title": "Configuración",

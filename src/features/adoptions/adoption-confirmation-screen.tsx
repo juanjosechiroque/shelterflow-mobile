@@ -1,33 +1,47 @@
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/constants/theme';
+import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
+import {
+  selectAnimalById,
+  selectCandidateById,
+  selectFollowUpsForAnimal,
+  canConfirmAdoption,
+} from '@/features/prototype-flow/prototype-flow-selectors';
 import { formatDate } from '@/i18n/format';
 import { CandidateStatusBadge } from '@/features/animals/components/candidate-status-badge';
-import { getMockAnimalById } from '@/features/animals/mock-animals';
-import {
-  getCandidateStatusLabel,
-  parseOccurredOn,
-} from '@/features/animals/presenters';
-import { getCandidateDetailById } from '@/features/candidates/mock-candidates';
+import { getCandidateStatusLabel } from '@/features/animals/presenters';
 
 export function AdoptionConfirmationScreen() {
   const { t } = useTranslation();
+  const { state, dispatch } = usePrototypeFlow();
   const params = useLocalSearchParams<{ candidateId: string }>();
   const candidateId = Array.isArray(params.candidateId)
     ? params.candidateId[0]
     : params.candidateId;
-  const candidate = getCandidateDetailById(candidateId);
-  const animal = candidate ? getMockAnimalById(candidate.animalId) : undefined;
+  const candidate = selectCandidateById(state, candidateId);
+  const animal = candidate
+    ? selectAnimalById(state, candidate.animalId)
+    : undefined;
+  const adoption = candidate
+    ? state.adoptions.find(
+        (a) => a.candidateId === candidate.id && a.status === 'ACTIVE',
+      )
+    : undefined;
+  const followUps = animal ? selectFollowUpsForAnimal(state, animal.id) : [];
 
-  const [confirmed, setConfirmed] = useState(false);
-
-  const canConfirm = candidate?.status === 'DECISION_PENDING' && !confirmed;
+  const canConfirm = canConfirmAdoption(state, candidateId);
 
   function handleConfirm() {
-    setConfirmed(true);
+    if (!canConfirm) return;
+    const today = new Date().toISOString().slice(0, 10);
+    dispatch({
+      type: 'CONFIRM_ADOPTION',
+      candidateId,
+      adoptionDate: today,
+    });
   }
 
   if (!candidate || !animal) {
@@ -82,7 +96,7 @@ export function AdoptionConfirmationScreen() {
             {t('adoptions.confirm.appliedOn')}
           </Text>
           <Text style={styles.summaryValue}>
-            {formatDate(parseOccurredOn(candidate.applicationDate), {
+            {formatDate(new Date(candidate.applicationDate + 'T12:00:00'), {
               dateStyle: 'medium',
             })}
           </Text>
@@ -93,7 +107,7 @@ export function AdoptionConfirmationScreen() {
         <Text style={styles.warningText}>{t('adoptions.confirm.warning')}</Text>
       </View>
 
-      {confirmed ? (
+      {adoption ? (
         <View style={styles.successCard}>
           <Text accessibilityRole="alert" style={styles.successTitle}>
             {t('adoptions.confirm.successTitle')}
@@ -101,9 +115,36 @@ export function AdoptionConfirmationScreen() {
           <Text style={styles.successText}>
             {t('adoptions.confirm.successDescription')}
           </Text>
+          {followUps.length > 0 ? (
+            <Link
+              href={{
+                pathname: '/animals/followups/[animalId]',
+                params: { animalId: animal.id },
+              }}
+              asChild
+            >
+              <Pressable
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.doneButton,
+                  pressed && styles.doneButtonPressed,
+                ]}
+              >
+                <Text style={styles.doneButtonText}>
+                  {t('adoptions.confirm.viewFollowUps')}
+                </Text>
+              </Pressable>
+            </Link>
+          ) : null}
           <Link href="/animals" asChild>
-            <Pressable accessibilityRole="button" style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed && styles.secondaryButtonPressed,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>
                 {t('adoptions.confirm.done')}
               </Text>
             </Pressable>
@@ -177,6 +218,9 @@ const styles = StyleSheet.create({
     minHeight: 50,
     paddingHorizontal: 20,
   },
+  doneButtonPressed: {
+    backgroundColor: colors.primaryPressed,
+  },
   doneButtonText: {
     color: colors.surface,
     fontSize: 16,
@@ -198,6 +242,24 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 22,
     fontWeight: '900',
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    borderColor: colors.primary,
+    borderRadius: 14,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: 12,
+    minHeight: 50,
+    paddingHorizontal: 20,
+  },
+  secondaryButtonPressed: {
+    backgroundColor: colors.primarySoft,
+  },
+  secondaryButtonText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '800',
   },
   stateContainer: {
     alignItems: 'center',

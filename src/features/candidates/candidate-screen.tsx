@@ -1,29 +1,39 @@
 import { Link, Stack, useLocalSearchParams, type Href } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { colors } from '@/constants/theme';
 import { CandidateStatusBadge } from '@/features/animals/components/candidate-status-badge';
-import { getMockAnimalById } from '@/features/animals/mock-animals';
+import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
+import {
+  selectAnimalById,
+  selectCandidateById,
+  selectEvaluationForCandidate,
+  canMarkDecisionPending,
+} from '@/features/prototype-flow/prototype-flow-selectors';
 import {
   getAnimalSexLabel,
   getAnimalSizeLabel,
   getAnimalSpeciesLabel,
   getCandidateStatusLabel,
-  parseOccurredOn,
 } from '@/features/animals/presenters';
-import { getCandidateDetailById } from './mock-candidates';
 import { getCandidateSourceLabel } from './presenters';
 import { formatDate } from '@/i18n/format';
 
 export function CandidateScreen() {
   const { t } = useTranslation();
+  const { state, dispatch } = usePrototypeFlow();
   const params = useLocalSearchParams<{ candidateId: string }>();
   const candidateId = Array.isArray(params.candidateId)
     ? params.candidateId[0]
     : params.candidateId;
-  const candidate = getCandidateDetailById(candidateId);
-  const animal = candidate ? getMockAnimalById(candidate.animalId) : undefined;
+  const candidate = selectCandidateById(state, candidateId);
+  const animal = candidate
+    ? selectAnimalById(state, candidate.animalId)
+    : undefined;
+  const evaluation = candidate
+    ? selectEvaluationForCandidate(state, candidate.id)
+    : undefined;
 
   if (!candidate || !animal) {
     return (
@@ -40,10 +50,30 @@ export function CandidateScreen() {
   }
 
   const canConfirm = candidate.status === 'DECISION_PENDING';
-  const hasEvaluation = candidate.status !== 'NEEDS_EVALUATION';
+  const hasEvaluation = !!evaluation;
+  const canContinueContact = candidate.status === 'EVALUATED';
+  const canMarkDecision = canMarkDecisionPending(state, candidate.id);
+
+  function handleContinueContact(candidateId: string) {
+    dispatch({
+      type: 'CONTINUE_CANDIDATE',
+      candidateId,
+      toStatus: 'CONTACT_PENDING',
+    });
+  }
+
+  function handleMarkDecisionPending(candidateId: string) {
+    dispatch({
+      type: 'MARK_DECISION_PENDING',
+      candidateId,
+    });
+  }
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <Stack.Screen options={{ title: candidate.person.name }} />
 
       <View style={styles.hero}>
@@ -78,9 +108,12 @@ export function CandidateScreen() {
           />
           <InfoRow
             label={t('candidates.appliedOn')}
-            value={formatDate(parseOccurredOn(candidate.applicationDate), {
-              dateStyle: 'medium',
-            })}
+            value={formatDate(
+              new Date(candidate.applicationDate + 'T12:00:00'),
+              {
+                dateStyle: 'medium',
+              },
+            )}
           />
           {candidate.person.email ? (
             <InfoRow
@@ -112,7 +145,12 @@ export function CandidateScreen() {
               pathname: '/animals/candidate/[candidateId]/evaluation',
               params: { candidateId: candidate.id },
             }}
-            label={t('candidates.viewEvaluation')}
+            label={
+              hasEvaluation
+                ? t('candidates.viewEvaluation')
+                : t('candidates.registerEvaluation')
+            }
+            emphasized={!hasEvaluation}
           />
           <ActionLink
             href={{
@@ -121,6 +159,18 @@ export function CandidateScreen() {
             }}
             label={t('candidates.viewMeetings')}
           />
+          {canContinueContact ? (
+            <ActionButton
+              label={t('candidates.continueContact')}
+              onPress={() => handleContinueContact(candidate.id)}
+            />
+          ) : null}
+          {canMarkDecision ? (
+            <ActionButton
+              label={t('candidates.markDecisionPending')}
+              onPress={() => handleMarkDecisionPending(candidate.id)}
+            />
+          ) : null}
           {canConfirm ? (
             <ActionLink
               href={{
@@ -135,7 +185,7 @@ export function CandidateScreen() {
         {!hasEvaluation ? (
           <Text style={styles.hint}>{t('candidates.noEvaluationHint')}</Text>
         ) : null}
-        {!canConfirm ? (
+        {!canConfirm && !canContinueContact && !canMarkDecisionPending ? (
           <Text style={styles.hint}>
             {t('candidates.confirmHint', {
               status: getCandidateStatusLabel(t, candidate.status),
@@ -143,7 +193,7 @@ export function CandidateScreen() {
           </Text>
         ) : null}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -176,11 +226,13 @@ function ActionLink({
 }) {
   return (
     <Link href={href} asChild>
-      <View
-        style={StyleSheet.flatten([
+      <Pressable
+        accessibilityRole="button"
+        style={({ pressed }) => [
           styles.action,
           emphasized && styles.actionEmphasized,
-        ])}
+          pressed && styles.actionPressed,
+        ]}
       >
         <Text
           style={[
@@ -198,8 +250,35 @@ function ActionLink({
         >
           ›
         </Text>
-      </View>
+      </Pressable>
     </Link>
+  );
+}
+
+function ActionButton({
+  label,
+  onPress,
+}: {
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.action,
+        styles.actionEmphasized,
+        pressed && styles.actionPressed,
+      ]}
+    >
+      <Text style={[styles.actionLabel, styles.actionLabelEmphasized]}>
+        {label}
+      </Text>
+      <Text style={[styles.actionChevron, styles.actionChevronEmphasized]}>
+        ›
+      </Text>
+    </Pressable>
   );
 }
 
@@ -237,6 +316,9 @@ const styles = StyleSheet.create({
   actionList: {
     gap: 12,
   },
+  actionPressed: {
+    opacity: 0.7,
+  },
   avatar: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
@@ -264,7 +346,6 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: colors.background,
-    flex: 1,
     padding: 20,
     paddingBottom: 40,
   },
