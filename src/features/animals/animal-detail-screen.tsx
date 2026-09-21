@@ -169,7 +169,7 @@ export function AnimalDetailScreen() {
         ) : (
           candidates.map((candidate, index) => (
             <View key={candidate.id}>
-              {index > 0 ? <View style={styles.divider} /> : null}
+              {index > 0 ? <View style={styles.candidateDivider} /> : null}
               <CandidateRow candidate={candidate} />
             </View>
           ))
@@ -236,6 +236,11 @@ const styles = StyleSheet.create({
   divider: {
     backgroundColor: colors.border,
     height: StyleSheet.hairlineWidth,
+  },
+  candidateDivider: {
+    backgroundColor: colors.border,
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 8,
   },
   hero: {
     alignItems: 'center',

@@ -141,8 +141,6 @@ export function TodayScreen() {
                     </Text>
                     <Text style={styles.taskHint}>{getTaskHint(t, task)}</Text>
                   </View>
-
-                  <Text style={styles.chevron}>›</Text>
                 </Pressable>
               </Link>
             );
@@ -170,10 +168,6 @@ export function TodayScreen() {
 const styles = StyleSheet.create({
   brandBlock: {
     gap: 2,
-  },
-  chevron: {
-    color: colors.textMuted,
-    fontSize: 28,
   },
   container: {
     paddingBottom: 32,

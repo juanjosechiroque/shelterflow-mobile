@@ -3,12 +3,15 @@ import {
   fireEvent,
   render,
   waitFor,
+  within,
   type RenderResult,
 } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 
+import { colors } from '@/constants/theme';
 import { AdoptionConfirmationScreen } from '@/features/adoptions/adoption-confirmation-screen';
 import { AnimalDetailScreen } from '@/features/animals/animal-detail-screen';
 import { AnimalsScreen } from '@/features/animals/animals-screen';
@@ -94,6 +97,31 @@ describe('Candidate and adoption flows', () => {
     expect(screen.getByText('Registrar evaluación')).toBeTruthy();
     expect(screen.getByText('Ver reuniones')).toBeTruthy();
     expect(screen.queryByText('Confirmar adopción')).toBeNull();
+  });
+
+  it('presents "Registrar evaluación" as a primary action and "Ver reuniones" as secondary', async () => {
+    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-andrea' });
+    const screen = await renderWithProvider(<CandidateScreen />);
+
+    const registerButton = screen.getByRole('button', {
+      name: 'Registrar evaluación',
+    });
+    const registerStyle = StyleSheet.flatten(registerButton.props.style);
+    expect(registerStyle.backgroundColor).toBe(colors.primary);
+    expect(registerStyle.borderColor).toBe(colors.primary);
+    const registerLabel = within(registerButton).getByText(
+      'Registrar evaluación',
+    );
+    const registerLabelStyle = StyleSheet.flatten(registerLabel.props.style);
+    expect(registerLabelStyle.color).toBe(colors.surface);
+
+    const meetingsLink = screen.getByRole('button', { name: 'Ver reuniones' });
+    const meetingsStyle = StyleSheet.flatten(meetingsLink.props.style);
+    expect(meetingsStyle.backgroundColor).toBe(colors.surface);
+    expect(meetingsStyle.borderColor).toBe(colors.border);
+    const meetingsLabel = within(meetingsLink).getByText('Ver reuniones');
+    const meetingsLabelStyle = StyleSheet.flatten(meetingsLabel.props.style);
+    expect(meetingsLabelStyle.color).toBe(colors.text);
   });
 
   it('continues an evaluated candidate to contact pending', async () => {

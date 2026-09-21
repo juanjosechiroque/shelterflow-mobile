@@ -282,7 +282,7 @@ function ScheduleMeetingForm({ candidateId }: { candidateId: string }) {
       <TextInput
         value={scheduledOn}
         onChangeText={setScheduledOn}
-        placeholder="YYYY-MM-DD"
+        placeholder={t('meetings.form.datePlaceholder')}
         placeholderTextColor={colors.textMuted}
         style={styles.textInput}
         keyboardType="numbers-and-punctuation"

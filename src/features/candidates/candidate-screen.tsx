@@ -150,7 +150,7 @@ export function CandidateScreen() {
                 ? t('candidates.viewEvaluation')
                 : t('candidates.registerEvaluation')
             }
-            emphasized={!hasEvaluation}
+            variant={hasEvaluation ? 'secondary' : 'primary'}
           />
           <ActionLink
             href={{
@@ -178,7 +178,7 @@ export function CandidateScreen() {
                 params: { candidateId: candidate.id },
               }}
               label={t('candidates.confirmAdoption')}
-              emphasized
+              variant="primary"
             />
           ) : null}
         </View>
@@ -218,37 +218,31 @@ function InfoRow({
 function ActionLink({
   href,
   label,
-  emphasized,
+  variant = 'secondary',
 }: {
   href: Href;
   label: string;
-  emphasized?: boolean;
+  variant?: 'primary' | 'secondary';
 }) {
+  const isPrimary = variant === 'primary';
   return (
     <Link href={href} asChild>
       <Pressable
         accessibilityRole="button"
         style={({ pressed }) => [
           styles.action,
-          emphasized && styles.actionEmphasized,
-          pressed && styles.actionPressed,
+          isPrimary && styles.actionEmphasized,
+          pressed &&
+            (isPrimary ? styles.actionPressedEmphasized : styles.actionPressed),
         ]}
       >
         <Text
           style={[
             styles.actionLabel,
-            emphasized && styles.actionLabelEmphasized,
+            isPrimary && styles.actionLabelEmphasized,
           ]}
         >
           {label}
-        </Text>
-        <Text
-          style={[
-            styles.actionChevron,
-            emphasized && styles.actionChevronEmphasized,
-          ]}
-        >
-          ›
         </Text>
       </Pressable>
     </Link>
@@ -269,14 +263,11 @@ function ActionButton({
       style={({ pressed }) => [
         styles.action,
         styles.actionEmphasized,
-        pressed && styles.actionPressed,
+        pressed && styles.actionPressedEmphasized,
       ]}
     >
       <Text style={[styles.actionLabel, styles.actionLabelEmphasized]}>
         {label}
-      </Text>
-      <Text style={[styles.actionChevron, styles.actionChevronEmphasized]}>
-        ›
       </Text>
     </Pressable>
   );
@@ -290,16 +281,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     minHeight: 54,
     paddingHorizontal: 16,
-  },
-  actionChevron: {
-    color: colors.textMuted,
-    fontSize: 24,
-  },
-  actionChevronEmphasized: {
-    color: colors.surface,
   },
   actionEmphasized: {
     backgroundColor: colors.primary,
@@ -318,6 +301,9 @@ const styles = StyleSheet.create({
   },
   actionPressed: {
     opacity: 0.7,
+  },
+  actionPressedEmphasized: {
+    backgroundColor: colors.primaryPressed,
   },
   avatar: {
     alignItems: 'center',
