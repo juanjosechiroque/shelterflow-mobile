@@ -147,9 +147,8 @@ Exact SQL design and indexes are decided alongside Supabase migrations, not in m
 
 ### Atomic operations
 
-At minimum, these operations require PostgreSQL transactions:
+User and shelter provisioning is external to the mobile application. At minimum, these operations require PostgreSQL transactions:
 
-- `create_shelter_account()`;
 - `confirm_adoption()`;
 - `return_adoption()`.
 

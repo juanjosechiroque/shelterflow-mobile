@@ -14,6 +14,7 @@ V1 deliberately excludes initial application forms, generic CRM functionality, v
 
 - Node.js 24 LTS recommended (`.nvmrc`)
 - npm 10 or newer
+- Docker (Docker Desktop for Mac or an equivalent Docker Engine) running locally, required only for the local Supabase backend
 - Android Studio and an Android emulator, or a physical Android device with USB debugging enabled
 
 Expo SDK 57 requires Node.js 22.13 or newer. The project pins the recommended development line to Node.js 24 LTS while allowing compatible Node.js versions through the `engines` field.
@@ -45,6 +46,20 @@ npm run lint
 npm run format:check
 npm test
 ```
+
+## Local Supabase backend
+
+The project ships a reproducible local Supabase backend under `supabase/`. Docker must be running before any of these commands:
+
+```bash
+npm run supabase:start     # start the local stack (migrations applied)
+npm run supabase:status    # show local service URLs and ports
+npm run supabase:reset     # reset to migrations and reapply supabase/seed.sql
+npm run supabase:test      # run database tests (pgTAP) against the local database
+npm run supabase:stop      # stop the local stack
+```
+
+Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in `supabase/seed.sql` and are reapplied by every reset. Seed data is deterministic and clearly fictitious (invented names and `example.com` addresses). No remote Supabase project is linked or modified by these commands. The mobile app still uses its in-memory prototype and does not connect to Supabase yet.
 
 ## Application variants
 
