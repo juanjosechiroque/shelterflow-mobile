@@ -55,7 +55,7 @@ export function CandidateScreen() {
   const canMarkDecision = canMarkDecisionPending(state, candidate.id);
 
   function handleContinueContact(candidateId: string) {
-    commands.continueContact(candidateId, 'CONTACT_PENDING');
+    commands.continueContact(candidateId);
   }
 
   function handleMarkDecisionPending(candidateId: string) {

@@ -263,7 +263,7 @@ describe('Candidate and adoption flows', () => {
           concerns: [],
           recommendation: 'CONTINUE',
         });
-        commands.continueContact('luna-andrea', 'CONTACT_PENDING');
+        commands.continueContact('luna-andrea');
         commands.scheduleMeeting('luna-andrea', 'HOME_VISIT', '2026-09-01');
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }, []);
