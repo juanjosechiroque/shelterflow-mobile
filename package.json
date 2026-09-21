@@ -45,7 +45,7 @@
     "android:device": "cross-env APP_VARIANT=development expo run:android --device",
     "ios": "cross-env APP_VARIANT=development expo run:ios",
     "web": "cross-env APP_VARIANT=development expo start --web",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "expo lint --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

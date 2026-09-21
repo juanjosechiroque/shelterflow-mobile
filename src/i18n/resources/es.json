@@ -4,13 +4,268 @@
   },
   "navigation": {
     "home": "Inicio",
+    "today": "Hoy",
+    "animals": "Animales",
     "settings": "Configuración"
   },
   "foundation": {
-    "eyebrow": "FASE 0",
     "title": "La base de ShelterFlow está lista",
     "description": "Una aplicación móvil para acompañar cada adopción desde la evaluación hasta el seguimiento.",
     "settingsAction": "Configurar idioma"
+  },
+  "today": {
+    "eyebrow": "TRABAJO PENDIENTE",
+    "title": "Hoy",
+    "subtitle": "Estas son las adopciones que necesitan tu atención.",
+    "viewAnimals": "Ver todos los animales",
+    "tasks": {
+      "evaluations_one": "{{count}} candidato necesita evaluación",
+      "evaluations_other": "{{count}} candidatos necesitan evaluación",
+      "meetings_one": "{{count}} reunión programada para hoy",
+      "meetings_other": "{{count}} reuniones programadas para hoy",
+      "decisions_one": "{{count}} decisión de adopción pendiente",
+      "decisions_other": "{{count}} decisiones de adopción pendientes",
+      "followups_one": "{{count}} seguimiento pendiente",
+      "followups_other": "{{count}} seguimientos pendientes",
+      "reevaluations_one": "{{count}} animal necesita reevaluación",
+      "reevaluations_other": "{{count}} animales necesitan reevaluación"
+    },
+    "hints": {
+      "evaluations": "Revisa los candidatos de {{animalName}}.",
+      "meetings": "Hay un encuentro importante para {{animalName}}.",
+      "decisions": "El proceso de {{animalName}} está listo para una decisión.",
+      "followups": "Revisa la adopción activa de {{animalName}}.",
+      "reevaluations": "{{animalName}} requiere una revisión humana."
+    }
+  },
+  "animals": {
+    "title": "Animales",
+    "subtitle": "Sigue el estado de cada proceso de adopción.",
+    "results_one": "{{count}} animal",
+    "results_other": "{{count}} animales",
+    "candidates": {
+      "title": "Candidatos",
+      "empty": "Todavía no hay candidatos registrados para este animal.",
+      "count_one": "{{count}} candidato",
+      "count_other": "{{count}} candidatos",
+      "status": {
+        "needsEvaluation": "Necesita evaluación",
+        "evaluated": "Evaluado",
+        "contactPending": "Contacto pendiente",
+        "meetingScheduled": "Reunión programada",
+        "decisionPending": "Decisión pendiente",
+        "selected": "Seleccionado",
+        "notSelected": "No seleccionado",
+        "withdrawn": "Retirado"
+      },
+      "rowAccessibility": "Abrir el proceso de {{name}}"
+    },
+    "timeline": {
+      "title": "Línea de tiempo",
+      "events": {
+        "animalReady": "{{animalName}} quedó listo para adopción.",
+        "candidateCreated": "{{personName}} se registró como candidato.",
+        "evaluationRecorded": "Se registró la evaluación de {{personName}}.",
+        "meetingScheduled": "Se programó una reunión con {{personName}}.",
+        "animalInProcess": "{{animalName}} pasó a un proceso de adopción activo.",
+        "decisionPending": "El proceso de {{personName}} quedó listo para una decisión.",
+        "adoptionConfirmed": "Se confirmó la adopción con {{personName}}.",
+        "followUpsPlanned": "Se planificaron los seguimientos de la adopción.",
+        "adoptionReturned": "La adopción con {{personName}} fue devuelta.",
+        "reevaluationRequired": "{{animalName}} requiere una reevaluación humana."
+      }
+    },
+    "filters": {
+      "all": "Todos",
+      "ready": "Listos",
+      "inProcess": "En proceso",
+      "adopted": "Adoptados",
+      "reevaluation": "Reevaluación"
+    },
+    "status": {
+      "preparing": "En preparación",
+      "ready": "Listo",
+      "inProcess": "En proceso",
+      "adopted": "Adoptado",
+      "reevaluation": "Reevaluación",
+      "notAvailable": "No disponible"
+    },
+    "species": {
+      "dog": "Perro",
+      "cat": "Gato",
+      "other": "Otra especie",
+      "unknown": "Especie desconocida"
+    },
+    "sex": {
+      "male": "Macho",
+      "female": "Hembra",
+      "unknown": "Desconocido"
+    },
+    "size": {
+      "small": "Pequeño",
+      "medium": "Mediano",
+      "large": "Grande",
+      "unknown": "Desconocido"
+    },
+    "age": {
+      "months_one": "Aproximadamente {{count}} mes",
+      "months_other": "Aproximadamente {{count}} meses",
+      "years_one": "Aproximadamente {{count}} año",
+      "years_other": "Aproximadamente {{count}} años",
+      "unknown": "Edad desconocida"
+    },
+    "card": {
+      "accessibilityLabel": "Abrir a {{name}}, estado: {{status}}"
+    },
+    "empty": {
+      "title": "No hay animales en este estado",
+      "description": "Prueba con otro filtro para continuar."
+    },
+    "detail": {
+      "title": "Detalle del animal",
+      "overview": "Información general",
+      "species": "Especie",
+      "sex": "Sexo",
+      "age": "Edad",
+      "size": "Tamaño",
+      "currentProcess": "Proceso actual",
+      "activeCandidates": "Candidatos registrados",
+      "nextStep": "Siguiente paso",
+      "reviewFollowUps": "Revisar seguimientos",
+      "nextSteps": {
+        "preparing": "Completar la preparación antes de habilitar la adopción.",
+        "ready": "Revisar candidatos o esperar una nueva postulación preseleccionada.",
+        "inProcess": "Continuar evaluaciones, reuniones y decisiones pendientes.",
+        "adopted": "Revisar y completar los seguimientos de la adopción.",
+        "reevaluation": "Realizar una revisión humana antes de cambiar su disponibilidad.",
+        "notAvailable": "El refugio debe decidir cuándo reiniciar la preparación."
+      },
+      "prototype": {
+        "title": "Datos de demostración",
+        "description": "Este prototipo usa información ficticia. Las evaluaciones, reuniones y confirmaciones de adopción se añadirán en fases posteriores."
+      },
+      "notFoundTitle": "Animal no encontrado",
+      "notFoundDescription": "No pudimos encontrar este animal en los datos de demostración.",
+      "goBack": "Volver"
+    }
+  },
+  "candidates": {
+    "title": "Candidato",
+    "overview": "Información general",
+    "animal": "Animal",
+    "animalHint": "{{species}} · {{sex}} · {{size}}",
+    "source": "Fuente",
+    "appliedOn": "Postulado el",
+    "email": "Correo",
+    "phone": "Teléfono",
+    "notes": "Notas",
+    "actions": "Acciones",
+    "viewEvaluation": "Ver evaluación",
+    "viewMeetings": "Ver reuniones",
+    "confirmAdoption": "Confirmar adopción",
+    "confirmHint": "La confirmación está disponible solo cuando el proceso está en estado {{status}}.",
+    "noEvaluationHint": "Este candidato todavía no tiene una evaluación registrada.",
+    "sourceLabels": {
+      "referral": "Referido",
+      "application": "Solicitud",
+      "walkIn": "Visita al refugio",
+      "previousAdopter": "Adoptante anterior",
+      "unknown": "Desconocida"
+    },
+    "notFoundTitle": "Candidato no encontrado",
+    "notFoundDescription": "No pudimos encontrar este candidato en los datos de demostración."
+  },
+  "evaluations": {
+    "title": "Evaluación",
+    "summary": "Resumen",
+    "animal": "Animal",
+    "candidate": "Candidato",
+    "fit": "Ajuste",
+    "recordedOn": "Registrada el",
+    "positiveFactors": "Factores positivos",
+    "concerns": "Preocupaciones",
+    "notes": "Notas",
+    "noConcerns": "Sin preocupaciones registradas.",
+    "recommendation": "Recomendación",
+    "fits": {
+      "strong": "Fuerte",
+      "possible": "Posible",
+      "concerns": "Con preocupaciones"
+    },
+    "recommendations": {
+      "continue": "Continuar",
+      "moreInformation": "Más información",
+      "doNotContinue": "No continuar"
+    },
+    "emptyTitle": "Sin evaluación",
+    "emptyDescription": "Este candidato todavía no tiene una evaluación registrada.",
+    "backToCandidate": "Volver al candidato"
+  },
+  "meetings": {
+    "title": "Reuniones",
+    "subtitle": "Interacciones registradas con {{personName}} sobre {{animalName}}.",
+    "resultLabel": "Resultado",
+    "noResultHint": "Reunión completada sin resultado registrado.",
+    "emptyTitle": "Sin reuniones",
+    "emptyDescription": "Todavía no hay reuniones registradas para este candidato.",
+    "types": {
+      "interview": "Entrevista",
+      "visit": "Visita",
+      "meetAndGreet": "Conocimiento",
+      "homeVisit": "Visita al hogar"
+    },
+    "status": {
+      "scheduled": "Programada",
+      "completed": "Completada",
+      "canceled": "Cancelada",
+      "rescheduled": "Reprogramada"
+    },
+    "results": {
+      "strongMatch": "Muy buena coincidencia",
+      "good": "Buena",
+      "concerns": "Con preocupaciones",
+      "notRecommended": "No recomendada"
+    },
+    "notFoundTitle": "Candidato no encontrado"
+  },
+  "adoptions": {
+    "confirm": {
+      "title": "Confirmar adopción",
+      "headline": "Confirmar adopción",
+      "subtitle": "Estás por confirmar la adopción de {{animalName}} con {{personName}}.",
+      "animal": "Animal",
+      "candidate": "Candidato",
+      "candidateStatus": "Estado del candidato",
+      "appliedOn": "Postulado el",
+      "action": "Confirmar adopción",
+      "unavailable": "No disponible ({{status}})",
+      "warning": "Al confirmar, la adopción quedará registrada y los otros candidatos quedarán sin seleccionar. Esta acción se realiza de forma atómica en el servidor.",
+      "successTitle": "Adopción confirmada",
+      "successDescription": "La adopción del animal quedó registrada. Ahora puedes revisar y completar los seguimientos.",
+      "done": "Listo"
+    },
+    "notFoundTitle": "Candidato no encontrado"
+  },
+  "followups": {
+    "title": "Seguimientos",
+    "subtitle": "Compromisos de seguimiento de la adopción de {{animalName}}.",
+    "outcomeLabel": "Resultado",
+    "emptyTitle": "Sin seguimientos",
+    "emptyDescription": "Todavía no hay seguimientos registrados para esta adopción.",
+    "status": {
+      "pending": "Pendiente",
+      "completed": "Completado",
+      "rescheduled": "Reprogramado",
+      "missed": "Perdido"
+    },
+    "outcomes": {
+      "excellent": "Excelente",
+      "good": "Bueno",
+      "concerns": "Con preocupaciones",
+      "interventionRequired": "Requiere intervención"
+    },
+    "noAdoptionTitle": "Sin adopción activa",
+    "noAdoptionDescription": "Este animal no tiene una adopción activa para mostrar seguimientos."
   },
   "settings": {
     "title": "Configuración",

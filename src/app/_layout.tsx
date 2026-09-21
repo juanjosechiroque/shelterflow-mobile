@@ -20,7 +20,7 @@ function RootNavigator() {
           headerTintColor: colors.text,
         }}
       >
-        <Stack.Screen name="index" options={{ title: t('navigation.home') }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="settings"
           options={{ title: t('navigation.settings') }}
