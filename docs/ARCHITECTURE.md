@@ -108,7 +108,7 @@ AsyncStorage is appropriate for small device-local preferences such as selected 
 
 A global client-state library is not part of the baseline. Redux, Zustand, or an equivalent may be introduced only for a concrete state-sharing requirement not already served by navigation, React context, form state, TanStack Query, or local persistence.
 
-The prototype uses a lightweight in-memory store (`src/features/prototype-flow`) built on React Context and `useReducer`. It holds animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, and it owns the domain transition rules. Screens read from it through selectors and dispatch domain actions. This store is a stopgap to make the adoption journey interactive before persistence exists; it is not intended to replace the backend and resets on reload. It is mounted once in the root layout and is deliberately not a generic CRM or global state abstraction.
+The prototype uses a lightweight in-memory store (`src/features/prototype-flow`) built on React Context and `useReducer`. It holds animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, and it owns the domain transition rules. Screens read from it through selectors and invoke expressive commands; the reusable pure reducer and selectors are decoupled from React so transitions are testable in isolation. Data originates behind a mock repository contract: the only production file allowed to import the fictitious `mock-*` fixtures is `mock-repository.ts`, which returns deep-cloned snapshot state so loads and resets never reuse references. This store is a stopgap to make the adoption journey interactive before persistence exists; it is not intended to replace the backend and resets on reload. It is mounted once in the root layout and is deliberately not a generic CRM or global state abstraction.
 
 ## Domain layer
 
@@ -117,7 +117,7 @@ Domain states and allowed transitions are defined in `DOMAIN.md`. React componen
 The implementation path is incremental:
 
 1. Mocked UI establishes mobile interaction and navigation.
-2. A small in-memory domain store owns transition rules and removes direct fixture coupling. ([state ownership](#state-ownership))
+2. A small in-memory domain store owns transition rules and removes direct fixture coupling. A pure reducer, pure selectors, and a mock repository contract isolate screens from fictitious data and expose them through commands. ([state ownership](#state-ownership), [domain layer](#domain-layer))
 3. Supabase repositories replace the in-memory store by vertical slice.
 4. Critical cross-record operations move to PostgreSQL functions.
 

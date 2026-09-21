@@ -12,9 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
+import { selectShelter } from '@/features/prototype-flow/prototype-flow-selectors';
 
 import { AnimalCard } from './components/animal-card';
-import { mockShelter } from './mock-animals';
 import { filterAnimals, type AnimalFilter } from './presenters';
 
 const filters: readonly {
@@ -36,6 +36,7 @@ const filters: readonly {
 export function AnimalsScreen() {
   const { t } = useTranslation();
   const { state } = usePrototypeFlow();
+  const shelter = selectShelter(state);
   const [selectedFilter, setSelectedFilter] = useState<AnimalFilter>('ALL');
   const visibleAnimals = useMemo(
     () => filterAnimals(state.animals, selectedFilter),
@@ -59,7 +60,7 @@ export function AnimalsScreen() {
         }
         ListHeaderComponent={
           <View>
-            <Text style={styles.shelterName}>{mockShelter.name}</Text>
+            <Text style={styles.shelterName}>{shelter.name}</Text>
             <Text accessibilityRole="header" style={styles.title}>
               {t('animals.title')}
             </Text>

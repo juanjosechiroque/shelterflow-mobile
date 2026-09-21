@@ -114,17 +114,12 @@ function MeetingCard({
   showComplete: boolean;
 }) {
   const { t } = useTranslation();
-  const { dispatch } = usePrototypeFlow();
+  const { commands } = usePrototypeFlow();
   const [result, setResult] = useState<MeetingResult>('GOOD');
   const [notes, setNotes] = useState('');
 
   function handleComplete() {
-    dispatch({
-      type: 'COMPLETE_MEETING',
-      meetingId: meeting.id,
-      result,
-      notes: notes.trim() || undefined,
-    });
+    commands.completeMeeting(meeting.id, result, notes.trim() || undefined);
   }
 
   return (
@@ -216,7 +211,7 @@ function MeetingCard({
 
 function ScheduleMeetingForm({ candidateId }: { candidateId: string }) {
   const { t } = useTranslation();
-  const { dispatch } = usePrototypeFlow();
+  const { commands } = usePrototypeFlow();
   const [type, setType] = useState<MeetingType>('MEET_AND_GREET');
   const [scheduledOn, setScheduledOn] = useState('');
   const [notes, setNotes] = useState('');
@@ -225,13 +220,12 @@ function ScheduleMeetingForm({ candidateId }: { candidateId: string }) {
     const trimmedDate = scheduledOn.trim();
     if (!isValidISODate(trimmedDate)) return;
 
-    dispatch({
-      type: 'SCHEDULE_MEETING',
+    commands.scheduleMeeting(
       candidateId,
-      meetingType: type,
-      scheduledOn: trimmedDate,
-      notes: notes.trim() || undefined,
-    });
+      type,
+      trimmedDate,
+      notes.trim() || undefined,
+    );
     setScheduledOn('');
     setNotes('');
   }
