@@ -37,11 +37,11 @@
       "followups": "Revisa la adopción activa de {{animalName}}.",
       "reevaluations": "{{animalName}} requiere una revisión humana."
     },
-    "realDecisions": {
-      "title": "Decisiones de adopción reales pendientes",
+    "pendingDecisions": {
+      "title": "Decisiones de adopción pendientes",
       "subtitle": "Estas decisiones se consultan en el refugio autenticado.",
       "loading": "Cargando decisiones de adopción…",
-      "empty": "No hay decisiones de adopción reales pendientes.",
+      "retry": "Reintentar",
       "error": "No pudimos cargar las decisiones de adopción. Inténtalo nuevamente.",
       "open": "Abrir decisión de adopción de {{personName}} para {{animalName}}"
     }

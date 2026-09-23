@@ -14,7 +14,10 @@ import {
   listPendingAdoptionDecisions,
 } from '@/features/adoptions/adoption-repository';
 import { adoptionDecisionKeys } from '@/features/adoptions/adoption-queries';
-import { PersistedAdoptionConfirmationScreen } from '@/features/adoptions/persisted-adoption-confirmation-screen';
+import {
+  getDefaultFollowupDates,
+  PersistedAdoptionConfirmationScreen,
+} from '@/features/adoptions/persisted-adoption-confirmation-screen';
 import { TodayScreen } from '@/features/today/today-screen';
 import { PrototypeFlowProvider } from '@/features/prototype-flow/prototype-flow-provider';
 import type { Database } from '@/lib/database.types';
@@ -139,7 +142,7 @@ describe('Persisted adoption decisions', () => {
     }
   });
 
-  it('renders loading, empty, and error states for real decisions', async () => {
+  it('renders loading, hides on empty, and exposes error with retry', async () => {
     let resolveList!: (value: unknown) => void;
     const pendingList = new Promise((resolve) => {
       resolveList = resolve;
@@ -154,12 +157,15 @@ describe('Persisted adoption decisions', () => {
     expect(
       loadingView.getByText('Cargando decisiones de adopción…'),
     ).toBeTruthy();
-    resolveList({ data: [], error: null });
     expect(
-      await loadingView.findByText(
-        'No hay decisiones de adopción reales pendientes.',
-      ),
+      loadingView.getByText('Decisiones de adopción pendientes'),
     ).toBeTruthy();
+    resolveList({ data: [], error: null });
+    await waitFor(() => {
+      expect(
+        loadingView.queryByText('Decisiones de adopción pendientes'),
+      ).toBeNull();
+    });
 
     const empty = createClient({ list: { data: [], error: null } });
     const { screen: emptyView } = await renderWithClient(
@@ -168,11 +174,14 @@ describe('Persisted adoption decisions', () => {
       </PrototypeFlowProvider>,
       empty.client,
     );
+    await waitFor(() => {
+      expect(
+        emptyView.queryByText('Decisiones de adopción pendientes'),
+      ).toBeNull();
+    });
     expect(
-      await emptyView.findByText(
-        'No hay decisiones de adopción reales pendientes.',
-      ),
-    ).toBeTruthy();
+      emptyView.queryByText('Cargando decisiones de adopción…'),
+    ).toBeNull();
 
     const failed = createClient({
       list: { data: null, error: { message: 'network unavailable' } },
@@ -188,6 +197,9 @@ describe('Persisted adoption decisions', () => {
         'No pudimos cargar las decisiones de adopción. Inténtalo nuevamente.',
       ),
     ).toBeTruthy();
+    const retry = await failedView.findByRole('button', { name: 'Reintentar' });
+    await fireEvent.press(retry);
+    expect(failed.mocks.listOrder).toHaveBeenCalled();
   });
 
   it('navigates from a real decision using its UUID', async () => {
@@ -385,5 +397,33 @@ describe('Persisted adoption decisions', () => {
       (confirmButton.props as { accessibilityState?: { disabled?: boolean } })
         .accessibilityState?.disabled,
     ).toBe(true);
+  });
+});
+
+describe('Local follow-up date calculation', () => {
+  it('returns the local adoption date and follow-up dates at +7, +30 and +60 days', () => {
+    const today = new Date(2026, 8, 2, 15, 30);
+
+    expect(getDefaultFollowupDates(today)).toEqual({
+      adoptionDate: '2026-09-02',
+      followupDueDates: ['2026-09-09', '2026-10-02', '2026-11-01'],
+    });
+  });
+
+  it('rolls the adoption date to local midnight regardless of the time of day', () => {
+    const evening = new Date(2026, 8, 2, 23, 45);
+    const morning = new Date(2026, 8, 3, 0, 5);
+
+    expect(getDefaultFollowupDates(evening).adoptionDate).toBe('2026-09-02');
+    expect(getDefaultFollowupDates(morning).adoptionDate).toBe('2026-09-03');
+  });
+
+  it('uses the local calendar so each follow-up date stays after the adoption date', () => {
+    const lateMonth = new Date(2026, 11, 31, 12);
+
+    expect(getDefaultFollowupDates(lateMonth)).toEqual({
+      adoptionDate: '2026-12-31',
+      followupDueDates: ['2027-01-07', '2027-01-30', '2027-03-01'],
+    });
   });
 });
