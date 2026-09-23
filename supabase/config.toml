@@ -20,9 +20,8 @@ max_rows = 1000
 # `postgres` are reachable through the Data API roles (`anon`, `authenticated`, `service_role`)
 # without explicit GRANTs, matching the cloud default. Set to `false` to require explicit GRANTs
 # instead. Left unset, a fresh project falls back to `true`.
-# Phase 5 keeps this `false` so the Data API only exposes rows that the RLS
-# migration explicitly grants. It also forces future migrations to be explicit
-# about which roles can touch which objects.
+# This keeps the Data API limited to rows that RLS explicitly grants. It also
+# requires migrations to be explicit about which roles can touch which objects.
 auto_expose_new_tables = false
 
 [api.tls]
@@ -224,7 +223,7 @@ web3 = 30
 # `GOTRUE_EXTERNAL_EMAIL_ENABLED`, which gates password grant sign-in.
 # Leaving this `false` makes /auth/v1/token return `email_provider_disabled`
 # for every password sign-in attempt, including the seeded administrator.
-# Phase 5 ships a sign-in-only mobile application (no signup UI). The auth
+# The mobile application supports sign-in only (no signup UI). The auth
 # endpoint therefore accepts sign-in for the externally provisioned local
 # fixtures, while no public signup flow exists in the mobile application.
 enable_signup = true

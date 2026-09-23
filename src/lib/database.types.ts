@@ -607,6 +607,14 @@ export type Database = {
         }
         Returns: string
       }
+      return_adoption: {
+        Args: {
+          p_adoption_id: string
+          p_notes: string | null
+          p_reason: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

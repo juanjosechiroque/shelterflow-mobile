@@ -1,8 +1,7 @@
--- ShelterFlow Increment 6A: atomically confirm an adoption.
+-- Atomically confirm an adoption.
 --
--- This RPC is the only mutation path introduced by this increment. It derives
--- shelter ownership from the authenticated profile and performs every related
--- state change in the transaction that executes the function.
+-- This RPC derives shelter ownership from the authenticated profile and
+-- performs every related state change in the transaction that executes it.
 
 create or replace function public.confirm_adoption(
   p_candidate_id uuid,

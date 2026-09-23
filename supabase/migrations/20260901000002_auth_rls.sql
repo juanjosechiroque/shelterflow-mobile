@@ -1,4 +1,4 @@
--- ShelterFlow Phase 5: authentication and Row Level Security.
+-- ShelterFlow authentication and Row Level Security.
 --
 -- This migration establishes the durable authorization boundary for V1:
 --   * unauthenticated users have no access to public schema objects;
@@ -6,8 +6,7 @@
 --     domain rows whose `shelter_id` matches the shelter recorded on their
 --     `public.profiles` row;
 --   * direct mobile-client INSERT, UPDATE, and DELETE paths remain denied;
---     mutations will be introduced in later phases through dedicated atomic
---     PostgreSQL operations.
+--     mutations use dedicated atomic PostgreSQL operations.
 --
 -- The migration does NOT create the login-capable users themselves; those are
 -- inserted through `supabase/seed.sql` so that `supabase db reset` produces a
@@ -55,9 +54,9 @@ revoke all on table public.adoption_returns from anon, authenticated;
 revoke all on table public.followups from anon, authenticated;
 revoke all on table public.timeline_events from anon, authenticated;
 
--- Future public schema objects created by the migration/seed role do not
--- receive automatic grants to the Data API roles. Phase 6+ will GRANT
--- SELECT/EXECUTE explicitly when it introduces new tables or RPCs.
+-- New public schema objects created by the migration/seed role do not receive
+-- automatic grants to the Data API roles. They must GRANT SELECT/EXECUTE
+-- explicitly when they introduce tables or RPCs.
 alter default privileges for role postgres in schema public
   revoke all on tables from anon, authenticated;
 alter default privileges for role postgres in schema public
@@ -66,8 +65,8 @@ alter default privileges for role postgres in schema public
   revoke all on functions from anon, authenticated;
 
 -- =====================================================================
--- 3. Enable RLS and grant read-only SELECT to authenticated on every
---    Phase 4 public table. Each policy uses `auth.uid()` for the profile
+-- 3. Enable RLS and grant read-only SELECT to authenticated on every public
+--    domain table. Each policy uses `auth.uid()` for the profile
 --    row and the SECURITY DEFINER helper for the shelter_id.
 -- =====================================================================
 

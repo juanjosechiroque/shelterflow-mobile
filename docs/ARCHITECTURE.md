@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This document describes the intended V1 architecture and the boundaries that guide incremental implementation. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented; operational animal, candidate, adoption, and follow-up persistence is not yet connected to the mobile flow.
+This document describes the intended V1 architecture and its boundaries. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented; operational animal, candidate, adoption, and follow-up persistence is not yet connected to the mobile flow.
 
 The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, Supabase Auth, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used to demonstrate the interactive flow.
 
@@ -45,7 +45,7 @@ Supabase
 └── Storage
 ```
 
-Mock and Supabase implementations are introduced incrementally. They must not be forced to coexist through a premature framework before persistence creates a concrete need.
+Mock and Supabase implementations must not be forced to coexist through a premature framework before persistence creates a concrete need.
 
 ## Navigation is not business state
 
@@ -114,12 +114,12 @@ The prototype uses a lightweight in-memory store (`src/features/prototype-flow`)
 
 Domain states and allowed transitions are defined in `DOMAIN.md`. React components may request a transition and present its result, but they must not be the only place enforcing invariants.
 
-The implementation path is incremental:
+Domain behavior and storage responsibilities are organized as follows:
 
-1. Mocked UI establishes mobile interaction and navigation.
-2. A small in-memory domain store owns transition rules and removes direct fixture coupling. A pure reducer, pure selectors, and a mock repository contract isolate screens from fictitious data and expose them through commands. ([state ownership](#state-ownership), [domain layer](#domain-layer))
-3. Supabase repositories replace the in-memory store by vertical slice.
-4. Critical cross-record operations move to PostgreSQL functions.
+- Mocked UI establishes mobile interaction and navigation.
+- A small in-memory domain store owns transition rules and removes direct fixture coupling. A pure reducer, pure selectors, and a mock repository contract isolate screens from fictitious data and expose them through commands. ([state ownership](#state-ownership), [domain layer](#domain-layer))
+- Supabase repositories replace the in-memory store by vertical slice.
+- Critical cross-record operations use PostgreSQL functions.
 
 Simple single-record validation can exist in shared domain code and database constraints. Security and multi-record atomicity must be enforced by the backend even when the client also validates for user experience.
 
@@ -137,7 +137,7 @@ The service-role key is never referenced, imported, or stored by the mobile appl
 
 Row Level Security compares the current profile's `shelter_id` with each row's `shelter_id`. Client-side filtering is never authorization. A single-purpose `SECURITY DEFINER` helper (`public.auth_shelter_id()`) resolves the authenticated user's shelter inside policy expressions while bypassing RLS so policies can avoid recursive profile lookups.
 
-Every public Phase 4 table enables `rowsecurity` and `forcerowsecurity`, exposes only `SELECT` to the `authenticated` role, and explicitly `REVOKE`s all privileges from `anon`. Direct mobile-client `INSERT`, `UPDATE`, and `DELETE` paths remain denied in this phase; later domain mutations arrive through reviewed server-side operations.
+Every public domain table enables `rowsecurity` and `forcerowsecurity`, exposes only `SELECT` to the `authenticated` role, and explicitly `REVOKE`s all privileges from `anon`. Direct mobile-client `INSERT`, `UPDATE`, and `DELETE` paths remain denied; domain mutations arrive through reviewed server-side operations.
 
 The Expo Router root layout mounts the tabs and settings routes inside `<Stack.Protected guard={isAuthenticated}>` and the login screen inside `<Stack.Protected guard={!isAuthenticated}>`. The guard flips when the auth provider emits `SIGNED_IN` or `SIGNED_OUT`, so navigation stays in sync with the session and session-expired tokens return the user to the login screen automatically.
 
@@ -208,7 +208,7 @@ Complex synchronization queues are out of scope unless real requirements demonst
 
 ## Testing strategy
 
-Testing accompanies each implementation increment:
+Testing covers each change:
 
 - unit tests for transition rules and pure formatting or validation;
 - component tests for forms and visible interaction behavior;
