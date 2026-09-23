@@ -310,7 +310,7 @@ RETURNED
 
 There is no `CLOSED` state in V1. Completion of all follow-ups is derived from the follow-up records and does not change the validity of an active adoption.
 
-An animal may have multiple adoptions over its lifetime after returns, but it can have at most one active adoption at a time. A candidate used by an adoption must belong to the same animal and shelter.
+An animal may have multiple adoptions over its lifetime after returns, but it can have at most one active adoption at a time. A candidate can have exactly one adoption over its lifetime, including after a return. A persisted `SELECTED` candidate has exactly one associated adoption, and every adoption must reference a `SELECTED` candidate. A candidate used by an adoption must belong to the same animal and shelter.
 
 ## FollowUp
 
@@ -378,7 +378,7 @@ Timeline is not a generic audit system. Security auditing and operational logs a
 3. An authenticated actor may access only rows belonging to the shelter in their profile.
 4. A candidate always links one person and one animal within the same shelter.
 5. Animal and candidate statuses can change only through allowed transitions or documented atomic domain operations.
-6. A persisted candidate with `status = SELECTED` always has a corresponding adoption.
+6. A persisted candidate with `status = SELECTED` has exactly one corresponding adoption, and every adoption references a candidate with `status = SELECTED`.
 7. Selecting a candidate in a confirmation screen is temporary UI state and must not persist `SELECTED`.
 8. An animal with an active adoption is `ADOPTED` and cannot have a second active adoption.
 9. An `ACTIVE` adoption cannot have an `AdoptionReturn`; a `RETURNED` adoption has exactly one return record.

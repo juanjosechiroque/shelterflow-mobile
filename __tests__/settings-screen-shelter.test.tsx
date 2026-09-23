@@ -27,6 +27,7 @@ describe('<SettingsScreen /> My Shelter section', () => {
   it('exposes only the authenticated shelter identity read-only', async () => {
     useAuthMock.mockReturnValue({
       status: 'authenticated',
+      supabase: null,
       session: null,
       profile: {
         id: '00000000-0000-4000-8000-000000000103',
@@ -61,6 +62,7 @@ describe('<SettingsScreen /> My Shelter section', () => {
     const signOut = jest.fn(() => Promise.resolve());
     useAuthMock.mockReturnValue({
       status: 'authenticated',
+      supabase: null,
       session: null,
       profile: {
         id: '00000000-0000-4000-8000-000000000103',

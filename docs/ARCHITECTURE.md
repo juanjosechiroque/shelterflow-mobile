@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This document describes the intended V1 architecture and its boundaries. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented; operational animal, candidate, adoption, and follow-up persistence is not yet connected to the mobile flow.
+This document describes the intended V1 architecture and its boundaries. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented. An isolated persisted path lists `DECISION_PENDING` candidates from Today and confirms an adoption through `confirm_adoption()`; the other operational animal, candidate, adoption, and follow-up screens still use the prototype.
 
 The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, Supabase Auth, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used to demonstrate the interactive flow.
 
@@ -94,7 +94,7 @@ Feature-local components, schemas, hooks, and tests should remain inside their f
 
 ### Server state
 
-Once persistence exists, TanStack Query will own remote loading, caching, retries, invalidation, and mutation status. Supabase remains the source of truth.
+TanStack Query owns remote loading, caching, retries, invalidation, and mutation status for the persisted adoption-decision slice. Supabase remains the source of truth.
 
 ### Form and screen state
 
@@ -108,7 +108,9 @@ AsyncStorage is appropriate for small device-local preferences such as selected 
 
 A global client-state library is not part of the baseline. Redux, Zustand, or an equivalent may be introduced only for a concrete state-sharing requirement not already served by navigation, React context, form state, TanStack Query, or local persistence.
 
-The prototype uses a lightweight in-memory store (`src/features/prototype-flow`) built on React Context and `useReducer`. It holds animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, and it owns the domain transition rules. Screens read from it through selectors and invoke expressive commands; the reusable pure reducer and selectors are decoupled from React so transitions are testable in isolation. Data originates behind a mock repository contract: the only production file allowed to import the fictitious `mock-*` fixtures is `mock-repository.ts`, which returns deep-cloned snapshot state so loads and resets never reuse references. This store is a stopgap to make the adoption journey interactive before persistence exists; it is not intended to replace the backend and resets on reload. It is mounted once in the root layout and is deliberately not a generic CRM or global state abstraction.
+The prototype uses a lightweight in-memory store (`src/features/prototype-flow`) built on React Context and `useReducer`. It holds animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, and it owns the domain transition rules. Screens read from it through selectors and invoke expressive commands; the reusable pure reducer and selectors are decoupled from React so transitions are testable in isolation. Data originates behind a mock repository contract: the only production file allowed to import the fictitious `mock-*` fixtures is `mock-repository.ts`, which returns deep-cloned snapshot state so loads and resets never reuse references. This store remains a stopgap for the prototype screens; it is not intended to replace the backend and resets on reload. It is mounted once in the root layout and is deliberately not a generic CRM or global state abstraction.
+
+TanStack Query is mounted once at the application root for authenticated server state. `AuthProvider` owns the single active Supabase client and exposes it to feature code; persisted adoption-decision queries and the confirmation mutation use that client, never the global singleton. On a successful confirmation, the list and candidate-detail query keys are invalidated before the user returns to Today.
 
 ## Domain layer
 

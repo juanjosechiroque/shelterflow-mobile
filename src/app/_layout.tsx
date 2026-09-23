@@ -7,6 +7,7 @@ import { colors } from '@/constants/theme';
 import { AuthLoadingScreen } from '@/features/auth/auth-loading-screen';
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
 import { I18nProvider } from '@/providers/i18n-provider';
+import { AppQueryClientProvider } from '@/providers/query-client-provider';
 import { PrototypeFlowProvider } from '@/features/prototype-flow/prototype-flow-provider';
 
 function RootNavigator() {
@@ -36,6 +37,10 @@ function RootNavigator() {
             name="settings"
             options={{ title: t('navigation.settings') }}
           />
+          <Stack.Screen
+            name="adoptions/confirm/[candidateId]"
+            options={{ title: t('adoptions.persisted.title') }}
+          />
         </Stack.Protected>
         <Stack.Protected guard={!isAuthenticated}>
           <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
@@ -50,9 +55,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <I18nProvider>
         <AuthProvider>
-          <PrototypeFlowProvider>
-            <RootNavigator />
-          </PrototypeFlowProvider>
+          <AppQueryClientProvider>
+            <PrototypeFlowProvider>
+              <RootNavigator />
+            </PrototypeFlowProvider>
+          </AppQueryClientProvider>
         </AuthProvider>
       </I18nProvider>
     </SafeAreaProvider>

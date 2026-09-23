@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   fireEvent,
   render,
@@ -28,10 +29,22 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
 }));
 
+jest.mock('@/features/auth/auth-provider', () => ({
+  useAuth: () => ({ profile: null, supabase: null }),
+}));
+
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
 
 async function renderWithProvider(ui: ReactElement): Promise<RenderResult> {
-  return render(<PrototypeFlowProvider>{ui}</PrototypeFlowProvider>);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { gcTime: Infinity, retry: false } },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <PrototypeFlowProvider>{ui}</PrototypeFlowProvider>
+    </QueryClientProvider>,
+  );
 }
 
 describe('Shelter browse prototype', () => {

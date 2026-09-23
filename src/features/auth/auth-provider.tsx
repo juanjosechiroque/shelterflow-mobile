@@ -43,6 +43,7 @@ export interface SignInError {
 
 export interface AuthContextValue {
   status: AuthStatus;
+  supabase: SupabaseClient<Database> | null;
   session: Session | null;
   profile: AuthProfile | null;
   shelter: AuthShelter | null;
@@ -276,6 +277,7 @@ export function AuthProvider({
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
+      supabase: activeClient,
       session,
       profile,
       shelter,
@@ -284,7 +286,16 @@ export function AuthProvider({
       signIn,
       signOut,
     }),
-    [status, session, profile, shelter, hasSupabaseConfig, signIn, signOut],
+    [
+      status,
+      activeClient,
+      session,
+      profile,
+      shelter,
+      hasSupabaseConfig,
+      signIn,
+      signOut,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

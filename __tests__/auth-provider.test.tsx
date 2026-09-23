@@ -90,8 +90,15 @@ function createDeferred<Value>() {
 }
 
 function Consumer(): React.JSX.Element {
-  const { status, session, profile, shelter, email, hasSupabaseConfig } =
-    useAuth();
+  const {
+    status,
+    supabase,
+    session,
+    profile,
+    shelter,
+    email,
+    hasSupabaseConfig,
+  } = useAuth();
   return (
     <Text testID="consumer">
       {JSON.stringify({
@@ -100,6 +107,7 @@ function Consumer(): React.JSX.Element {
         profileId: profile?.id ?? null,
         shelterId: shelter?.id ?? null,
         email,
+        hasSupabaseClient: supabase !== null,
         hasSupabaseConfig,
       })}
     </Text>
@@ -225,6 +233,9 @@ describe('AuthProvider', () => {
       );
       expect(view.getByTestId('consumer').props.children).toContain(
         '"email":"admin@shelter.com"',
+      );
+      expect(view.getByTestId('consumer').props.children).toContain(
+        '"hasSupabaseClient":true',
       );
     });
   });

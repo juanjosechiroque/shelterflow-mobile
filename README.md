@@ -2,7 +2,7 @@
 
 ShelterFlow is a Spanish-first React Native application for small animal shelters and independent rescuers. It supports the operational adoption journey after a candidate has already been shortlisted: evaluation, meeting, decision, adoption, and post-adoption follow-up.
 
-The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype keeps its operational data in memory and lets you walk an adoption journey end to end — evaluation, meeting, decision, adoption confirmation, and follow-up — but the data resets when the app reloads. Supabase currently supports authentication and reads the authenticated profile and shelter identity; operational animal, candidate, adoption, and follow-up flows remain in memory.
+The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype keeps its operational data in memory and lets you walk an adoption journey end to end — evaluation, meeting, decision, adoption confirmation, and follow-up — but the data resets when the app reloads. Supabase supports authentication, authenticated shelter identity, and a persisted adoption-confirmation slice from Today; the remaining operational animal, candidate, adoption, and follow-up flows remain in memory.
 
 ## Product scope
 
@@ -77,7 +77,7 @@ The local repository is the authoritative source for fixtures: a fresh `npm run 
 
 Run `npm run supabase:start` to bring up the stack and the seed will create the credentials above. They are local development fixtures only and are not used in any other environment.
 
-Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in `supabase/seed.sql` and are reapplied by every reset. Seed data is deterministic and clearly fictitious (invented names and `example.com` addresses). The mobile application is wired to local Supabase Auth for sign-in, session restoration, and logout, and reads the authenticated profile and shelter identity with shelter-scoped Row Level Security. Operational animal, candidate, adoption, and follow-up flows still use the in-memory prototype store.
+Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in `supabase/seed.sql` and are reapplied by every reset. Seed data is deterministic and clearly fictitious (invented names and `example.com` addresses). The mobile application is wired to local Supabase Auth for sign-in, session restoration, and logout, reads the authenticated profile and shelter identity with shelter-scoped Row Level Security, and lists and confirms real `DECISION_PENDING` candidates from Today through `confirm_adoption()`. Other operational animal, candidate, adoption, and follow-up flows still use the in-memory prototype store.
 
 ## Application variants
 
@@ -112,6 +112,7 @@ The initial dependencies are intentionally limited:
 | Expo Dev Client                            | Native development build compatible with SDK 57     |
 | AsyncStorage                               | Local persistence for the selected UI language      |
 | i18next and react-i18next                  | Typed Spanish and English UI resources              |
+| TanStack Query                             | Cached authenticated Supabase queries and mutations |
 | React Native Screens and Safe Area Context | Native navigation primitives and safe screen layout |
 | Jest and React Native Testing Library      | Unit and component validation                       |
 | TypeScript, ESLint, and Prettier           | Static types and consistent code quality            |
@@ -142,4 +143,4 @@ src/
   providers/    Application-level providers
 ```
 
-The current `animals`, `candidates`, `evaluations`, `meetings`, `adoptions`, `followups`, and `today` feature folders support an interactive prototype whose state lives in memory. A shared in-memory store (`src/features/prototype-flow`) drives the screens; it is seeded with clearly fictitious data and reset on reload. Demo contacts use `example.com` addresses and must never represent real people. Additional feature folders are added only when their functionality is needed.
+The current `animals`, `candidates`, `evaluations`, `meetings`, `followups`, and most `adoptions` and `today` screens support an interactive prototype whose state lives in memory. The isolated persisted adoption-decision path under `src/features/adoptions/` queries the authenticated shelter and confirms an adoption through its atomic RPC. A shared in-memory store (`src/features/prototype-flow`) drives the prototype screens; it is seeded with clearly fictitious data and reset on reload. Demo contacts use `example.com` addresses and must never represent real people. Additional feature folders are added only when their functionality is needed.

@@ -36,6 +36,14 @@
       "decisions": "{{animalName}}'s process is ready for a decision.",
       "followups": "Review {{animalName}}'s active adoption.",
       "reevaluations": "{{animalName}} requires a human review."
+    },
+    "realDecisions": {
+      "title": "Pending real adoption decisions",
+      "subtitle": "These decisions are read from the authenticated shelter.",
+      "loading": "Loading adoption decisions…",
+      "empty": "There are no pending real adoption decisions.",
+      "error": "We couldn't load the adoption decisions. Please try again.",
+      "open": "Open {{personName}}'s adoption decision for {{animalName}}"
     }
   },
   "animals": {
@@ -267,7 +275,28 @@
       "viewFollowUps": "View follow-ups",
       "done": "Done"
     },
-    "notFoundTitle": "Candidate not found"
+    "notFoundTitle": "Candidate not found",
+    "persisted": {
+      "title": "Confirm adoption",
+      "subtitle": "Confirm the adoption of {{animalName}} with {{personName}}.",
+      "loading": "Loading the adoption decision…",
+      "loadErrorTitle": "We couldn't load the decision",
+      "loadErrorDescription": "Check your connection and try again.",
+      "retry": "Retry",
+      "notFoundTitle": "Decision unavailable",
+      "notFoundDescription": "We couldn't find this adoption decision in your shelter.",
+      "status": "Status",
+      "decisionPending": "Decision pending",
+      "candidate": "Candidate",
+      "animal": "Animal",
+      "confirm": "Confirm adoption",
+      "confirming": "Confirming adoption…",
+      "unavailable": "This adoption can only be confirmed when the server reports a pending decision.",
+      "error": "We couldn't confirm the adoption. Review the decision and try again.",
+      "successTitle": "Adoption confirmed",
+      "successDescription": "The adoption was recorded successfully.",
+      "backToToday": "Back to Today"
+    }
   },
   "followups": {
     "title": "Follow-ups",
