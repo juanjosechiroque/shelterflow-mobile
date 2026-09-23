@@ -394,6 +394,22 @@ Shelters and profiles are provisioned externally by the product owners; there is
 
 ### Confirm adoption
 
+RPC contract:
+
+```text
+public.confirm_adoption(
+  p_candidate_id uuid,
+  p_adoption_date date,
+  p_handover_notes text,
+  p_followup_due_dates date[]
+) returns uuid
+```
+
+Only authenticated actors may execute the RPC. It derives `shelter_id` from
+the authenticated profile; clients never provide a shelter identifier. The
+follow-up plan must contain at least one non-null, unique due date and every
+due date must be after `p_adoption_date`.
+
 Preconditions:
 
 ```text

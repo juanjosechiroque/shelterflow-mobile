@@ -598,7 +598,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      confirm_adoption: {
+        Args: {
+          p_adoption_date: string
+          p_candidate_id: string
+          p_followup_due_dates: string[]
+          p_handover_notes: string | null
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
