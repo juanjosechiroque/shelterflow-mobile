@@ -187,15 +187,6 @@ export function AnimalDetailScreen() {
           />
         ))}
       </View>
-
-      <View style={styles.prototypeNote}>
-        <Text style={styles.prototypeNoteTitle}>
-          {t('animals.detail.prototype.title')}
-        </Text>
-        <Text style={styles.prototypeNoteText}>
-          {t('animals.detail.prototype.description')}
-        </Text>
-      </View>
     </ScrollView>
   );
 }
@@ -359,23 +350,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '800',
-  },
-  prototypeNote: {
-    backgroundColor: colors.infoSoft,
-    borderRadius: 16,
-    marginTop: 24,
-    padding: 18,
-  },
-  prototypeNoteText: {
-    color: colors.info,
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: 5,
-  },
-  prototypeNoteTitle: {
-    color: colors.info,
-    fontSize: 15,
-    fontWeight: '900',
   },
   sectionTitle: {
     color: colors.text,

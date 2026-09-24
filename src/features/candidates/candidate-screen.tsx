@@ -1,4 +1,4 @@
-import { Link, Stack, useLocalSearchParams, type Href } from 'expo-router';
+import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -219,26 +219,22 @@ function ActionLink({
 }) {
   const isPrimary = variant === 'primary';
   return (
-    <Link href={href} asChild>
-      <Pressable
-        accessibilityRole="button"
-        style={({ pressed }) => [
-          styles.action,
-          isPrimary && styles.actionEmphasized,
-          pressed &&
-            (isPrimary ? styles.actionPressedEmphasized : styles.actionPressed),
-        ]}
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(href)}
+      style={({ pressed }) => [
+        styles.action,
+        isPrimary && styles.actionEmphasized,
+        pressed &&
+          (isPrimary ? styles.actionPressedEmphasized : styles.actionPressed),
+      ]}
+    >
+      <Text
+        style={[styles.actionLabel, isPrimary && styles.actionLabelEmphasized]}
       >
-        <Text
-          style={[
-            styles.actionLabel,
-            isPrimary && styles.actionLabelEmphasized,
-          ]}
-        >
-          {label}
-        </Text>
-      </Pressable>
-    </Link>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -274,6 +270,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
+    justifyContent: 'center',
     minHeight: 54,
     paddingHorizontal: 16,
   },

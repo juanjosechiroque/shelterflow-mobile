@@ -9,7 +9,7 @@ import {
 import type { ReactElement } from 'react';
 import { StyleSheet } from 'react-native';
 import { useEffect } from 'react';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { colors } from '@/constants/theme';
 import { AdoptionConfirmationScreen } from '@/features/adoptions/adoption-confirmation-screen';
@@ -37,7 +37,7 @@ import i18n from '@/i18n';
 jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
   Stack: { Screen: () => null },
-  router: { back: jest.fn() },
+  router: { back: jest.fn(), push: jest.fn() },
   useLocalSearchParams: jest.fn(),
 }));
 
@@ -91,6 +91,7 @@ describe('Candidate and adoption flows', () => {
     expect(screen.getByText('Andrea Pérez')).toBeTruthy();
     expect(screen.getByText('Carlos Ruiz')).toBeTruthy();
     expect(screen.getByText('Sofía Vargas')).toBeTruthy();
+    expect(screen.queryByText('Datos de demostración')).toBeNull();
   });
 
   it('opens an unevaluated candidate and shows the journey actions', async () => {
@@ -127,6 +128,12 @@ describe('Candidate and adoption flows', () => {
     const meetingsLabel = within(meetingsLink).getByText('Ver reuniones');
     const meetingsLabelStyle = StyleSheet.flatten(meetingsLabel.props.style);
     expect(meetingsLabelStyle.color).toBe(colors.text);
+
+    await fireEvent.press(registerButton);
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/animals/candidate/[candidateId]/evaluation',
+      params: { candidateId: 'luna-andrea' },
+    });
   });
 
   it('continues an evaluated candidate to contact pending', async () => {
