@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This document describes the intended V1 architecture and its boundaries. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented. An isolated persisted path lists `DECISION_PENDING` candidates from Today and confirms an adoption through `confirm_adoption()`; the other operational animal, candidate, adoption, and follow-up screens still use the prototype.
+This document describes the intended V1 architecture and its boundaries. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented. An isolated persisted slice from Today covers the post-decision journey: it lists `DECISION_PENDING` candidates and confirms them through `confirm_adoption()`, lists active adoptions, opens an adoption detail page, completes pending follow-ups through `complete_followup()`, and records returns through the existing `return_adoption()` RPC. The other operational animal, candidate, evaluation, and meeting screens still use the prototype.
 
 The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, Supabase Auth, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used to demonstrate the interactive flow.
 
@@ -160,7 +160,13 @@ Exact SQL design and indexes are decided alongside Supabase migrations, not in m
 User and shelter provisioning is external to the mobile application. At minimum, these operations require PostgreSQL transactions:
 
 - `confirm_adoption()`;
+- `complete_followup()`;
 - `return_adoption()`.
+
+`complete_followup()` and `return_adoption()` lock the adoption row first so
+the two operations cannot leave a follow-up completed after the adoption
+was already returned. Either RPC rejects a follow-up whose adoption is no
+longer `ACTIVE`, preventing duplicate cancellations.
 
 The client makes one request and handles one success or failure result. It must not orchestrate a sequence of independent updates that could leave partial domain state.
 

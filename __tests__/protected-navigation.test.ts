@@ -30,13 +30,14 @@ describe('Root layout uses Stack.Protected for navigation guarding', () => {
     expect(guardCalls).toContain('!isAuthenticated');
   });
 
-  it('keeps the tabs and settings screens inside the authenticated guard', () => {
+  it('keeps the tabs, settings, and adoptions routes inside the authenticated guard', () => {
     const guardBlock = source.match(
       /<Stack\.Protected\s+guard=\{isAuthenticated\}>([\s\S]*?)<\/Stack\.Protected>/,
     );
     expect(guardBlock).not.toBeNull();
     expect(guardBlock?.[1]).toMatch(/name="\(tabs\)"/);
     expect(guardBlock?.[1]).toMatch(/name="settings"/);
+    expect(guardBlock?.[1]).toMatch(/name="adoptions"/);
   });
 
   it('keeps the login screen inside the unauthenticated guard', () => {

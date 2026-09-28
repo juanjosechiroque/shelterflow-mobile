@@ -44,6 +44,15 @@
       "retry": "Retry",
       "error": "We couldn't load the adoption decisions. Please try again.",
       "open": "Open {{personName}}'s adoption decision for {{animalName}}"
+    },
+    "activeAdoptions": {
+      "title": "Active adoptions",
+      "subtitle": "Active adoptions from the authenticated shelter.",
+      "loading": "Loading active adoptions…",
+      "retry": "Retry",
+      "error": "We couldn't load the active adoptions. Please try again.",
+      "open": "Open {{personName}}'s active adoption for {{animalName}}",
+      "adoptionDate": "Adopted on {{date}}"
     }
   },
   "animals": {
@@ -295,7 +304,82 @@
       "error": "We couldn't confirm the adoption. Review the decision and try again.",
       "successTitle": "Adoption confirmed",
       "successDescription": "The adoption was recorded successfully.",
+      "viewAdoption": "View adoption",
       "backToToday": "Back to Today"
+    },
+    "detail": {
+      "title": "Adoption",
+      "loading": "Loading the adoption…",
+      "loadErrorTitle": "We couldn't load the adoption",
+      "loadErrorDescription": "Check your connection and try again.",
+      "retry": "Retry",
+      "notFoundTitle": "Adoption not found",
+      "notFoundDescription": "We couldn't find this adoption in your shelter.",
+      "activeBadge": "Active",
+      "returnedBadge": "Returned",
+      "status": "Status",
+      "animal": "Animal",
+      "candidate": "Candidate",
+      "adoptionDate": "Adoption date",
+      "handoverNotes": "Handover notes",
+      "handoverNotesEmpty": "No handover notes were recorded.",
+      "followups": {
+        "title": "Follow-ups",
+        "loading": "Loading follow-ups…",
+        "empty": "This adoption has no follow-ups recorded.",
+        "dueDate": "Due date",
+        "status": "Status",
+        "outcome": "Outcome",
+        "notes": "Notes",
+        "notesEmpty": "No notes recorded.",
+        "complete": "Complete follow-up",
+        "unavailable": "This follow-up can only be completed while it is pending.",
+        "cancelledReturn": "Cancelled because the adoption was returned."
+      },
+      "return": {
+        "trigger": "Record return",
+        "registeredTitle": "Return recorded",
+        "registeredDescription": "The adoption was returned. The animal moved to reevaluation and the pending follow-ups were cancelled."
+      }
+    },
+    "completeFollowup": {
+      "title": "Complete follow-up",
+      "subtitle": "Record the outcome of the scheduled follow-up for {{animalName}} with {{personName}}.",
+      "outcome": "Outcome",
+      "outcomes": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "concerns": "With concerns",
+        "interventionRequired": "Intervention required"
+      },
+      "notes": "Notes",
+      "notesPlaceholder": "Follow-up observations",
+      "submit": "Complete follow-up",
+      "submitting": "Saving follow-up…",
+      "error": "We couldn't save the follow-up. Please try again.",
+      "missingOutcome": "Select an outcome to enable the action.",
+      "cancel": "Cancel",
+      "notFoundTitle": "Follow-up unavailable",
+      "notFoundDescription": "We couldn't find this follow-up in your shelter."
+    },
+    "return": {
+      "title": "Record return",
+      "subtitle": "Record the return of {{animalName}}'s adoption with {{personName}}.",
+      "reason": "Reason",
+      "reasonPlaceholder": "Briefly describe the reason",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional observations",
+      "warning": "Recording the return marks the adoption as returned, moves the animal back to reevaluation, and cancels any pending follow-ups.",
+      "acknowledgement": "I understand this action cannot be undone.",
+      "submit": "Record return",
+      "submitting": "Recording return…",
+      "error": "We couldn't record the return. Please try again.",
+      "missingReason": "Enter a reason to enable the action.",
+      "missingAcknowledgement": "You must confirm the warning before continuing.",
+      "cancel": "Cancel",
+      "successTitle": "Return recorded",
+      "successDescription": "The adoption was returned and the pending follow-ups were cancelled.",
+      "backToAdoption": "View adoption"
     }
   },
   "followups": {
@@ -308,7 +392,8 @@
       "pending": "Pending",
       "completed": "Completed",
       "rescheduled": "Rescheduled",
-      "missed": "Missed"
+      "missed": "Missed",
+      "cancelled": "Cancelled"
     },
     "outcomes": {
       "excellent": "Excellent",

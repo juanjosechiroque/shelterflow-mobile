@@ -598,6 +598,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_followup: {
+        Args: {
+          p_followup_id: string
+          p_notes: string | null
+          p_outcome: string
+        }
+        Returns: string
+      }
       confirm_adoption: {
         Args: {
           p_adoption_date: string
