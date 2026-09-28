@@ -89,7 +89,7 @@ export async function getAdoptionDecisionCandidate(
 export interface ConfirmAdoptionInput {
   candidateId: string;
   adoptionDate: string;
-  handoverNotes: null;
+  handoverNotes: string | null;
   followupDueDates: string[];
 }
 
@@ -100,10 +100,12 @@ export async function confirmAdoption(
   const { data, error } = await client.rpc('confirm_adoption', {
     p_candidate_id: input.candidateId,
     p_adoption_date: input.adoptionDate,
-    p_handover_notes: input.handoverNotes,
+    p_handover_notes:
+      input.handoverNotes as Database['public']['Functions']['confirm_adoption']['Args']['p_handover_notes'],
     p_followup_due_dates: input.followupDueDates,
   });
 
   if (error) throw error;
+  if (data === null) throw new Error('supabase_rpc_result_missing');
   return data;
 }

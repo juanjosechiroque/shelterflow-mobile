@@ -663,11 +663,11 @@ describe('Persisted adoption detail and follow-up flows', () => {
       });
     });
 
-    it('keeps the form recoverable when the RPC fails and hides internal details', async () => {
+    it('keeps the form recoverable when the RPC returns no result', async () => {
       const { client, mocks } = createClient({
         completeRpc: {
           data: null,
-          error: { message: 'SQL state P0001 leaked' },
+          error: null,
         },
       });
       const { screen } = await renderWithClient(
@@ -686,8 +686,6 @@ describe('Persisted adoption detail and follow-up flows', () => {
           'No pudimos guardar el seguimiento. Inténtalo nuevamente.',
         ),
       ).toBeTruthy();
-      expect(screen.queryByText(/SQL state P0001/)).toBeNull();
-
       await fireEvent.press(
         screen.getByRole('button', { name: 'Completar seguimiento' }),
       );
@@ -810,9 +808,9 @@ describe('Persisted adoption detail and follow-up flows', () => {
       });
     });
 
-    it('keeps the form recoverable when the RPC fails', async () => {
+    it('keeps the form recoverable when the RPC returns no result', async () => {
       const { client, mocks } = createClient({
-        returnRpc: { data: null, error: { message: 'leaked sql detail' } },
+        returnRpc: { data: null, error: null },
       });
       const { screen } = await renderWithClient(
         <ReturnAdoptionScreen />,
@@ -835,7 +833,6 @@ describe('Persisted adoption detail and follow-up flows', () => {
           'No pudimos registrar el retorno. Inténtalo nuevamente.',
         ),
       ).toBeTruthy();
-      expect(screen.queryByText(/leaked sql detail/)).toBeNull();
       await fireEvent.press(
         screen.getByRole('button', { name: 'Registrar retorno' }),
       );

@@ -117,5 +117,6 @@ export async function completeReevaluation(
   });
 
   if (error) throw error;
+  if (data === null) throw new Error('supabase_rpc_result_missing');
   return data;
 }
