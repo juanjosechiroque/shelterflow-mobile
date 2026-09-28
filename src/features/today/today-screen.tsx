@@ -4,7 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
+import { Card, ScreenHeader, SectionHeader } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-provider';
 import { usePendingAdoptionDecisions } from '@/features/adoptions/adoption-queries';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
@@ -99,7 +100,7 @@ export function TodayScreen() {
       >
         <View style={styles.topBar}>
           <View style={styles.brandBlock}>
-            <Text style={styles.shelterName}>{shelter.name}</Text>
+            <Text style={styles.shelterEyebrow}>{shelter.name}</Text>
             <Text style={styles.productName}>{t('app.name')}</Text>
           </View>
 
@@ -118,21 +119,19 @@ export function TodayScreen() {
         </View>
 
         <View style={styles.intro}>
-          <Text style={styles.eyebrow}>{t('today.eyebrow')}</Text>
-          <Text accessibilityRole="header" style={styles.title}>
-            {t('today.title')}
-          </Text>
-          <Text style={styles.subtitle}>{t('today.subtitle')}</Text>
+          <ScreenHeader
+            eyebrow={t('today.eyebrow')}
+            title={t('today.title')}
+            subtitle={t('today.subtitle')}
+          />
         </View>
 
         {shouldRenderPendingDecisions ? (
           <View style={styles.pendingDecisionsSection}>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
-              {t('today.pendingDecisions.title')}
-            </Text>
-            <Text style={styles.sectionSubtitle}>
-              {t('today.pendingDecisions.subtitle')}
-            </Text>
+            <SectionHeader
+              description={t('today.pendingDecisions.subtitle')}
+              title={t('today.pendingDecisions.title')}
+            />
 
             {pendingDecisions.isLoading ? (
               <Text accessibilityRole="progressbar" style={styles.stateText}>
@@ -173,16 +172,14 @@ export function TodayScreen() {
                     key={candidate.id}
                     asChild
                   >
-                    <Pressable
+                    <Card
                       accessibilityLabel={t('today.pendingDecisions.open', {
                         personName: candidate.personName,
                         animalName: candidate.animal.name,
                       })}
                       accessibilityRole="button"
-                      style={({ pressed }) => [
-                        styles.pendingDecisionCard,
-                        pressed && styles.pressed,
-                      ]}
+                      padding="comfortable"
+                      variant="subtle"
                     >
                       <Text style={styles.pendingDecisionPerson}>
                         {candidate.personName}
@@ -190,7 +187,7 @@ export function TodayScreen() {
                       <Text style={styles.pendingDecisionAnimal}>
                         {candidate.animal.name}
                       </Text>
-                    </Pressable>
+                    </Card>
                   </Link>
                 ))}
               </View>
@@ -198,56 +195,60 @@ export function TodayScreen() {
           </View>
         ) : null}
 
-        <View style={styles.taskList}>
-          {tasks.map((task) => {
-            const tone = taskToneStyles[task.tone];
-            const href = taskHref(task);
+        <View style={styles.taskSection}>
+          <View style={styles.taskList}>
+            {tasks.map((task) => {
+              const tone = taskToneStyles[task.tone];
+              const href = taskHref(task);
 
-            return (
-              <Link href={href} key={task.id} asChild>
-                <Pressable
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.taskCard,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.countBadge,
-                      { backgroundColor: tone.backgroundColor },
+              return (
+                <Link href={href} key={task.id} asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.taskRow,
+                      pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={[styles.countText, { color: tone.color }]}>
-                      {task.count}
-                    </Text>
-                  </View>
+                    <View
+                      style={[
+                        styles.countBadge,
+                        { backgroundColor: tone.backgroundColor },
+                      ]}
+                    >
+                      <Text style={[styles.countText, { color: tone.color }]}>
+                        {task.count}
+                      </Text>
+                    </View>
 
-                  <View style={styles.taskContent}>
-                    <Text style={styles.taskTitle}>
-                      {getTaskTitle(t, task)}
-                    </Text>
-                    <Text style={styles.taskHint}>{getTaskHint(t, task)}</Text>
-                  </View>
-                </Pressable>
-              </Link>
-            );
-          })}
+                    <View style={styles.taskContent}>
+                      <Text style={styles.taskTitle}>
+                        {getTaskTitle(t, task)}
+                      </Text>
+                      <Text style={styles.taskHint}>
+                        {getTaskHint(t, task)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                </Link>
+              );
+            })}
+          </View>
+
+          <Link href="/animals" asChild>
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.viewAllButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.viewAllButtonText}>
+                {t('today.viewAnimals')}
+              </Text>
+            </Pressable>
+          </Link>
         </View>
-
-        <Link href="/animals" asChild>
-          <Pressable
-            accessibilityRole="button"
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>
-              {t('today.viewAnimals')}
-            </Text>
-          </Pressable>
-        </Link>
       </ScrollView>
     </SafeAreaView>
   );
@@ -258,122 +259,79 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   container: {
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: 15,
-    lineHeight: 21,
-    marginTop: 12,
+    paddingBottom: spacing['2xl'],
+    paddingHorizontal: spacing.lg,
   },
   countBadge: {
     alignItems: 'center',
-    borderRadius: 14,
-    height: 48,
+    borderRadius: radii.md,
+    height: 44,
     justifyContent: 'center',
-    width: 48,
+    width: 44,
   },
   countText: {
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-  },
-  intro: {
-    marginBottom: 24,
-    marginTop: 28,
-  },
-  pendingDecisionAnimal: {
-    color: colors.textMuted,
-    fontSize: 15,
-    marginTop: 4,
-  },
-  pendingDecisionCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-  },
-  pendingDecisionList: {
-    gap: 10,
-    marginTop: 14,
-  },
-  pendingDecisionPerson: {
-    color: colors.text,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
   },
+  errorText: {
+    ...typography.body,
+    color: colors.danger,
+    marginTop: spacing.sm,
+  },
+  intro: {
+    marginBottom: spacing.xl,
+    marginTop: spacing.lg,
+  },
+  pendingDecisionAnimal: {
+    ...typography.subtitle,
+    color: colors.textMuted,
+    marginTop: spacing['2xs'],
+  },
+  pendingDecisionList: {
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  pendingDecisionPerson: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    fontSize: 16,
+  },
   pendingDecisionsSection: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   pressed: {
-    opacity: 0.72,
+    opacity: 0.78,
+  },
+  productName: {
+    ...typography.meta,
+    color: colors.textSubtle,
   },
   retryButton: {
     alignItems: 'center',
-    borderColor: colors.primary,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
-    marginTop: 12,
-    minHeight: 44,
-    paddingHorizontal: 16,
+    marginTop: spacing.sm,
+    minHeight: 42,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   retryButtonText: {
+    ...typography.metaStrong,
     color: colors.primary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  productName: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
   },
   safeArea: {
     backgroundColor: colors.background,
     flex: 1,
   },
-  secondaryButton: {
-    alignItems: 'center',
-    borderColor: colors.primary,
-    borderRadius: 14,
-    borderWidth: 1,
-    justifyContent: 'center',
-    marginTop: 24,
-    minHeight: 52,
-    paddingHorizontal: 18,
-  },
-  sectionSubtitle: {
-    color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 21,
-    marginTop: 4,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 21,
-    fontWeight: '900',
-  },
-  secondaryButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '800',
-  },
   settingsButton: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
+    backgroundColor: 'transparent',
+    borderRadius: radii.pill,
     height: 40,
     justifyContent: 'center',
-    width: 44,
+    width: 40,
   },
   settingsSymbol: {
     color: colors.text,
@@ -382,64 +340,56 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginTop: -7,
   },
-  shelterName: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '800',
+  shelterEyebrow: {
+    ...typography.eyebrow,
+    color: colors.primary,
   },
-  subtitle: {
+  stateText: {
+    ...typography.body,
     color: colors.textMuted,
-    fontSize: 17,
-    lineHeight: 25,
-    marginTop: 8,
-  },
-  taskCard: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 14,
-    minHeight: 88,
-    padding: 16,
+    marginTop: spacing.sm,
   },
   taskContent: {
     flex: 1,
-    gap: 4,
+    gap: spacing['2xs'],
   },
   taskHint: {
+    ...typography.meta,
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
   },
   taskList: {
-    gap: 12,
+    gap: spacing.xs,
+  },
+  taskRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  taskSection: {
+    gap: spacing.md,
   },
   taskTitle: {
+    ...typography.bodyStrong,
     color: colors.text,
-    fontSize: 17,
-    fontWeight: '800',
-    lineHeight: 22,
-  },
-  stateText: {
-    color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 21,
-    marginTop: 12,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -0.8,
-    lineHeight: 40,
-    marginTop: 8,
+    fontSize: 16,
   },
   topBar: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 8,
+    paddingTop: spacing.xs,
+  },
+  viewAllButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+  },
+  viewAllButtonText: {
+    ...typography.bodyStrong,
+    color: colors.primary,
   },
 });

@@ -1,8 +1,9 @@
 import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/theme';
+import { colors, spacing, typography } from '@/constants/theme';
+import { Card } from '@/components/ui';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
 import { selectCandidatesForAnimal } from '@/features/prototype-flow/prototype-flow-selectors';
 
@@ -29,59 +30,55 @@ export function AnimalCard({ animal }: AnimalCardProps) {
       }}
       asChild
     >
-      <Pressable
+      <Card
         accessibilityLabel={t('animals.card.accessibilityLabel', {
           name: animal.name,
           status: statusLabel,
         })}
         accessibilityRole="button"
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        padding="comfortable"
+        variant="elevated"
       >
-        <AnimalAvatar animal={animal} />
-
-        <View style={styles.content}>
-          <Text numberOfLines={1} style={styles.name}>
-            {animal.name}
-          </Text>
-          <Text style={styles.meta}>
-            {getAnimalSpeciesLabel(t, animal.species)} ·{' '}
-            {t('animals.candidates.count', { count: candidateCount })}
-          </Text>
-          <StatusBadge status={animal.status} />
+        <View style={styles.row}>
+          <AnimalAvatar animal={animal} />
+          <View style={styles.content}>
+            <Text numberOfLines={1} style={styles.name}>
+              {animal.name}
+            </Text>
+            <Text style={styles.meta}>
+              {getAnimalSpeciesLabel(t, animal.species)} ·{' '}
+              {t('animals.candidates.count', { count: candidateCount })}
+            </Text>
+            <View style={styles.badgeRow}>
+              <StatusBadge status={animal.status} />
+            </View>
+          </View>
         </View>
-      </Pressable>
+      </Card>
     </Link>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 16,
-    minHeight: 112,
-    padding: 16,
-  },
-  cardPressed: {
-    backgroundColor: colors.surfaceMuted,
-    transform: [{ scale: 0.99 }],
+  badgeRow: {
+    marginTop: spacing.xs,
   },
   content: {
     flex: 1,
-    gap: 7,
+    gap: spacing['2xs'],
   },
   meta: {
+    ...typography.meta,
     color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
   },
   name: {
+    ...typography.title,
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 19,
+  },
+  row: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
   },
 });

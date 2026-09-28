@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
 
 import { getAnimalStatusLabel } from '../presenters';
 import type { AnimalStatus } from '../types';
@@ -44,13 +44,12 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing['2xs'],
   },
   label: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.2,
+    ...typography.metaStrong,
+    textTransform: 'uppercase',
   },
 });

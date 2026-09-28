@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/theme';
+import { colors, spacing, typography } from '@/constants/theme';
 import { formatDate } from '@/i18n/format';
 
 import { getTimelineEventLabel, parseOccurredOn } from '../presenters';
@@ -43,40 +43,36 @@ export function TimelineEventItem({
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    paddingBottom: 18,
+    paddingBottom: spacing.md,
   },
   contentLast: {
     paddingBottom: 0,
   },
   date: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+    ...typography.metaStrong,
+    color: colors.textSubtle,
     textTransform: 'uppercase',
   },
   dot: {
     backgroundColor: colors.primary,
-    borderRadius: 5,
-    height: 10,
-    marginTop: 4,
-    width: 10,
+    borderRadius: 4,
+    height: 8,
+    marginTop: 6,
+    width: 8,
   },
   item: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.sm,
   },
   label: {
+    ...typography.bodyStrong,
     color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 22,
-    marginTop: 4,
+    marginTop: spacing['2xs'],
   },
   line: {
     backgroundColor: colors.border,
     flex: 1,
-    marginTop: 4,
+    marginTop: spacing['2xs'],
     width: 2,
   },
   markerColumn: {

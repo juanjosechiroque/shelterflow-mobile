@@ -10,7 +10,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors } from '@/constants/theme';
+import { colors, radii, spacing, typography } from '@/constants/theme';
+import { ScreenHeader, StateView } from '@/components/ui';
 import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
 import { selectShelter } from '@/features/prototype-flow/prototype-flow-selectors';
 
@@ -51,20 +52,23 @@ export function AnimalsScreen() {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         keyExtractor={(animal) => animal.id}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>{t('animals.empty.title')}</Text>
-            <Text style={styles.emptyDescription}>
-              {t('animals.empty.description')}
-            </Text>
+          <View style={styles.emptyWrapper}>
+            <StateView
+              title={t('animals.empty.title')}
+              description={t('animals.empty.description')}
+              tone="empty"
+            />
           </View>
         }
         ListHeaderComponent={
-          <View>
-            <Text style={styles.shelterName}>{shelter.name}</Text>
-            <Text accessibilityRole="header" style={styles.title}>
-              {t('animals.title')}
-            </Text>
-            <Text style={styles.subtitle}>{t('animals.subtitle')}</Text>
+          <View style={styles.header}>
+            <Text style={styles.shelterEyebrow}>{shelter.name}</Text>
+            <View style={styles.headerBody}>
+              <ScreenHeader
+                subtitle={t('animals.subtitle')}
+                title={t('animals.title')}
+              />
+            </View>
 
             <ScrollView
               accessibilityRole="tablist"
@@ -84,7 +88,7 @@ export function AnimalsScreen() {
                     style={({ pressed }) => [
                       styles.filter,
                       isSelected && styles.filterSelected,
-                      pressed && styles.filterPressed,
+                      pressed && !isSelected && styles.filterPressed,
                     ]}
                   >
                     <Text
@@ -115,90 +119,63 @@ export function AnimalsScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
+    paddingBottom: spacing['2xl'],
+    paddingHorizontal: spacing.lg,
   },
-  emptyDescription: {
-    color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 18,
-    padding: 28,
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '800',
+  emptyWrapper: {
+    marginTop: spacing['2xl'],
   },
   filter: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 999,
-    borderWidth: 1,
-    minHeight: 42,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 36,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   filterLabel: {
+    ...typography.metaStrong,
     color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '700',
+    textTransform: 'none',
   },
   filterLabelSelected: {
-    color: colors.surface,
+    color: colors.onPrimary,
   },
   filterPressed: {
-    opacity: 0.72,
+    backgroundColor: colors.surfaceSunken,
   },
   filterSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   filters: {
-    gap: 8,
-    paddingRight: 20,
+    gap: spacing.xs,
+    paddingRight: spacing.lg,
+  },
+  header: {
+    marginBottom: spacing.lg,
+  },
+  headerBody: {
+    marginBottom: spacing.lg,
+    marginTop: spacing.xs,
   },
   resultCount: {
-    color: colors.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 12,
-    marginTop: 18,
+    ...typography.meta,
+    color: colors.textSubtle,
+    marginBottom: spacing.md,
+    marginTop: spacing.md,
   },
   safeArea: {
     backgroundColor: colors.background,
     flex: 1,
   },
   separator: {
-    height: 12,
+    height: spacing.xs,
   },
-  shelterName: {
+  shelterEyebrow: {
+    ...typography.eyebrow,
     color: colors.primary,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-    marginTop: 8,
-    textTransform: 'uppercase',
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 20,
-    marginTop: 8,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: -0.8,
-    lineHeight: 40,
-    marginTop: 6,
+    marginTop: spacing.xs,
   },
 });

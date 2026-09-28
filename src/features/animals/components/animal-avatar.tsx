@@ -24,20 +24,21 @@ interface AnimalAvatarProps {
 }
 
 export function AnimalAvatar({ animal, size = 'medium' }: AnimalAvatarProps) {
+  const isLarge = size === 'large';
   return (
     <View
       accessible={false}
       style={[
         styles.avatar,
-        size === 'large' ? styles.avatarLarge : styles.avatarMedium,
+        isLarge ? styles.avatarLarge : styles.avatarMedium,
         { backgroundColor: toneColors[animal.visualTone] },
       ]}
     >
-      <Text style={size === 'large' ? styles.symbolLarge : styles.symbolMedium}>
-        {speciesSymbols[animal.species]}
-      </Text>
-      <Text style={size === 'large' ? styles.nameLarge : styles.nameMedium}>
+      <Text style={[isLarge ? styles.nameLarge : styles.nameMedium]}>
         {animal.name.slice(0, 1).toUpperCase()}
+      </Text>
+      <Text style={[isLarge ? styles.symbolLarge : styles.symbolMedium]}>
+        {speciesSymbols[animal.species]}
       </Text>
     </View>
   );
@@ -46,25 +47,23 @@ export function AnimalAvatar({ animal, size = 'medium' }: AnimalAvatarProps) {
 const styles = StyleSheet.create({
   avatar: {
     alignItems: 'center',
-    borderColor: colors.surface,
-    borderWidth: 2,
     justifyContent: 'center',
     overflow: 'hidden',
     position: 'relative',
   },
   avatarLarge: {
-    borderRadius: 40,
-    height: 80,
-    width: 80,
+    borderRadius: 28,
+    height: 72,
+    width: 72,
   },
   avatarMedium: {
-    borderRadius: 30,
-    height: 60,
-    width: 60,
+    borderRadius: 22,
+    height: 56,
+    width: 56,
   },
   nameLarge: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
   },
   nameMedium: {
@@ -73,17 +72,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   symbolLarge: {
+    bottom: 6,
     color: colors.primary,
-    fontSize: 11,
+    fontSize: 10,
     position: 'absolute',
-    right: 12,
-    top: 9,
+    right: 10,
   },
   symbolMedium: {
+    bottom: 4,
     color: colors.primary,
     fontSize: 9,
     position: 'absolute',
     right: 8,
-    top: 6,
   },
 });

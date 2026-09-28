@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors } from '@/constants/theme';
+import { colors, spacing, typography } from '@/constants/theme';
 
 import type { MockCandidateDetail } from '@/features/candidates/types';
 import { CandidateStatusBadge } from './candidate-status-badge';
@@ -37,9 +37,7 @@ export function CandidateRow({ candidate }: CandidateRowProps) {
           </View>
           <Text style={styles.name}>{candidate.person.name}</Text>
         </View>
-        <View style={styles.status}>
-          <CandidateStatusBadge status={candidate.status} />
-        </View>
+        <CandidateStatusBadge status={candidate.status} />
       </Pressable>
     </Link>
   );
@@ -49,36 +47,34 @@ const styles = StyleSheet.create({
   identity: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
+    flex: 1,
+    gap: spacing.sm,
   },
   initials: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
-    borderRadius: 16,
-    height: 32,
+    borderRadius: 14,
+    height: 30,
     justifyContent: 'center',
-    width: 32,
+    width: 30,
   },
   initialsText: {
     color: colors.primary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
   },
   name: {
+    ...typography.bodyStrong,
     color: colors.text,
     flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
   },
   row: {
-    gap: 16,
-    paddingBottom: 16,
-    paddingTop: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
   rowPressed: {
     opacity: 0.7,
-  },
-  status: {
-    marginLeft: 44,
   },
 });
