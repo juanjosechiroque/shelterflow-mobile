@@ -375,6 +375,7 @@ Timeline event types observed by the mobile application:
 
 ```text
 ANIMAL_READY
+ANIMAL_NOT_AVAILABLE
 CANDIDATE_CREATED
 EVALUATION_RECORDED
 MEETING_SCHEDULED

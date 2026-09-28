@@ -81,6 +81,7 @@
       "title": "Línea de tiempo",
       "events": {
         "animalReady": "{{animalName}} quedó listo para adopción.",
+        "animalNotAvailable": "{{animalName}} ya no está disponible para adopción.",
         "candidateCreated": "{{personName}} se registró como candidato.",
         "evaluationRecorded": "Se registró la evaluación de {{personName}}.",
         "meetingScheduled": "Se programó una reunión con {{personName}}.",
@@ -88,6 +89,7 @@
         "decisionPending": "El proceso de {{personName}} quedó listo para una decisión.",
         "adoptionConfirmed": "Se confirmó la adopción con {{personName}}.",
         "followUpsPlanned": "Se planificaron los seguimientos de la adopción.",
+        "followUpCompleted": "Se completó un seguimiento de la adopción.",
         "adoptionReturned": "La adopción con {{personName}} fue devuelta.",
         "reevaluationRequired": "{{animalName}} requiere una reevaluación humana."
       }
@@ -149,6 +151,7 @@
       "activeCandidates": "Candidatos registrados",
       "nextStep": "Siguiente paso",
       "reviewFollowUps": "Revisar seguimientos",
+      "completeReevaluation": "Completar reevaluación",
       "nextSteps": {
         "preparing": "Completar la preparación antes de habilitar la adopción.",
         "ready": "Revisar candidatos o esperar una nueva postulación preseleccionada.",
@@ -159,7 +162,14 @@
       },
       "notFoundTitle": "Animal no encontrado",
       "notFoundDescription": "No pudimos encontrar este animal.",
-      "goBack": "Volver"
+      "goBack": "Volver",
+      "loading": "Cargando el animal…",
+      "loadErrorTitle": "No pudimos cargar el animal",
+      "loadErrorDescription": "Revisa tu conexión e inténtalo nuevamente.",
+      "retry": "Reintentar",
+      "timelineLoading": "Cargando la línea de tiempo…",
+      "timelineError": "No pudimos cargar la línea de tiempo.",
+      "timelineEmpty": "Aún no hay eventos registrados en la línea de tiempo."
     }
   },
   "candidates": {
@@ -379,6 +389,36 @@
       "cancel": "Cancelar",
       "successTitle": "Retorno registrado",
       "successDescription": "La adopción fue devuelta y los pendientes fueron cancelados.",
+      "backToAdoption": "Ver adopción"
+    },
+    "reevaluation": {
+      "title": "Completar reevaluación",
+      "subtitle": "Decide cómo queda {{animalName}} después del retorno registrado.",
+      "context": "La adopción anterior fue devuelta y el animal pasó a reevaluación humana.",
+      "options": {
+        "ready": {
+          "label": "Listo para adopción",
+          "description": "El animal vuelve a estar disponible para iniciar un nuevo proceso."
+        },
+        "notAvailable": {
+          "label": "No disponible",
+          "description": "El animal deja de estar disponible y debe prepararse antes de un próximo intento."
+        }
+      },
+      "warning": "Esta decisión cambia la disponibilidad del animal y queda registrada en su línea de tiempo.",
+      "decisionPrompt": "Selecciona una decisión para habilitar la acción.",
+      "missingDecision": "Selecciona una decisión para habilitar la acción.",
+      "submit": "Completar reevaluación",
+      "submitting": "Guardando reevaluación…",
+      "error": "No pudimos guardar la reevaluación. Inténtalo nuevamente.",
+      "cancel": "Cancelar",
+      "successTitle": "Reevaluación completada",
+      "successDescription": "El estado de {{animalName}} quedó actualizado en tu refugio.",
+      "backToAnimal": "Ver animal",
+      "notFoundTitle": "Animal no disponible",
+      "notFoundDescription": "No encontramos este animal en tu refugio.",
+      "invalidStateTitle": "Reevaluación no disponible",
+      "invalidStateDescription": "Solo se puede completar la reevaluación cuando el animal está en estado REEVALUATION.",
       "backToAdoption": "Ver adopción"
     }
   },

@@ -485,6 +485,42 @@ describe('Persisted adoption detail and follow-up flows', () => {
       expect(
         screen.queryByRole('button', { name: 'Completar seguimiento' }),
       ).toBeNull();
+
+      const reevaluationButton = screen.getByRole('button', {
+        name: 'Completar reevaluación',
+      });
+      expect(reevaluationButton).toBeTruthy();
+      await fireEvent.press(reevaluationButton);
+      expect(router.push).toHaveBeenCalledWith({
+        pathname: '/animals/[animalId]/reevaluation',
+        params: { animalId: returnedAdoption.animals.id },
+      });
+    });
+
+    it('hides the reevaluation action when the returned adoption animal is not REEVALUATION', async () => {
+      const nonReevaluationReturnedAdoption = {
+        ...returnedAdoption,
+        animals: {
+          ...returnedAdoption.animals,
+          status: 'NOT_AVAILABLE',
+        },
+      };
+      const { client } = createClient({
+        adoptionList: { data: [nonReevaluationReturnedAdoption], error: null },
+        adoptionDetail: { data: nonReevaluationReturnedAdoption, error: null },
+      });
+      mockedUseLocalSearchParams.mockReturnValue({
+        adoptionId: nonReevaluationReturnedAdoption.id,
+      });
+      const { screen } = await renderWithClient(
+        <PersistedAdoptionDetailScreen />,
+        client,
+      );
+
+      await screen.findByText('Devuelta');
+      expect(
+        screen.queryByRole('button', { name: 'Completar reevaluación' }),
+      ).toBeNull();
     });
 
     it('maps RLS-hidden adoption details to no result in the repository', async () => {

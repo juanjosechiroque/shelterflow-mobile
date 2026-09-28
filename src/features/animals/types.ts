@@ -22,6 +22,7 @@ export type CandidateStatus =
 
 export type TimelineEventType =
   | 'ANIMAL_READY'
+  | 'ANIMAL_NOT_AVAILABLE'
   | 'CANDIDATE_CREATED'
   | 'EVALUATION_RECORDED'
   | 'MEETING_SCHEDULED'
