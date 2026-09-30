@@ -329,10 +329,17 @@ sequence of independent updates that could leave partial domain state.
 
 ### Storage
 
-_Planned._ Animal, handover, and follow-up images will use shelter-scoped Supabase Storage
-policies. No bucket or upload path exists yet; the schema models nullable storage-path fields only.
-A database record must not claim a completed image attachment until the chosen upload workflow can
-recover safely from failure.
+**Implemented: bucket and shelter-scoped policies.** The private `shelter-media` bucket and the
+`storage.objects` Row Level Security policies are in place. Every object key follows the convention
+`<shelter_id>/<entity>/<entity_id>/<filename>`; the first path segment is the owning shelter. The
+four policies (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) compare that prefix with the caller's shelter
+resolved through `public.auth_shelter_id()`, so a user can only read or write objects under their
+own shelter. `anon` has no access.
+
+**Planned.** The image upload UI, the binary upload preflight, the signed-URL read path, and the
+`set_animal_primary_photo` / `set_adoption_photo` / `set_followup_photo` attach RPCs are still
+pending. A database record must not claim a completed image attachment until the chosen upload
+workflow can recover safely from failure.
 
 ## Internationalization
 
