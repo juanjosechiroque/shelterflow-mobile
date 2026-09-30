@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { colors, spacing, typography } from '@/constants/theme';
 
-import type { MockCandidateDetail } from '@/features/candidates/types';
+import type { Candidate } from '@/features/candidates/types';
 import { CandidateStatusBadge } from './candidate-status-badge';
 
 interface CandidateRowProps {
-  candidate: MockCandidateDetail;
+  candidate: Pick<Candidate, 'id' | 'person' | 'status'>;
 }
 
 export function CandidateRow({ candidate }: CandidateRowProps) {

@@ -24,6 +24,7 @@ const baseAuthValue: AuthContextValue = {
     id: '00000000-0000-4000-8000-000000000103',
     displayName: 'Administrador Huellitas',
     shelterId: '00000000-0000-4000-8000-000000000001',
+    shelterName: 'Huellitas Rescue',
   },
   shelter: {
     id: '00000000-0000-4000-8000-000000000001',

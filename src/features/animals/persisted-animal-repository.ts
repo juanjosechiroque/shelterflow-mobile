@@ -71,6 +71,22 @@ const animalFields =
 
 const timelineFields = 'id, event_type, occurred_at, data';
 
+export async function listAnimalsForShelter(
+  client: SupabaseClient<Database>,
+  shelterId: string,
+): Promise<PersistedAnimal[]> {
+  const { data, error } = await client
+    .from('animals')
+    .select(animalFields)
+    .eq('shelter_id', shelterId)
+    .is('archived_at', null)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+
+  return ((data ?? []) as unknown as AnimalRow[]).map(toAnimal);
+}
+
 export async function getAnimalById(
   client: SupabaseClient<Database>,
   animalId: string,

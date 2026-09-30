@@ -6,8 +6,10 @@ export type PersistedTimelineEventType =
   | 'ANIMAL_READY'
   | 'ANIMAL_NOT_AVAILABLE'
   | 'CANDIDATE_CREATED'
+  | 'CONTACT_PENDING'
   | 'EVALUATION_RECORDED'
   | 'MEETING_SCHEDULED'
+  | 'MEETING_COMPLETED'
   | 'ANIMAL_IN_PROCESS'
   | 'DECISION_PENDING'
   | 'ADOPTION_CONFIRMED'
@@ -21,8 +23,10 @@ const persistedTimelineEventKeys: Record<
   | 'animals.timeline.events.animalReady'
   | 'animals.timeline.events.animalNotAvailable'
   | 'animals.timeline.events.candidateCreated'
+  | 'animals.timeline.events.contactPending'
   | 'animals.timeline.events.evaluationRecorded'
   | 'animals.timeline.events.meetingScheduled'
+  | 'animals.timeline.events.meetingCompleted'
   | 'animals.timeline.events.animalInProcess'
   | 'animals.timeline.events.decisionPending'
   | 'animals.timeline.events.adoptionConfirmed'
@@ -37,11 +41,13 @@ const persistedTimelineEventKeys: Record<
   ANIMAL_NOT_AVAILABLE: 'animals.timeline.events.animalNotAvailable',
   ANIMAL_READY: 'animals.timeline.events.animalReady',
   CANDIDATE_CREATED: 'animals.timeline.events.candidateCreated',
+  CONTACT_PENDING: 'animals.timeline.events.contactPending',
   DECISION_PENDING: 'animals.timeline.events.decisionPending',
   EVALUATION_RECORDED: 'animals.timeline.events.evaluationRecorded',
   FOLLOW_UP_COMPLETED: 'animals.timeline.events.followUpCompleted',
   FOLLOW_UPS_PLANNED: 'animals.timeline.events.followUpsPlanned',
   MEETING_SCHEDULED: 'animals.timeline.events.meetingScheduled',
+  MEETING_COMPLETED: 'animals.timeline.events.meetingCompleted',
   REEVALUATION_REQUIRED: 'animals.timeline.events.reevaluationRequired',
 };
 

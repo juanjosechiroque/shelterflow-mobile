@@ -3,22 +3,14 @@ import {
   fireEvent,
   render,
   waitFor,
-  within,
   type RenderResult,
 } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
-import { StyleSheet } from 'react-native';
 import { useEffect } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
-import { colors } from '@/constants/theme';
 import { AdoptionConfirmationScreen } from '@/features/adoptions/adoption-confirmation-screen';
-import { AnimalDetailScreen } from '@/features/animals/animal-detail-screen';
-import { AnimalsScreen } from '@/features/animals/animals-screen';
-import { CandidateScreen } from '@/features/candidates/candidate-screen';
-import { EvaluationScreen } from '@/features/evaluations/evaluation-screen';
 import { FollowUpsScreen } from '@/features/followups/followups-screen';
-import { MeetingsScreen } from '@/features/meetings/meetings-screen';
 import { fixedClock } from '@/features/prototype-flow/clock';
 import { createMockPrototypeRepository } from '@/features/prototype-flow/mock-repository';
 import {
@@ -69,145 +61,10 @@ function DispatchBeforeRender({
   return <>{children}</>;
 }
 
-async function candidateActions(
-  screen: RenderResult,
-  actionLabel: string,
-): Promise<void> {
-  await fireEvent.press(
-    screen.getByRole('button', { name: new RegExp(actionLabel) }),
-  );
-}
-
-describe('Candidate and adoption flows', () => {
+describe('Prototype adoption confirmation and follow-ups', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
     await i18n.changeLanguage('es');
-  });
-
-  it('renders the Luna candidates on the animal detail screen', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ animalId: 'luna' });
-    const screen = await renderWithProvider(<AnimalDetailScreen />);
-
-    expect(screen.getByText('Andrea Pérez')).toBeTruthy();
-    expect(screen.getByText('Carlos Ruiz')).toBeTruthy();
-    expect(screen.getByText('Sofía Vargas')).toBeTruthy();
-    expect(screen.queryByText('Datos de demostración')).toBeNull();
-  });
-
-  it('opens an unevaluated candidate and shows the journey actions', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-andrea' });
-    const screen = await renderWithProvider(<CandidateScreen />);
-
-    expect(screen.getByText('Andrea Pérez')).toBeTruthy();
-    expect(screen.getByText('Necesita evaluación')).toBeTruthy();
-    expect(screen.getByText('Registrar evaluación')).toBeTruthy();
-    expect(screen.getByText('Ver reuniones')).toBeTruthy();
-    expect(screen.queryByText('Confirmar adopción')).toBeNull();
-  });
-
-  it('presents "Registrar evaluación" as a primary action and "Ver reuniones" as secondary', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-andrea' });
-    const screen = await renderWithProvider(<CandidateScreen />);
-
-    const registerButton = screen.getByRole('button', {
-      name: 'Registrar evaluación',
-    });
-    const registerStyle = StyleSheet.flatten(registerButton.props.style);
-    expect(registerStyle.backgroundColor).toBe(colors.primary);
-    expect(registerStyle.borderColor).toBe(colors.primary);
-    const registerLabel = within(registerButton).getByText(
-      'Registrar evaluación',
-    );
-    const registerLabelStyle = StyleSheet.flatten(registerLabel.props.style);
-    expect(registerLabelStyle.color).toBe(colors.surface);
-
-    const meetingsLink = screen.getByRole('button', { name: 'Ver reuniones' });
-    const meetingsStyle = StyleSheet.flatten(meetingsLink.props.style);
-    expect(meetingsStyle.backgroundColor).toBe(colors.surface);
-    expect(meetingsStyle.borderColor).toBe(colors.border);
-    const meetingsLabel = within(meetingsLink).getByText('Ver reuniones');
-    const meetingsLabelStyle = StyleSheet.flatten(meetingsLabel.props.style);
-    expect(meetingsLabelStyle.color).toBe(colors.text);
-
-    await fireEvent.press(registerButton);
-    expect(router.push).toHaveBeenCalledWith({
-      pathname: '/animals/candidate/[candidateId]/evaluation',
-      params: { candidateId: 'luna-andrea' },
-    });
-  });
-
-  it('continues an evaluated candidate to contact pending', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-sofia' });
-    const screen = await renderWithProvider(<CandidateScreen />);
-
-    expect(screen.getByText('Evaluado')).toBeTruthy();
-
-    await candidateActions(screen, 'Continuar contacto');
-
-    await waitFor(() => {
-      expect(screen.getByText('Contacto pendiente')).toBeTruthy();
-    });
-  });
-
-  it('marks a scheduled-meeting candidate for decision', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-carlos' });
-    const screen = await renderWithProvider(
-      <DispatchBeforeRender
-        setup={(commands) =>
-          commands.completeMeeting('luna-carlos-meeting', 'GOOD')
-        }
-      >
-        <CandidateScreen />
-      </DispatchBeforeRender>,
-    );
-
-    expect(screen.getByText('Reunión programada')).toBeTruthy();
-    expect(screen.queryByText('Confirmar adopción')).toBeNull();
-
-    await candidateActions(screen, 'Marcar para decisión');
-
-    await waitFor(() => {
-      expect(screen.getByText('Decisión pendiente')).toBeTruthy();
-      expect(screen.getByText('Confirmar adopción')).toBeTruthy();
-    });
-  });
-
-  it('records an evaluation and shows the summary', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-andrea' });
-    const screen = await renderWithProvider(<EvaluationScreen />);
-
-    expect(screen.getByText('Registrar evaluación')).toBeTruthy();
-    expect(screen.getByText('Guardar evaluación')).toBeTruthy();
-
-    await fireEvent.changeText(
-      screen.getByPlaceholderText('Ej. Experiencia con perros'),
-      'Buena disposición',
-    );
-    await fireEvent.press(screen.getAllByRole('button', { name: '+' })[0]);
-    await candidateActions(screen, 'Guardar evaluación');
-
-    expect(await screen.findByText('Fuerte')).toBeTruthy();
-    expect(screen.getByText('Continuar')).toBeTruthy();
-    expect(screen.getByText('Resumen')).toBeTruthy();
-  });
-
-  it('shows an evaluation summary for an evaluated candidate', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-sofia' });
-    const screen = await renderWithProvider(<EvaluationScreen />);
-
-    expect(screen.getByText('Posible')).toBeTruthy();
-    expect(screen.getByText('Más información')).toBeTruthy();
-    expect(screen.queryByText('Guardar evaluación')).toBeNull();
-  });
-
-  it('lists a scheduled meeting for a candidate', async () => {
-    mockedUseLocalSearchParams.mockReturnValue({ candidateId: 'luna-carlos' });
-    const screen = await renderWithProvider(<MeetingsScreen />);
-
-    expect(screen.getAllByText('Conocimiento').length).toBeGreaterThanOrEqual(
-      1,
-    );
-    expect(screen.getAllByText('Programada').length).toBeGreaterThanOrEqual(1);
   });
 
   it('confirms an adoption for a candidate in decision status', async () => {
@@ -256,7 +113,7 @@ describe('Candidate and adoption flows', () => {
     expect(screen.getByText('Sin adopción activa')).toBeTruthy();
   });
 
-  it('reflects a completed Andrea adoption across the shared state', async () => {
+  it('confirms an Andrea adoption atomically across the shared state', async () => {
     let sharedState: PrototypeFlowState | null = null;
 
     function AndreaJourney() {
@@ -290,18 +147,15 @@ describe('Candidate and adoption flows', () => {
       }, [andreaMeeting, andrea]);
 
       sharedState = state;
-      return <AnimalsScreen />;
+      return null;
     }
 
-    const screen = await renderWithProvider(<AndreaJourney />);
+    await renderWithProvider(<AndreaJourney />);
 
     await waitFor(() => {
       expect(selectAnimalById(sharedState!, 'luna')?.status).toBe('ADOPTED');
     });
 
-    expect(
-      screen.getAllByText('Adoptado', { exact: false }).length,
-    ).toBeGreaterThan(0);
     expect(
       selectCandidatesForAnimal(sharedState!, 'luna')
         .filter((c) => c.id !== 'luna-andrea')

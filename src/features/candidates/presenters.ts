@@ -19,7 +19,10 @@ const sourceKeys: Record<
 
 export function getCandidateSourceLabel(
   t: TFunction,
-  source: CandidateSource,
+  source: string | null,
 ): string {
-  return t(sourceKeys[source]);
+  if (source && source in sourceKeys) {
+    return t(sourceKeys[source as CandidateSource]);
+  }
+  return source ?? t(sourceKeys.UNKNOWN);
 }

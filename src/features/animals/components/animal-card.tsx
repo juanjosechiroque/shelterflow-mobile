@@ -4,23 +4,28 @@ import { useTranslation } from 'react-i18next';
 
 import { colors, spacing, typography } from '@/constants/theme';
 import { Card } from '@/components/ui';
-import { usePrototypeFlow } from '@/features/prototype-flow/prototype-flow-provider';
-import { selectCandidatesForAnimal } from '@/features/prototype-flow/prototype-flow-selectors';
-
-import { getAnimalSpeciesLabel, getAnimalStatusLabel } from '../presenters';
-import type { MockAnimal } from '../types';
+import {
+  getAnimalSpeciesLabel,
+  getAnimalStatusLabel,
+  getAnimalSizeLabel,
+} from '@/features/animals/presenters';
+import type {
+  AnimalSpecies,
+  AnimalSize,
+  AnimalStatus,
+} from '@/features/animals/types';
+import type { PersistedAnimal } from '@/features/animals/persisted-animal-repository';
 import { AnimalAvatar } from './animal-avatar';
 import { StatusBadge } from './status-badge';
 
 interface AnimalCardProps {
-  animal: MockAnimal;
+  animal: PersistedAnimal;
 }
 
 export function AnimalCard({ animal }: AnimalCardProps) {
   const { t } = useTranslation();
-  const { state } = usePrototypeFlow();
-  const statusLabel = getAnimalStatusLabel(t, animal.status);
-  const candidateCount = selectCandidatesForAnimal(state, animal.id).length;
+  const status = animal.status as AnimalStatus;
+  const statusLabel = getAnimalStatusLabel(t, status);
 
   return (
     <Link
@@ -46,11 +51,11 @@ export function AnimalCard({ animal }: AnimalCardProps) {
               {animal.name}
             </Text>
             <Text style={styles.meta}>
-              {getAnimalSpeciesLabel(t, animal.species)} ·{' '}
-              {t('animals.candidates.count', { count: candidateCount })}
+              {getAnimalSpeciesLabel(t, animal.species as AnimalSpecies)} ·{' '}
+              {getAnimalSizeLabel(t, animal.size as AnimalSize)}
             </Text>
             <View style={styles.badgeRow}>
-              <StatusBadge status={animal.status} />
+              <StatusBadge status={status} />
             </View>
           </View>
         </View>

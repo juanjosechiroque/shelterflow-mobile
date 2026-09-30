@@ -60,6 +60,9 @@
     "subtitle": "Follow the status of every adoption journey.",
     "results_one": "{{count}} animal",
     "results_other": "{{count}} animals",
+    "loading": "Loading animals…",
+    "loadErrorTitle": "We couldn't load the animals",
+    "loadErrorDescription": "Check your connection and try again.",
     "candidates": {
       "title": "Candidates",
       "empty": "There are no registered candidates for this animal yet.",
@@ -83,15 +86,17 @@
         "animalReady": "{{animalName}} became ready for adoption.",
         "animalNotAvailable": "{{animalName}} is no longer available for adoption.",
         "candidateCreated": "{{personName}} was registered as a candidate.",
-        "evaluationRecorded": "{{personName}}'s evaluation was recorded.",
-        "meetingScheduled": "A meeting was scheduled with {{personName}}.",
+        "evaluationRecorded": "An evaluation was recorded.",
+        "meetingScheduled": "A meeting was scheduled.",
         "animalInProcess": "{{animalName}} moved into an active adoption process.",
         "decisionPending": "{{personName}}'s process is ready for a decision.",
         "adoptionConfirmed": "The adoption with {{personName}} was confirmed.",
         "followUpsPlanned": "Adoption follow-ups were planned.",
         "followUpCompleted": "An adoption follow-up was completed.",
         "adoptionReturned": "The adoption with {{personName}} was returned.",
-        "reevaluationRequired": "{{animalName}} requires a human reevaluation."
+        "reevaluationRequired": "{{animalName}} requires a human reevaluation.",
+        "contactPending": "The candidate is pending contact.",
+        "meetingCompleted": "A meeting was completed."
       }
     },
     "filters": {
@@ -169,8 +174,11 @@
       "retry": "Retry",
       "timelineLoading": "Loading the timeline…",
       "timelineError": "We couldn't load the timeline.",
-      "timelineEmpty": "There are no timeline events recorded yet."
-    }
+      "timelineEmpty": "There are no timeline events recorded yet.",
+      "candidatesLoading": "Loading candidates…",
+      "candidatesError": "We couldn't load the candidates."
+    },
+    "refresh": "Refresh"
   },
   "candidates": {
     "title": "Candidate",
@@ -199,7 +207,11 @@
       "unknown": "Unknown"
     },
     "notFoundTitle": "Candidate not found",
-    "notFoundDescription": "We couldn't find this candidate."
+    "notFoundDescription": "We couldn't find this candidate.",
+    "loadingTitle": "Loading candidate",
+    "loading": "Loading candidate…",
+    "contactError": "Could not advance contact. Please try again.",
+    "decisionError": "Could not mark for decision. Please try again."
   },
   "evaluations": {
     "title": "Evaluation",
@@ -225,6 +237,8 @@
     },
     "emptyTitle": "No evaluation",
     "emptyDescription": "This candidate has no evaluation recorded yet.",
+    "loading": "Loading evaluation…",
+    "loadError": "We couldn't load the evaluation. Please try again.",
     "backToCandidate": "Back to candidate",
     "form": {
       "title": "Register evaluation",
@@ -244,6 +258,9 @@
     "subtitle": "Recorded interactions with {{personName}} about {{animalName}}.",
     "resultLabel": "Result",
     "noResultHint": "Meeting completed with no recorded result.",
+    "loading": "Loading meetings…",
+    "loadError": "We couldn't load the meetings. Please try again.",
+    "mutationError": "We couldn't save the meeting. Please try again.",
     "emptyTitle": "No meetings",
     "emptyDescription": "There are no meetings recorded for this candidate yet.",
     "types": {
@@ -485,5 +502,8 @@
       "configMissing": "The application is not connected to Supabase. Configure the local environment variables.",
       "unknown": "We couldn't sign you in. Please try again."
     }
+  },
+  "common": {
+    "retry": "Retry"
   }
 }

@@ -2,14 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '@/constants/theme';
 
-import type { AnimalSpecies, MockAnimal } from '../types';
-
-const toneColors: Record<MockAnimal['visualTone'], string> = {
-  forest: '#D8ECDD',
-  rose: '#F4DFE2',
-  sand: '#F3E5C9',
-  sky: '#DCEAF1',
-};
+import type { AnimalSpecies } from '../types';
 
 const speciesSymbols: Record<AnimalSpecies, string> = {
   CAT: '●',
@@ -18,28 +11,22 @@ const speciesSymbols: Record<AnimalSpecies, string> = {
   UNKNOWN: '•',
 };
 
-interface AnimalAvatarProps {
-  animal: MockAnimal;
-  size?: 'medium' | 'large';
+function speciesSymbol(species: string): string {
+  return speciesSymbols[species as AnimalSpecies] ?? speciesSymbols.UNKNOWN;
 }
 
-export function AnimalAvatar({ animal, size = 'medium' }: AnimalAvatarProps) {
-  const isLarge = size === 'large';
+interface AnimalAvatarProps {
+  animal: { name: string; species: string };
+}
+
+export function AnimalAvatar({ animal }: AnimalAvatarProps) {
   return (
     <View
       accessible={false}
-      style={[
-        styles.avatar,
-        isLarge ? styles.avatarLarge : styles.avatarMedium,
-        { backgroundColor: toneColors[animal.visualTone] },
-      ]}
+      style={[styles.avatar, { backgroundColor: colors.surface }]}
     >
-      <Text style={[isLarge ? styles.nameLarge : styles.nameMedium]}>
-        {animal.name.slice(0, 1).toUpperCase()}
-      </Text>
-      <Text style={[isLarge ? styles.symbolLarge : styles.symbolMedium]}>
-        {speciesSymbols[animal.species]}
-      </Text>
+      <Text style={styles.name}>{animal.name.slice(0, 1).toUpperCase()}</Text>
+      <Text style={styles.symbol}>{speciesSymbol(animal.species)}</Text>
     </View>
   );
 }
@@ -49,40 +36,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    position: 'relative',
-  },
-  avatarLarge: {
     borderRadius: 28,
-    height: 72,
-    width: 72,
-  },
-  avatarMedium: {
-    borderRadius: 22,
     height: 56,
     width: 56,
   },
-  nameLarge: {
-    color: colors.text,
-    fontSize: 26,
-    fontWeight: '800',
-  },
-  nameMedium: {
+  name: {
     color: colors.text,
     fontSize: 22,
     fontWeight: '800',
   },
-  symbolLarge: {
-    bottom: 6,
+  symbol: {
     color: colors.primary,
-    fontSize: 10,
-    position: 'absolute',
-    right: 10,
-  },
-  symbolMedium: {
-    bottom: 4,
-    color: colors.primary,
-    fontSize: 9,
-    position: 'absolute',
-    right: 8,
+    fontSize: 14,
+    marginTop: 4,
   },
 });

@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This document describes the intended V1 architecture and its boundaries. The current prototype includes an interactive in-memory adoption journey: users can record an evaluation, schedule and complete a meeting, mark a decision, confirm an adoption, and complete a follow-up. These mutations update a shared in-memory store and are reset on reload. Supabase Auth and shelter-scoped reads of the authenticated profile and shelter identity are implemented. An isolated persisted slice from Today covers the post-decision journey: it lists `DECISION_PENDING` candidates and confirms them through `confirm_adoption()`, lists active adoptions, opens an adoption detail page, completes pending follow-ups through `complete_followup()`, and records returns through the existing `return_adoption()` RPC. The other operational animal, candidate, evaluation, and meeting screens still use the prototype.
+This document describes the intended V1 architecture and its boundaries. The original interactive in-memory walkthrough remains available, but the authenticated application now reads animals, timelines, candidates, people, evaluations, meetings, adoptions, and follow-ups through feature-local Supabase repositories. Evaluation recording, contact advancement, meeting scheduling, meeting completion, decision advancement, adoption confirmation, follow-up completion, returns, and reevaluation use reviewed PostgreSQL RPCs. Direct mobile-client table writes remain denied.
 
 The current application uses Expo SDK 57, React Native, TypeScript, Expo Router, a development client, Supabase Auth, i18next, AsyncStorage, Jest, ESLint, and Prettier. Animal, candidate, and timeline data in the prototype are fictitious fixtures used to demonstrate the interactive flow.
 
@@ -94,7 +94,7 @@ Feature-local components, schemas, hooks, and tests should remain inside their f
 
 ### Server state
 
-TanStack Query owns remote loading, caching, retries, invalidation, and mutation status for the persisted adoption-decision slice. Supabase remains the source of truth.
+TanStack Query owns remote loading, caching, retries, invalidation, and mutation status for authenticated feature slices. Supabase remains the source of truth.
 
 ### Form and screen state
 
@@ -110,7 +110,7 @@ A global client-state library is not part of the baseline. Redux, Zustand, or an
 
 The prototype uses a lightweight in-memory store (`src/features/prototype-flow`) built on React Context and `useReducer`. It holds animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, and it owns the domain transition rules. Screens read from it through selectors and invoke expressive commands; the reusable pure reducer and selectors are decoupled from React so transitions are testable in isolation. Data originates behind a mock repository contract: the only production file allowed to import the fictitious `mock-*` fixtures is `mock-repository.ts`, which returns deep-cloned snapshot state so loads and resets never reuse references. This store remains a stopgap for the prototype screens; it is not intended to replace the backend and resets on reload. It is mounted once in the root layout and is deliberately not a generic CRM or global state abstraction.
 
-TanStack Query is mounted once at the application root for authenticated server state. `AuthProvider` owns the single active Supabase client and exposes it to feature code; persisted adoption-decision queries and the confirmation mutation use that client, never the global singleton. On a successful confirmation, the list and candidate-detail query keys are invalidated before the user returns to Today.
+TanStack Query is mounted once at the application root for authenticated server state. `AuthProvider` owns the single active Supabase client and exposes it to feature code; repositories and mutations use that client, never a global singleton. Each mutation invalidates its affected animal, timeline, candidate, meeting, adoption, or follow-up query keys after the atomic RPC succeeds.
 
 ## Domain layer
 
@@ -157,11 +157,22 @@ Exact SQL design and indexes are decided alongside Supabase migrations, not in m
 
 ### Atomic operations
 
-User and shelter provisioning is external to the mobile application. At minimum, these operations require PostgreSQL transactions:
+User and shelter provisioning is external to the mobile application. Every
+workflow transition that touches more than one row, a status, or timeline
+history runs as a `SECURITY DEFINER` PostgreSQL function:
 
+- `record_evaluation()`, `bridge_evaluated_to_contact_pending()`;
+- `schedule_meeting()`, `complete_meeting()`, `mark_decision_pending()`;
 - `confirm_adoption()`;
 - `complete_followup()`;
-- `return_adoption()`.
+- `return_adoption()`;
+- `complete_reevaluation()`.
+
+Each derives `shelter_id` from the authenticated profile, validates shelter
+ownership of every referenced row, locks the rows it mutates, and writes its
+own timeline events with display-safe metadata only. `schedule_meeting()` is
+guarded against duplicate active meetings for a candidate by a partial unique
+index; `complete_meeting()` rejects a second completion of the same meeting.
 
 `complete_followup()` and `return_adoption()` lock the adoption row first so
 the two operations cannot leave a follow-up completed after the adoption

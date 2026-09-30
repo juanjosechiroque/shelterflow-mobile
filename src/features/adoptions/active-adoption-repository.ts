@@ -161,6 +161,21 @@ export async function getAdoptionById(
   return data ? toAdoptionRecord(data as unknown as AdoptionRow) : null;
 }
 
+export async function getActiveAdoptionByAnimal(
+  client: SupabaseClient<Database>,
+  animalId: string,
+): Promise<AdoptionRecord | null> {
+  const { data, error } = await client
+    .from('adoptions')
+    .select(adoptionFields)
+    .eq('animal_id', animalId)
+    .eq('status', 'ACTIVE')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? toAdoptionRecord(data as unknown as AdoptionRow) : null;
+}
+
 export async function listFollowupsForAdoption(
   client: SupabaseClient<Database>,
   adoptionId: string,
