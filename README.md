@@ -1,23 +1,39 @@
 # ShelterFlow Mobile
 
-ShelterFlow is a Spanish-first React Native application for small animal shelters and independent rescuers. It supports the operational adoption journey after a candidate has already been shortlisted: evaluation, meeting, decision, adoption, and post-adoption follow-up.
+ShelterFlow is a Spanish-first React Native application for small animal shelters and independent
+rescuers. It manages the operational adoption journey after a candidate has already been
+shortlisted: evaluation, meetings, decision, adoption, follow-up, return, and reevaluation.
 
-The repository currently contains the mobile foundation, the canonical adoption domain model, and an interactive adoption prototype. The prototype remains available for the original in-memory walkthrough, but authenticated animal and candidate reads, evaluation recording, meeting scheduling and completion, and post-adoption follow-up completion use Supabase. The persisted journey also includes pending decisions, active adoptions, returns, and reevaluation.
+ShelterFlow begins after a shelter has already shortlisted a person for an animal. V1 deliberately
+excludes initial application forms, generic CRM functionality, veterinary records, inventory,
+donations, volunteers, accounting, internal messaging, and public pet browsing. The full scope and
+its boundaries are in [docs/PRODUCT.md](docs/PRODUCT.md).
 
-## Product scope
+## What works today
 
-ShelterFlow begins after a shelter has already shortlisted a person for an animal. It manages evaluation, meaningful meetings, adoption decisions, adoption confirmation, follow-ups, and returned-adoption history.
+The application is authenticated and shelter-scoped against Supabase: sign-in with session
+restoration, shelter-scoped reads of every domain entity, and the complete persisted workflow —
+evaluation, contact, meeting scheduling and completion, decision, adoption confirmation, follow-up
+completion, return, and reevaluation — each through one atomic PostgreSQL operation. Row Level
+Security protects every table and direct mobile-client table writes are denied.
 
-V1 deliberately excludes initial application forms, generic CRM functionality, veterinary records, inventory, donations, volunteers, accounting, internal messaging, and public pet browsing. These boundaries keep the application focused on the animal's adoption journey.
+Images, native contact actions, notifications and deep links, and the demo shelter are planned and
+**not implemented**. A legacy in-memory prototype (`src/features/prototype-flow`) remains for the
+original walkthrough; it resets on reload and is not the target architecture.
+
+The full breakdown of implemented, planned, and deferred is in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#implementation-status).
 
 ## Requirements
 
 - Node.js 24 LTS recommended (`.nvmrc`)
 - npm 10 or newer
-- Docker (Docker Desktop for Mac or an equivalent Docker Engine) running locally, required only for the local Supabase backend
+- Docker (Docker Desktop for Mac or an equivalent Docker Engine) running locally, required only for
+  the local Supabase backend
 - Android Studio and an Android emulator, or a physical Android device with USB debugging enabled
 
-Expo SDK 57 requires Node.js 22.13 or newer. The project pins the recommended development line to Node.js 24 LTS while allowing compatible Node.js versions through the `engines` field.
+Expo SDK 57 requires Node.js 22.13 or newer. The project pins the recommended development line to
+Node.js 24 LTS while allowing compatible Node.js versions through the `engines` field.
 
 ## Setup
 
@@ -26,13 +42,18 @@ npm install
 npm start
 ```
 
-Expo Go from Google Play currently targets an older SDK than this project. ShelterFlow therefore uses a development build instead of Expo Go. Install the Android development build for the first time with:
+Expo Go from Google Play currently targets an older SDK than this project. ShelterFlow therefore
+uses a development build instead of Expo Go. Install the Android development build for the first
+time with:
 
 ```bash
 npm run android:device
 ```
 
-The command generates the native Android project, compiles it, installs ShelterFlow Dev on the selected USB-connected device, and starts Metro. After the development build is installed, use `npm start` for normal JavaScript and asset changes. Rebuild only after changing native dependencies or native app configuration.
+The command generates the native Android project, compiles it, installs ShelterFlow Dev on the
+selected USB-connected device, and starts Metro. After the development build is installed, use
+`npm start` for normal JavaScript and asset changes. Rebuild only after changing native dependencies
+or native app configuration.
 
 Useful scripts:
 
@@ -49,7 +70,8 @@ npm test
 
 ## Local Supabase backend
 
-The project ships a reproducible local Supabase backend under `supabase/`. Docker must be running before any of these commands:
+The project ships a reproducible local Supabase backend under `supabase/`. Docker must be running
+before any of these commands:
 
 ```bash
 npm run supabase:start       # start the local stack (migrations applied)
@@ -60,28 +82,48 @@ npm run supabase:test:rls    # run the real Auth + RLS integration test against 
 npm run supabase:stop        # stop the local stack
 ```
 
+Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in
+`supabase/seed.sql` and are reapplied by every reset. Run a reset only when migrations or seed data
+change, or when explicitly verifying reproducibility.
+
 ### Local environment variables
 
-The mobile application reads two `EXPO_PUBLIC_*` variables for Supabase. Copy `.env.example` to `.env` and fill them from `npm run supabase:status`:
+The mobile application reads two `EXPO_PUBLIC_*` variables for Supabase. Copy `.env.example` to
+`.env` and fill them from `npm run supabase:status`:
 
 ```bash
 cp .env.example .env
 npm run supabase:status -o env   # print key/value pairs
 ```
 
-`EXPO_PUBLIC_SUPABASE_URL` is the API URL (default `http://127.0.0.1:54321`). `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the publishable key printed under "Authentication Keys". The Supabase **secret** key is server-side only and must never be embedded in the mobile app.
+`EXPO_PUBLIC_SUPABASE_URL` is the API URL (default `http://127.0.0.1:54321`).
+`EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the publishable key printed under "Authentication Keys".
+The Supabase **secret** key is server-side only and must never be embedded in the mobile app — see
+[docs/SECURITY.md](docs/SECURITY.md#secrets).
 
-The local repository is the authoritative source for fixtures: a fresh `npm run supabase:reset` always produces the same two shelters, animals, candidates, evaluations, meetings, adoptions, follow-ups, and timeline events, plus two login-capable local users (`admin@shelter.com / shelter2026` for Huellitas Rescue and `rls-fixture@example.com / rls-fixture-2026` for Patitas Felices, the latter is reserved for the RLS integration test).
+### Local fixtures and sign-in
 
-### Local administrator sign-in
+A fresh `npm run supabase:reset` always produces the same two shelters, animals, candidates,
+evaluations, meetings, adoptions, follow-ups, and timeline events, plus two login-capable local
+users:
 
-Run `npm run supabase:start` to bring up the stack and the seed will create the credentials above. They are local development fixtures only and are not used in any other environment.
+| Account                                        | Shelter          | Purpose                               |
+| ---------------------------------------------- | ---------------- | ------------------------------------- |
+| `admin@shelter.com` / `shelter2026`            | Huellitas Rescue | The account to sign in with locally   |
+| `rls-fixture@example.com` / `rls-fixture-2026` | Patitas Felices  | Reserved for the RLS integration test |
 
-Schema changes are versioned migrations in `supabase/migrations/`; local fixtures live in `supabase/seed.sql` and are reapplied by every reset. Seed data is deterministic and clearly fictitious (invented names and `example.com` addresses). The mobile application is wired to Supabase Auth for sign-in, session restoration, and logout, reads the authenticated profile and shelter identity with shelter-scoped Row Level Security, and invokes reviewed RPCs for cross-record workflow transitions. The in-memory store remains only for prototype routes that have not been replaced by an authenticated read or mutation.
+**These are local development fixtures only.** They exist solely in the local stack, are clearly
+fictitious, and are never used in any other environment. Seed data uses invented names and
+`example.com` addresses.
 
 ### Hosted development fixture data
 
-The linked hosted development project is intentionally separate from the local stack. Its one-time, manually run fixture loader is [`supabase/hosted-dev-seed.sql`](supabase/hosted-dev-seed.sql); run it in that project's SQL Editor, never with `supabase db push`. It refuses to run unless the project has exactly one shelter named `Huellitas Peru` and an existing `admin@shelter.com` profile. It does not create users, shelters, Storage objects, or any credentials. The script provides fictitious operational data for the persisted adoption decision, follow-up, return, and reevaluation flows. Rerunning it updates its stable core records but deliberately preserves records created by manual tests.
+The linked hosted development project is intentionally separate from the local stack. Its one-time,
+manually run fixture loader is [`supabase/hosted-dev-seed.sql`](supabase/hosted-dev-seed.sql); run
+it in that project's SQL Editor, never with `supabase db push`. It refuses to run unless the project
+has exactly one shelter named `Huellitas Peru` and an existing `admin@shelter.com` profile. It does
+not create users, shelters, Storage objects, or any credentials. Rerunning it updates its stable
+core records but deliberately preserves records created by manual tests.
 
 ## Application variants
 
@@ -93,58 +135,45 @@ The app configuration reads `APP_VARIANT` and keeps native application identifie
 | Preview     | ShelterFlow Preview | `com.juanjosechiroque.shelterflow.preview` |
 | Production  | ShelterFlow         | `com.juanjosechiroque.shelterflow`         |
 
-The local native scripts use the development variant. Preview and production profiles will be introduced separately so local development cannot accidentally target a production identifier.
+The local native scripts use the development variant. Preview and production profiles will be
+introduced separately so local development cannot accidentally target a production identifier.
 
 ## Internationalization
 
-Spanish (`es`) is the default language and English (`en`) is supported. UI strings live in `src/i18n/resources`, and the selected language is persisted locally. User-entered content will never be translated automatically.
-
-## Foundation architecture
-
-Expo Router maps files in `src/app` to application routes. For example, `src/app/(tabs)/index.tsx` is the Today tab and `src/app/settings.tsx` is `/settings`; the root layout composes navigation and application-level providers. Navigation only determines which screen is visible. It must not be used to represent domain state such as an animal being adopted or a candidate being selected.
-
-TypeScript extends Expo's SDK-matched base configuration, enables strict mode, and exposes the `@/` alias for source imports. Generated Expo Router route types are included so invalid route references can be detected during development.
-
-`APP_VARIANT` is a build-time configuration value read by `app.config.ts`. It selects the display name and native application identifiers for development, preview, or production. It is not a secret and must not be used to store credentials. Future public mobile configuration may use `EXPO_PUBLIC_` variables, while secrets and privileged backend keys must never be embedded in the app.
-
-The initial dependencies are intentionally limited:
-
-| Dependency                                 | Purpose                                             |
-| ------------------------------------------ | --------------------------------------------------- |
-| Expo and React Native                      | SDK-managed cross-platform mobile runtime           |
-| Expo Router and Linking                    | File-based navigation and deep-link-ready routing   |
-| Expo Dev Client                            | Native development build compatible with SDK 57     |
-| AsyncStorage                               | Local persistence for the selected UI language      |
-| i18next and react-i18next                  | Typed Spanish and English UI resources              |
-| TanStack Query                             | Cached authenticated Supabase queries and mutations |
-| React Native Screens and Safe Area Context | Native navigation primitives and safe screen layout |
-| Jest and React Native Testing Library      | Unit and component validation                       |
-| TypeScript, ESLint, and Prettier           | Static types and consistent code quality            |
-
-Server-state, authentication, database, and business-domain dependencies will be introduced only when the corresponding functionality requires them.
-
-## Documentation
-
-Public engineering documentation is intentionally concise:
-
-- [Domain model](docs/DOMAIN.md)
-- [Architecture](docs/ARCHITECTURE.md)
-
-The domain model and architecture are maintained with the code because implementation correctness depends on them. Detailed planning notes remain local and are not part of the public repository.
-
-## Continuous integration
-
-GitHub Actions runs `npm ci`, type checking, linting, formatting validation, and tests for pull requests and pushes to `main`. The workflow uses the Node.js version pinned in `.nvmrc` and has read-only repository permissions.
+Spanish (`es`) is the default language and English (`en`) is supported. UI strings live in
+`src/i18n/resources`, and the selected language is persisted locally. User-entered content is never
+translated automatically.
 
 ## Project structure
 
 ```text
-src/
-  app/          Expo Router routes and layouts
-  constants/    Foundation-level visual constants
-  features/     Feature screens, mock data, and presenters
-  i18n/         Translation resources, persistence, and formatting
-  providers/    Application-level providers
+src/          Mobile application (see docs/ARCHITECTURE.md#source-organization)
+supabase/     Migrations, pgTAP tests, and deterministic local fixtures
+docs/         Canonical product, domain, architecture, security, and decision records
 ```
 
-The authenticated animal list and detail, candidate detail, evaluation, meeting, adoption, return, reevaluation, and follow-up screens query the current shelter through feature-local repositories and TanStack Query. Workflow mutations use reviewed RPCs; direct mobile table writes remain denied. A shared in-memory store (`src/features/prototype-flow`) still drives the legacy prototype walkthrough, is seeded with clearly fictitious data, and resets on reload. Demo contacts use `example.com` addresses and must never represent real people.
+Expo Router maps files in `src/app` to routes; `src/app/(tabs)/index.tsx` is the Today tab and
+`src/app/settings.tsx` is `/settings`. Navigation only determines which screen is visible — it never
+represents domain state such as an animal being adopted.
+
+## Documentation
+
+| Document                                     | Answers                                                               |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| [docs/PRODUCT.md](docs/PRODUCT.md)           | What we are building, for whom, and what is out of scope              |
+| [docs/DOMAIN.md](docs/DOMAIN.md)             | How the business works: entities, states, transitions, invariants     |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the system is built technically                                   |
+| [docs/SECURITY.md](docs/SECURITY.md)         | Authentication, authorization, tenant isolation, and the threat model |
+| [docs/decisions/](docs/decisions/README.md)  | Why significant decisions were made, and what was rejected            |
+| [docs/DEMO.md](docs/DEMO.md)                 | What the product demonstration must show                              |
+| [AGENTS.md](AGENTS.md)                       | How agents and contributors must work in this repository              |
+
+Domain rules are maintained with the code because implementation correctness depends on them.
+Delivery planning, phase status, task specifications, and review findings are internal working notes
+under `docs/internal/`, which is intentionally ignored by Git.
+
+## Continuous integration
+
+GitHub Actions runs `npm ci`, type checking, linting, formatting validation, and tests for pull
+requests and pushes to `main`. The workflow uses the Node.js version pinned in `.nvmrc` and has
+read-only repository permissions.
