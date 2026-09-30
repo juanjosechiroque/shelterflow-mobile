@@ -1,17 +1,22 @@
--- ShelterFlow fictitious local fixtures for reproducible local development.
+-- ShelterFlow fictitious fixture set — the reference definition of the two
+-- deterministic shelters. It is no longer applied automatically: there is no
+-- local Supabase stack (see docs/decisions/026-remove-local-supabase-test-stack.md).
+-- Keep it as the canonical description of the fixture data; the hosted
+-- development project is loaded from hosted-dev-seed.sql instead.
+--
 -- All identities are invented. Emails use example.com and provide no login capability.
 --
--- The local fixtures include two login-capable users:
+-- Two login-capable users are described:
 --   * admin@shelter.com / shelter2026        belongs to Huellitas Rescue and
 --                                             is the visible manual demo
 --                                             account.
 --   * rls-fixture@example.com / rls-fixture-2026  belongs to Patitas Felices
---                                             and exists only for automated
---                                             RLS isolation tests. It is
---                                             NEVER used as a manual demo.
+--                                             and exists so the cross-shelter
+--                                             boundary can be exercised by hand.
+--                                             It is NEVER used as a manual demo.
 -- Both passwords are bcrypt-hashed with `extensions.crypt(..., bf)`. These
--- credentials are local-development fixtures only and must never be used in
--- any other environment.
+-- credentials are development fixtures only and must never be used in any other
+-- environment.
 
 begin;
 

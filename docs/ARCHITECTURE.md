@@ -29,8 +29,8 @@ planned matters here, so the whole document uses these labels.
   return, and reevaluation.
 - Row Level Security on every public domain table, with direct mobile-client table writes denied.
 - Spanish-first i18n with English support, and a persisted language preference.
-- Jest unit, component, and structural tests; pgTAP database and RLS tests; a real-session RLS
-  integration script.
+- Jest unit, component, structural, and repository tests. Database-level tests run against a local
+  stack were removed with the local Supabase / Docker tooling ([ADR-026](decisions/026-remove-local-supabase-test-stack.md)).
 
 **Planned**
 
@@ -225,9 +225,10 @@ enforced by the backend even when the client also validates.
 ## Backend and data boundaries
 
 Supabase is the V1 backend ([ADR-016](decisions/016-use-supabase-as-backend-platform.md)). The
-backend is defined by versioned migrations in `supabase/migrations/`; local fixtures live in
-`supabase/seed.sql` and are reapplied by every reset. No production table depends on manual
-dashboard setup.
+backend is defined by versioned migrations in `supabase/migrations/`, applied to the linked hosted
+project with `supabase db push`. `supabase/seed.sql` is the reference definition of the two-shelter
+fixture set; `supabase/hosted-dev-seed.sql` is the loader run once against the hosted development
+project. No production table depends on manual dashboard setup.
 
 [SECURITY.md](SECURITY.md) is authoritative for the security properties of everything in this
 section; what follows is the structural view.
@@ -384,16 +385,20 @@ Complex synchronization queues are out of scope unless real requirements demonst
 ## Testing strategy
 
 Tests are added with each increment, at the level that matches the trust boundary
-([ADR-024](decisions/024-test-throughout-delivery.md)):
+([ADR-024](decisions/024-test-throughout-delivery.md)). All automated tests run under Jest with no
+external services:
 
 - unit tests for transition rules and pure formatting or validation;
 - component tests for forms and visible interaction behavior;
-- repository and mapper tests for PostgREST response handling and RPC payload mapping;
-- pgTAP database tests for constraints, RLS policies, and the atomic operations, including
-  cross-shelter denial, duplicate submission, double completion, rollback, and the absence of
-  private notes in timeline payloads;
-- an integration script that exercises real Supabase Auth and RLS with the publishable key;
+- repository and mapper tests for PostgREST response handling and RPC payload mapping, exercised
+  against a fake Supabase client that returns canned `{ data, error }` results;
 - end-to-end tests only for critical paths where their cost is justified.
+
+Database-level tests (pgTAP for constraints, RLS policies, and atomic-operation rollback) and the
+real-session RLS integration script were removed together with the local Supabase / Docker tooling
+([ADR-026](decisions/026-remove-local-supabase-test-stack.md)). Constraint, RLS, and atomicity
+correctness now rests on the migrations and on review, not on an automated suite; repository tests
+assert only that the client builds the right query and handles the error path.
 
 The same assertion is not duplicated across every layer without a concrete reason. Type checking,
 linting, formatting, and tests are never disabled to make a change pass.
@@ -425,16 +430,18 @@ modules.
 `APP_VARIANT` is a build-time configuration value read by `app.config.ts`. It is not a secret and
 must never store credentials.
 
-Three environments exist:
+Two environments exist:
 
-| Environment            | Backend                               | Fixtures                                          |
-| ---------------------- | ------------------------------------- | ------------------------------------------------- |
-| Local                  | Local Supabase stack from `supabase/` | `supabase/seed.sql`, reapplied by every reset     |
-| Hosted development     | Linked hosted Supabase project        | `supabase/hosted-dev-seed.sql`, run manually once |
-| Preview and production | Not yet provisioned                   | —                                                 |
+| Environment            | Backend                        | Fixtures                                          |
+| ---------------------- | ------------------------------ | ------------------------------------------------- |
+| Development            | Linked hosted Supabase project | `supabase/hosted-dev-seed.sql`, run manually once |
+| Preview and production | Not yet provisioned            | —                                                 |
 
-The hosted development project is intentionally separate from the local stack. Migrations are
-applied to it deliberately, and its fixture loader is never run through `supabase db push`.
+Local development uses the linked hosted development project directly; there is no local database
+and no Docker ([ADR-026](decisions/026-remove-local-supabase-test-stack.md)). Migrations are applied
+to the hosted project deliberately with `supabase db push`, and its fixture loader
+(`hosted-dev-seed.sql`) is run once in the SQL Editor, never through `supabase db push`.
+`supabase/seed.sql` is kept only as the reference definition of the two-shelter fixture set.
 
 Preview and production delivery will use EAS when release builds are introduced. No secret or
 production credential is required for ordinary local checks.

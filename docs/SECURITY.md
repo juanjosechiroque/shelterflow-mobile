@@ -22,8 +22,11 @@ cannot be mistaken for a promise.
    write privilege on any domain table.
 3. **Identity comes from the session, never from the payload.** Shelter and actor are derived
    server-side; a client cannot name the shelter it is acting for.
-4. **Isolation is proven, not assumed.** The cross-shelter boundary is asserted by automated tests
-   against at least two shelters.
+4. **Isolation is enforced in the database, not in the client.** The cross-shelter boundary is
+   enforced by forced Row Level Security and shelter-scoped constraints in the migrations. It is no
+   longer covered by an automated test suite ([ADR-026](decisions/026-remove-local-supabase-test-stack.md));
+   changes to policies, constraints, or `SECURITY DEFINER` functions must be verified by review and,
+   where needed, by hand against the hosted project.
 5. **History is protected as data.** No application path hard-deletes historical records.
 6. **The app ships no privileged credential.** Only publishable, non-secret configuration reaches
    the device.
@@ -94,9 +97,12 @@ application.
 - Storage objects in the private `shelter-media` bucket are isolated by shelter-scoped policies on
   `storage.objects`; the object key's first path segment is the owning shelter, resolved by the same
   `public.auth_shelter_id()` helper.
-- Isolation is asserted by pgTAP policy tests, by cross-shelter referential-integrity tests, by
-  denial tests inside the operation test files, by a storage isolation test, and by integration
-  scripts that sign a real second user in and attempt to read or write the first shelter's rows.
+- Isolation rests on the migrations themselves: every table enables and forces RLS, revokes default
+  privileges, and adds a shelter-scoped policy in the same migration that creates it. The former
+  pgTAP policy tests, cross-shelter referential-integrity tests, storage isolation test, and
+  real-session integration scripts were removed with the local Supabase / Docker tooling
+  ([ADR-026](decisions/026-remove-local-supabase-test-stack.md)); the boundary is now verified by
+  review and by manual checks against the hosted project.
 
 Every new domain table is unprotected until it enables RLS, forces it, revokes default privileges,
 and adds its policy. That sequence is part of the migration, not a follow-up.
@@ -167,9 +173,9 @@ Two rules follow from this:
 - The publishable key is only safe because the roles it can assume have almost no privileges. Any
   broad grant to `anon` or `authenticated` turns it into a data breach.
 
-**One deliberate exception.** Local development fixtures create login-capable accounts whose
-credentials are documented in [README.md](../README.md#local-supabase-backend). They exist only in
-the local stack, are clearly fictitious, and are never used in another environment
+**One deliberate exception.** Development fixtures describe login-capable accounts whose
+credentials are documented in [README.md](../README.md#supabase-backend). They are clearly
+fictitious and belong only to the development fixture set
 ([ADR-023](decisions/023-fictitious-reproducible-fixtures.md)). Fixture credentials must never be
 reused for the hosted development, preview, or production environments.
 
@@ -191,8 +197,8 @@ Rules:
 
 - **Timeline payloads carry display-safe workflow metadata only.** Private notes, contact details,
   and identifying information stay on their domain records
-  ([ADR-014](decisions/014-timeline-as-domain-projection.md)). A database test asserts that private
-  notes do not reach timeline payloads.
+  ([ADR-014](decisions/014-timeline-as-domain-projection.md)). The closed event-type set and
+  display-safe payload shape keep private notes out of timeline payloads by construction.
 - **Attachments are referenced by storage path, never by a signed or public URL**, so a leaked
   record cannot double as a durable public link.
 - **User-entered content is preserved exactly as entered** and is never automatically translated or
@@ -225,22 +231,22 @@ embed record contents.
 
 Threats the project currently considers relevant, with the control that addresses each.
 
-| Threat                                              | Scenario                                                                                                   | Control                                                                                                                                                                                         | Status                            |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| **Cross-shelter access**                            | A legitimate user of shelter A reads or changes shelter B's data                                           | Forced RLS on every table; shelter derived from the session; shelter-scoped foreign keys; two-shelter tests including a real-session integration test                                           | Implemented                       |
-| **ID enumeration**                                  | An attacker with a valid session guesses record identifiers from another shelter                           | Identifiers are UUIDs; RLS filters reads regardless of the identifier; operations report a foreign record as unavailable without confirming existence                                           | Implemented                       |
-| **Mutation forgery**                                | A modified client calls a write path directly, or names another shelter in the payload                     | No table write grants; every function derives shelter and actor from the session and ignores caller-supplied ownership                                                                          | Implemented                       |
-| **Invariant bypass**                                | A crafted or future write path produces a selected candidate with no adoption, or a second active adoption | Preconditions inside the transaction, plus triggers, unique indexes, and check constraints that hold independently of the caller                                                                | Implemented                       |
-| **Duplicate submission**                            | A double tap or a retry after a timeout applies a transition twice                                         | Preconditions reject an already-applied transition; row locks serialize concurrent calls; a partial unique index blocks a duplicate scheduled meeting; client mutations disable while in flight | Implemented                       |
-| **Race between concurrent operations**              | A follow-up is completed while the adoption is being returned                                              | Both operations lock the adoption row first and reject a follow-up whose adoption is no longer active                                                                                           | Implemented                       |
-| **Privilege escalation through a definer function** | A `SECURITY DEFINER` function is abused to act outside the caller's shelter                                | Functions are narrow and reviewed, pin `search_path`, are revoked from `public` and `anon`, and re-derive the shelter internally                                                                | Implemented                       |
-| **Anonymous data access**                           | An unauthenticated caller uses the publishable key against the Data API                                    | All privileges revoked from `anon`, including schema default privileges                                                                                                                         | Implemented                       |
-| **Private-data leakage through the timeline**       | Notes or contact details are copied into an animal timeline that is broadly read within the shelter        | Closed event-type set with display-safe payloads; a database test asserts notes are absent                                                                                                      | Implemented                       |
-| **Secret exposure**                                 | A privileged key is bundled into the application or committed                                              | Only publishable configuration is read by the client; the service-role key is never referenced; `.env` files and signing material are ignored by Git                                            | Implemented                       |
-| **Session theft from a device**                     | An attacker with the unlocked device or a compromised backup reads the stored session                      | Platform per-app sandbox; foreground-only refresh; sign-out clears the session                                                                                                                  | Partial — see below               |
-| **Sensitive data in logs or crash reports**         | Tokens or private notes reach a third-party service                                                        | No logging or reporting integration exists yet; the redaction rules above must be applied before one is added                                                                                   | Not addressed yet                 |
-| **Unauthorized image access**                       | A follow-up photo of an adopter's home is readable by another shelter                                      | Private `shelter-media` bucket, shelter-scoped `storage.objects` policies, and two-shelter isolation tests; the upload/attach RPC path is still pending                                         | Implemented — upload path pending |
-| **Destructive data loss**                           | Historical records are deleted from the application, by accident or on purpose                             | No application path hard-deletes historical records; archiving is invariant-checked ([ADR-013](decisions/013-preserve-history-and-restrict-deletion.md))                                        | Implemented                       |
+| Threat                                              | Scenario                                                                                                   | Control                                                                                                                                                                                                                                  | Status                            |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **Cross-shelter access**                            | A legitimate user of shelter A reads or changes shelter B's data                                           | Forced RLS on every table; shelter derived from the session; shelter-scoped foreign keys and constraints in the migrations; verified by review, not by an automated suite ([ADR-026](decisions/026-remove-local-supabase-test-stack.md)) | Implemented                       |
+| **ID enumeration**                                  | An attacker with a valid session guesses record identifiers from another shelter                           | Identifiers are UUIDs; RLS filters reads regardless of the identifier; operations report a foreign record as unavailable without confirming existence                                                                                    | Implemented                       |
+| **Mutation forgery**                                | A modified client calls a write path directly, or names another shelter in the payload                     | No table write grants; every function derives shelter and actor from the session and ignores caller-supplied ownership                                                                                                                   | Implemented                       |
+| **Invariant bypass**                                | A crafted or future write path produces a selected candidate with no adoption, or a second active adoption | Preconditions inside the transaction, plus triggers, unique indexes, and check constraints that hold independently of the caller                                                                                                         | Implemented                       |
+| **Duplicate submission**                            | A double tap or a retry after a timeout applies a transition twice                                         | Preconditions reject an already-applied transition; row locks serialize concurrent calls; a partial unique index blocks a duplicate scheduled meeting; client mutations disable while in flight                                          | Implemented                       |
+| **Race between concurrent operations**              | A follow-up is completed while the adoption is being returned                                              | Both operations lock the adoption row first and reject a follow-up whose adoption is no longer active                                                                                                                                    | Implemented                       |
+| **Privilege escalation through a definer function** | A `SECURITY DEFINER` function is abused to act outside the caller's shelter                                | Functions are narrow and reviewed, pin `search_path`, are revoked from `public` and `anon`, and re-derive the shelter internally                                                                                                         | Implemented                       |
+| **Anonymous data access**                           | An unauthenticated caller uses the publishable key against the Data API                                    | All privileges revoked from `anon`, including schema default privileges                                                                                                                                                                  | Implemented                       |
+| **Private-data leakage through the timeline**       | Notes or contact details are copied into an animal timeline that is broadly read within the shelter        | Closed event-type set with display-safe payloads that exclude notes by construction                                                                                                                                                      | Implemented                       |
+| **Secret exposure**                                 | A privileged key is bundled into the application or committed                                              | Only publishable configuration is read by the client; the service-role key is never referenced; `.env` files and signing material are ignored by Git                                                                                     | Implemented                       |
+| **Session theft from a device**                     | An attacker with the unlocked device or a compromised backup reads the stored session                      | Platform per-app sandbox; foreground-only refresh; sign-out clears the session                                                                                                                                                           | Partial — see below               |
+| **Sensitive data in logs or crash reports**         | Tokens or private notes reach a third-party service                                                        | No logging or reporting integration exists yet; the redaction rules above must be applied before one is added                                                                                                                            | Not addressed yet                 |
+| **Unauthorized image access**                       | A follow-up photo of an adopter's home is readable by another shelter                                      | Private `shelter-media` bucket and shelter-scoped `storage.objects` policies in the migrations (no automated test; see [ADR-026](decisions/026-remove-local-supabase-test-stack.md)); the upload/attach RPC path is still pending        | Implemented — upload path pending |
+| **Destructive data loss**                           | Historical records are deleted from the application, by accident or on purpose                             | No application path hard-deletes historical records; archiving is invariant-checked ([ADR-013](decisions/013-preserve-history-and-restrict-deletion.md))                                                                                 | Implemented                       |
 
 Out of scope for the current model: denial-of-service protection, rate limiting, and abuse
 prevention at the API edge, which are properties of the hosting platform rather than of this
@@ -256,8 +262,8 @@ a commitment to a date.
   handling, and error reporting are planned; the redaction rules in
   [Logging and observability](#logging-and-observability) must ship with them, not after.
 - **Storage bucket and shelter-scoped policies exist; upload path is pending.** The private
-  `shelter-media` bucket and `storage.objects` policies are in place and have been proven with two
-  shelters. The client upload preflight, signed-URL read path, and attach RPCs are still pending.
+  `shelter-media` bucket and `storage.objects` policies are in place in the migrations. The client
+  upload preflight, signed-URL read path, and attach RPCs are still pending.
 - **The session is not in hardware-backed storage.** AsyncStorage is the deliberate current choice;
   moving to SecureStore is a candidate hardening step.
 - **No rate limiting on authentication or operations** beyond what the hosting platform provides.

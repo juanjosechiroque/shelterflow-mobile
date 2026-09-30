@@ -49,19 +49,14 @@
     "android:device": "cross-env APP_VARIANT=development expo run:android --device",
     "ios": "cross-env APP_VARIANT=development expo run:ios",
     "web": "cross-env APP_VARIANT=development expo start --web",
+    "supabase:push": "supabase db push",
+    "supabase:types": "supabase gen types typescript --linked > src/lib/database.types.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "expo lint --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest --runInBand",
-    "test:watch": "jest --watch",
-    "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop",
-    "supabase:status": "supabase status",
-    "supabase:reset": "supabase db reset",
-    "supabase:test": "supabase test db",
-    "supabase:test:rls": "node scripts/supabase-rls-test.mjs",
-    "supabase:test:storage": "node scripts/supabase-storage-test.mjs"
+    "test:watch": "jest --watch"
   },
   "private": true
 }

@@ -106,11 +106,15 @@ Always, regardless of the row:
   git diff --check
   ```
 
-- Run `supabase db reset` only when migrations or seed data change, or when explicitly verifying
-  reproducibility.
-- Match tests to the trust boundary: component tests for UI behavior, database and RLS tests for
-  persistence and authorization, and a focused integration test for a critical cross-boundary flow.
-  Do not duplicate the same assertion across all layers without a concrete reason.
+- The backend is the linked hosted Supabase project; there is no local stack or Docker
+  ([ADR-026](docs/decisions/026-remove-local-supabase-test-stack.md)). Apply migrations with
+  `npm run supabase:push` and regenerate types with `npm run supabase:types`, both against the
+  linked project. Never reintroduce a `supabase start` / `supabase db reset` workflow.
+- Match tests to the trust boundary: unit tests for pure logic, component tests for UI behavior,
+  and repository tests that fake the Supabase client for query shape and error handling. Database
+  and RLS correctness is not covered by automated tests; verify policy, constraint, and function
+  changes by review. Do not duplicate the same assertion across all layers without a concrete
+  reason.
 - Describe remaining manual checks. For significant technical decisions, explain the choice,
   alternatives, implications, and failure scenarios — and if the decision outlives the task, record
   it as an [ADR](docs/decisions/README.md).
