@@ -165,6 +165,17 @@
         "reevaluation": "Realizar una revisión humana antes de cambiar su disponibilidad.",
         "notAvailable": "El refugio debe decidir cuándo reiniciar la preparación."
       },
+      "photo": {
+        "pickFromGallery": "Seleccionar de galería",
+        "takePhoto": "Tomar foto",
+        "uploading": "Subiendo foto…",
+        "error": "No pudimos subir la foto. Inténtalo nuevamente.",
+        "attachError": "No pudimos guardar la foto. Inténtalo nuevamente.",
+        "permissionDenied": "No tenemos permiso para acceder a la cámara o la galería. Habilítalo en la configuración del dispositivo.",
+        "invalidType": "Ese archivo no es una imagen compatible (JPEG, PNG o WEBP).",
+        "tooLarge": "La imagen supera el tamaño máximo permitido (10 MB)."
+      },
+      "noPhoto": "Sin foto",
       "notFoundTitle": "Animal no encontrado",
       "notFoundDescription": "No pudimos encontrar este animal.",
       "goBack": "Volver",

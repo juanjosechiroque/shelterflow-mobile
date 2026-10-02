@@ -165,6 +165,17 @@
         "reevaluation": "Perform a human review before changing availability.",
         "notAvailable": "The shelter must decide when to restart preparation."
       },
+      "photo": {
+        "pickFromGallery": "Pick from gallery",
+        "takePhoto": "Take photo",
+        "uploading": "Uploading photo…",
+        "error": "We couldn't upload the photo. Try again.",
+        "attachError": "We couldn't save the photo. Try again.",
+        "permissionDenied": "We don't have permission to access the camera or gallery. Enable it in device settings.",
+        "invalidType": "That file isn't a supported image (JPEG, PNG, or WEBP).",
+        "tooLarge": "The image is larger than the maximum allowed size (10 MB)."
+      },
+      "noPhoto": "No photo set",
       "notFoundTitle": "Animal not found",
       "notFoundDescription": "We couldn't find this animal.",
       "goBack": "Go back",

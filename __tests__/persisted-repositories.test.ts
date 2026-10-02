@@ -13,6 +13,10 @@ import {
   listMeetingsForCandidate,
   scheduleMeeting,
 } from '@/features/meetings/meeting-repository';
+import {
+  getAnimalPrimaryPhotoSignedUrl,
+  setAnimalPrimaryPhoto,
+} from '@/features/animals/persisted-animal-repository';
 import type { Database } from '@/lib/database.types';
 
 type Result = { data: unknown; error: unknown };
@@ -25,9 +29,11 @@ type Result = { data: unknown; error: unknown };
 function createClient(config: {
   tableResult?: Result;
   rpc?: Record<string, Result>;
+  storage?: { createSignedUrl?: Result };
 }): {
   client: SupabaseClient<Database>;
   rpcMock: jest.Mock;
+  createSignedUrlMock: jest.Mock;
 } {
   const tableResult = config.tableResult ?? { data: null, error: null };
 
@@ -46,8 +52,19 @@ function createClient(config: {
     Promise.resolve(config.rpc?.[name] ?? { data: null, error: null }),
   );
 
-  const client = { from, rpc: rpcMock } as unknown as SupabaseClient<Database>;
-  return { client, rpcMock };
+  const createSignedUrlMock = jest.fn(() =>
+    Promise.resolve(
+      config.storage?.createSignedUrl ?? { data: null, error: null },
+    ),
+  );
+  const storageFrom = jest.fn(() => ({ createSignedUrl: createSignedUrlMock }));
+
+  const client = {
+    from,
+    rpc: rpcMock,
+    storage: { from: storageFrom },
+  } as unknown as SupabaseClient<Database>;
+  return { client, rpcMock, createSignedUrlMock };
 }
 
 const shelterId = '00000000-0000-4000-8000-000000000001';
@@ -321,6 +338,86 @@ describe('meeting-repository', () => {
       p_meeting_id: 'meeting-2',
       p_result: 'GOOD',
       p_notes: 'Went well',
+    });
+  });
+});
+
+describe('persisted-animal-repository primary photo', () => {
+  const animalId = animalRow.id;
+  const path = `${shelterId}/animals/${animalId}/11111111-1111-4111-8111-111111111111.jpg`;
+
+  it('sends the exact path passed in, not a derived value', async () => {
+    const { client, rpcMock } = createClient({
+      rpc: { set_animal_primary_photo: { data: animalId, error: null } },
+    });
+
+    const id = await setAnimalPrimaryPhoto(client, { animalId, path });
+
+    expect(id).toBe(animalId);
+    expect(rpcMock).toHaveBeenCalledWith('set_animal_primary_photo', {
+      p_animal_id: animalId,
+      p_path: path,
+    });
+  });
+
+  it('surfaces the RPC error', async () => {
+    const { client } = createClient({
+      rpc: {
+        set_animal_primary_photo: {
+          data: null,
+          error: {
+            message: 'Animal is not available in the authenticated shelter',
+          },
+        },
+      },
+    });
+
+    await expect(
+      setAnimalPrimaryPhoto(client, { animalId, path }),
+    ).rejects.toEqual({
+      message: 'Animal is not available in the authenticated shelter',
+    });
+  });
+
+  it('rejects when the RPC returns no id', async () => {
+    const { client } = createClient({
+      rpc: { set_animal_primary_photo: { data: null, error: null } },
+    });
+
+    await expect(
+      setAnimalPrimaryPhoto(client, { animalId, path }),
+    ).rejects.toThrow('supabase_rpc_result_missing');
+  });
+
+  it('returns the path and the signed URL as separate values, never a path containing http', async () => {
+    const { client, createSignedUrlMock } = createClient({
+      storage: {
+        createSignedUrl: {
+          data: { signedUrl: 'https://example.supabase.co/signed/abc' },
+          error: null,
+        },
+      },
+    });
+
+    const result = await getAnimalPrimaryPhotoSignedUrl(client, path);
+
+    expect(result).toEqual({
+      path,
+      signedUrl: 'https://example.supabase.co/signed/abc',
+    });
+    expect(result.path).not.toContain('http');
+    expect(createSignedUrlMock).toHaveBeenCalledWith(path, 60 * 60);
+  });
+
+  it('throws when the storage client fails to generate a signed URL', async () => {
+    const { client } = createClient({
+      storage: {
+        createSignedUrl: { data: null, error: { message: 'not found' } },
+      },
+    });
+
+    await expect(getAnimalPrimaryPhotoSignedUrl(client, path)).rejects.toEqual({
+      message: 'not found',
     });
   });
 });

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       adoption_returns: {
@@ -616,6 +641,10 @@ export type Database = {
         Args: { p_followup_id: string; p_notes: string; p_outcome: string }
         Returns: string
       }
+      complete_meeting: {
+        Args: { p_meeting_id: string; p_notes: string; p_result: string }
+        Returns: string
+      }
       complete_reevaluation: {
         Args: { p_animal_id: string; p_next_status: string }
         Returns: string
@@ -629,31 +658,36 @@ export type Database = {
         }
         Returns: string
       }
-      return_adoption: {
-        Args: { p_adoption_id: string; p_notes: string; p_reason: string }
-        Returns: string
-      }
-      complete_meeting: {
-        Args: { p_meeting_id: string; p_notes: string | null; p_result: string }
-        Returns: string
-      }
       mark_decision_pending: {
         Args: { p_candidate_id: string }
-        Returns: string
-      }
-      schedule_meeting: {
-        Args: { p_candidate_id: string; p_type: string; p_scheduled_at: string; p_notes: string | null }
         Returns: string
       }
       record_evaluation: {
         Args: {
           p_candidate_id: string
           p_concerns: string[]
-          p_notes: string | null
+          p_notes: string
           p_overall_fit: string
           p_positive_factors: string[]
           p_recommendation: string
         }
+        Returns: string
+      }
+      return_adoption: {
+        Args: { p_adoption_id: string; p_notes: string; p_reason: string }
+        Returns: string
+      }
+      schedule_meeting: {
+        Args: {
+          p_candidate_id: string
+          p_notes: string
+          p_scheduled_at: string
+          p_type: string
+        }
+        Returns: string
+      }
+      set_animal_primary_photo: {
+        Args: { p_animal_id: string; p_path: string }
         Returns: string
       }
     }
@@ -784,6 +818,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
