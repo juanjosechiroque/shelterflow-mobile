@@ -175,13 +175,20 @@ describe('Persisted CandidateScreen', () => {
     mockedUseLocalSearchParams.mockReturnValue({ candidateId });
   });
 
-  it('shows a loading state then the mapped person, animal and source', async () => {
+  it('shows a loading state while the query is pending', async () => {
     const { client } = createClient({
-      tables: { candidates: { data: candidateRow('EVALUATED'), error: null } },
+      tables: { candidates: new Promise(() => undefined) },
     });
     const { screen } = await renderScreen(<CandidateScreen />, client);
 
     expect(screen.getByText('Cargando el candidato…')).toBeTruthy();
+  });
+
+  it('shows the mapped person, animal and source once loaded', async () => {
+    const { client } = createClient({
+      tables: { candidates: { data: candidateRow('EVALUATED'), error: null } },
+    });
+    const { screen } = await renderScreen(<CandidateScreen />, client);
 
     expect(await screen.findByText('Andrea Pérez')).toBeTruthy();
     expect(screen.getByText('Luna')).toBeTruthy();

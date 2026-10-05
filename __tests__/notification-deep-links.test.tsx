@@ -30,6 +30,7 @@ function createSource() {
   const source: NotificationResponseSource = {
     configureForegroundHandler: jest.fn(),
     getLastResponse: jest.fn(async () => null),
+    clearLastResponse: jest.fn(async () => undefined),
     addResponseListener: jest.fn((next) => {
       listener = next;
       return unsubscribe;
@@ -39,6 +40,7 @@ function createSource() {
     source,
     unsubscribe,
     getLastResponse: source.getLastResponse as jest.Mock,
+    clearLastResponse: source.clearLastResponse as jest.Mock,
     emit(event: NotificationResponseEvent) {
       listener?.(event);
     },
@@ -158,6 +160,113 @@ describe('NotificationResponseProvider', () => {
     });
 
     expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears a recovered cold-start response so a new mount does not navigate again', async () => {
+    const { source, getLastResponse, clearLastResponse } = createSource();
+    let isCleared = false;
+    getLastResponse.mockImplementation(async () =>
+      isCleared ? null : validEvent('cold-start-clear-1'),
+    );
+    clearLastResponse.mockImplementation(async () => {
+      isCleared = true;
+    });
+    const navigate = jest.fn();
+
+    const first = await render(
+      <NotificationResponseProvider navigate={navigate} source={source}>
+        {null}
+      </NotificationResponseProvider>,
+    );
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith(expectedHref);
+    });
+    await waitFor(() => {
+      expect(clearLastResponse).toHaveBeenCalledTimes(1);
+    });
+
+    await first.unmount();
+
+    const second = await render(
+      <NotificationResponseProvider navigate={navigate} source={source}>
+        {null}
+      </NotificationResponseProvider>,
+    );
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+
+    await second.unmount();
+  });
+
+  it('clears the recovered response when the listener already handled the same tap', async () => {
+    const { source, getLastResponse, clearLastResponse, emit } = createSource();
+    let isCleared = false;
+    let resolveLast!: (event: NotificationResponseEvent | null) => void;
+    getLastResponse.mockImplementation(() => {
+      if (isCleared) return Promise.resolve(null);
+      return new Promise((resolve) => {
+        resolveLast = resolve;
+      });
+    });
+    clearLastResponse.mockImplementation(async () => {
+      isCleared = true;
+    });
+    const navigate = jest.fn();
+
+    const first = await render(
+      <NotificationResponseProvider navigate={navigate} source={source}>
+        {null}
+      </NotificationResponseProvider>,
+    );
+
+    const event = validEvent('cold-start-listener-1');
+    await act(async () => {
+      emit(event);
+    });
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(clearLastResponse).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveLast(event);
+    });
+
+    await waitFor(() => {
+      expect(clearLastResponse).toHaveBeenCalledTimes(1);
+    });
+    expect(navigate).toHaveBeenCalledTimes(1);
+
+    await first.unmount();
+
+    const second = await render(
+      <NotificationResponseProvider navigate={navigate} source={source}>
+        {null}
+      </NotificationResponseProvider>,
+    );
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+
+    await second.unmount();
+  });
+
+  it('does not clear the cold-start response when the payload is invalid', async () => {
+    const { source, getLastResponse, clearLastResponse } = createSource();
+    getLastResponse.mockResolvedValue({ identifier: 'bad-cold-1', data: {} });
+    const navigate = jest.fn();
+
+    await render(
+      <NotificationResponseProvider navigate={navigate} source={source}>
+        {null}
+      </NotificationResponseProvider>,
+    );
+
+    await waitFor(() => {
+      expect(getLastResponse).toHaveBeenCalled();
+    });
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(clearLastResponse).not.toHaveBeenCalled();
   });
 
   it('ignores invalid payloads without navigating', async () => {

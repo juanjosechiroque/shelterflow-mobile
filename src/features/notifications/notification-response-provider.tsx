@@ -12,8 +12,10 @@ import {
  *
  * Foreground and background taps arrive through the response listener; a cold
  * start is recovered once with `getLastNotificationResponseAsync`. A response
- * identifier is handled at most once per session so the cold-start recovery
- * cannot navigate twice. Invalid payloads are ignored, and a follow-up that
+ * identifier navigates at most once per session. A recovered cold-start
+ * response with a valid payload is always cleared from the native module, even
+ * when the listener already handled the same identifier first, so it cannot be
+ * replayed on a later mount. Invalid payloads are ignored, and a follow-up that
  * no longer exists or is unavailable is handled by the destination screen.
  */
 
@@ -25,6 +27,7 @@ export interface NotificationResponseEvent {
 export interface NotificationResponseSource {
   configureForegroundHandler(): void;
   getLastResponse(): Promise<NotificationResponseEvent | null>;
+  clearLastResponse(): Promise<void>;
   addResponseListener(
     listener: (event: NotificationResponseEvent) => void,
   ): () => void;
@@ -49,6 +52,9 @@ export function createExpoNotificationResponseSource(): NotificationResponseSour
         identifier: response.notification.request.identifier,
         data: response.notification.request.content.data,
       };
+    },
+    async clearLastResponse() {
+      await Notifications.clearLastNotificationResponseAsync();
     },
     addResponseListener(listener) {
       const subscription =
@@ -87,25 +93,36 @@ export function NotificationResponseProvider({
     const activeSource = sourceRef.current;
     activeSource.configureForegroundHandler();
 
-    const handleResponse = (event: NotificationResponseEvent) => {
-      if (handledRef.current.has(event.identifier)) return;
-      handledRef.current.add(event.identifier);
-
+    const handleResponse = (event: NotificationResponseEvent): boolean => {
       const payload = parseFollowupNotificationPayload(event.data);
-      if (!payload) return;
+      if (!payload) return false;
+      if (handledRef.current.has(event.identifier)) return false;
 
+      handledRef.current.add(event.identifier);
       const href = followupCompletionHref(payload);
       if (navigate) {
         navigate(href);
       } else {
         router.push(href);
       }
+      return true;
     };
 
     const unsubscribe = activeSource.addResponseListener(handleResponse);
-    void activeSource.getLastResponse().then((event) => {
-      if (event) handleResponse(event);
-    });
+    void activeSource
+      .getLastResponse()
+      .then((event) => {
+        if (!event) return undefined;
+        const payload = parseFollowupNotificationPayload(event.data);
+        if (!payload) return undefined;
+
+        // The listener may have handled this identifier before the recovery
+        // resolved. Navigation stays deduplicated, but the native response is
+        // still cleared so it cannot replay on the next cold start.
+        handleResponse(event);
+        return activeSource.clearLastResponse();
+      })
+      .catch(() => undefined);
 
     return unsubscribe;
   }, [enabled, navigate]);

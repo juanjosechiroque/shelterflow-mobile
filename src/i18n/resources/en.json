@@ -248,7 +248,9 @@
       "selectOutcome": "Select a result to enable saving.",
       "savedTitle": "Contact result saved",
       "savedDescription": "Stored locally on this device. Saving it to the server is still pending.",
-      "saveError": "We couldn't save the contact result. Please try again."
+      "saveError": "We couldn't save the contact result. Please try again.",
+      "historyTitle": "Contact history",
+      "historyEmpty": "You haven't recorded any contact results on this device yet."
     }
   },
   "evaluations": {

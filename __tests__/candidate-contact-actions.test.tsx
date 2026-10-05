@@ -1,8 +1,9 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { ContactActionsPanel } from '@/features/candidates/components/contact-actions-panel';
 import type { OpenContactResult } from '@/features/candidates/contact-actions';
 import type {
+  ContactLogEntry,
   ContactLogStore,
   NewContactLogEntry,
 } from '@/features/candidates/local-contact-log';
@@ -244,6 +245,97 @@ describe('ContactActionsPanel', () => {
     expect(
       await screen.findByText('Resultado del contacto guardado'),
     ).toBeTruthy();
+  });
+
+  it('shows a persisted result when the panel is reopened', async () => {
+    const { store } = createStore();
+    (store.list as jest.Mock).mockResolvedValue([
+      {
+        id: 'entry-existing',
+        candidateId,
+        channel: 'phone',
+        outcome: 'REACHED',
+        notes: 'Hablamos de Luna',
+        recordedAt: '2026-09-15T10:00:00.000Z',
+      },
+    ]);
+    const openUrl = createOpenUrl({ status: 'opened' });
+
+    const screen = await render(
+      <ContactActionsPanel
+        candidateId={candidateId}
+        openUrl={openUrl}
+        personName={personName}
+        phone={phone}
+        store={store}
+      />,
+    );
+
+    expect(await screen.findByText('Llamar · Se logró contacto')).toBeTruthy();
+    expect(screen.getByText('Hablamos de Luna')).toBeTruthy();
+  });
+
+  it('updates the contact history after saving a result', async () => {
+    const { store, record } = createStore();
+    const openUrl = createOpenUrl({ status: 'opened' });
+
+    const screen = await render(
+      <ContactActionsPanel
+        candidateId={candidateId}
+        openUrl={openUrl}
+        personName={personName}
+        phone={phone}
+        store={store}
+      />,
+    );
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Llamar' }));
+    await fireEvent.press(await screen.findByText('Se logró contacto'));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Guardar resultado' }),
+    );
+
+    await waitFor(() => {
+      expect(record).toHaveBeenCalledTimes(1);
+    });
+    expect(await screen.findByText('Llamar · Se logró contacto')).toBeTruthy();
+  });
+
+  it('keeps a saved result when the initial history load finishes late', async () => {
+    const { store, record } = createStore();
+    let resolveList!: (entries: ContactLogEntry[]) => void;
+    (store.list as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise<ContactLogEntry[]>((resolve) => {
+          resolveList = resolve;
+        }),
+    );
+    const openUrl = createOpenUrl({ status: 'opened' });
+
+    const screen = await render(
+      <ContactActionsPanel
+        candidateId={candidateId}
+        openUrl={openUrl}
+        personName={personName}
+        phone={phone}
+        store={store}
+      />,
+    );
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Llamar' }));
+    await fireEvent.press(await screen.findByText('Se logró contacto'));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Guardar resultado' }),
+    );
+    await waitFor(() => {
+      expect(record).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      resolveList([]);
+    });
+
+    expect(await screen.findByText('Llamar · Se logró contacto')).toBeTruthy();
   });
 
   it('renders the English interface when the language is English', async () => {

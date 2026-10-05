@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -24,7 +24,7 @@ import {
   type ContactLogStore,
   type ContactOutcome,
 } from '../local-contact-log';
-import { getContactOutcomeLabel } from '../presenters';
+import { getContactChannelLabel, getContactOutcomeLabel } from '../presenters';
 
 export interface ContactActionsPanelProps {
   candidateId: string;
@@ -61,9 +61,39 @@ export function ContactActionsPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [savedEntry, setSavedEntry] = useState<ContactLogEntry | null>(null);
+  const [history, setHistory] = useState<{
+    candidateId: string;
+    entries: ContactLogEntry[];
+  }>({ candidateId, entries: [] });
 
   const actionInFlight = useRef(false);
   const saveInFlight = useRef(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    void store
+      .list(candidateId)
+      .then((entries) => {
+        if (!isMounted) return;
+        setHistory((current) => {
+          if (current.candidateId !== candidateId) {
+            return { candidateId, entries };
+          }
+          const loadedIds = new Set(entries.map((entry) => entry.id));
+          return {
+            candidateId,
+            entries: [
+              ...entries,
+              ...current.entries.filter((entry) => !loadedIds.has(entry.id)),
+            ],
+          };
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      isMounted = false;
+    };
+  }, [candidateId, store]);
 
   async function handleContact(channel: ContactChannel) {
     const url = channel === 'phone' ? telephoneUrl : whatsappUrl;
@@ -98,6 +128,10 @@ export function ContactActionsPanel({
         notes: notes.trim().length > 0 ? notes.trim() : null,
       });
       setSavedEntry(entry);
+      setHistory((current) => {
+        if (current.candidateId !== candidateId) return current;
+        return { candidateId, entries: [...current.entries, entry] };
+      });
       setShowOutcomeForm(false);
     } catch {
       setSaveError(true);
@@ -108,6 +142,8 @@ export function ContactActionsPanel({
   }
 
   const isBusy = activeChannel !== null;
+  const historyEntries =
+    history.candidateId === candidateId ? history.entries : [];
 
   return (
     <View style={styles.section}>
@@ -273,6 +309,29 @@ export function ContactActionsPanel({
           </Text>
         </Card>
       ) : null}
+
+      <View style={styles.historySection}>
+        <Text style={styles.fieldLabel}>
+          {t('candidates.contact.historyTitle')}
+        </Text>
+        {historyEntries.length === 0 ? (
+          <Text style={styles.hint}>
+            {t('candidates.contact.historyEmpty')}
+          </Text>
+        ) : (
+          historyEntries.map((entry) => (
+            <View key={entry.id} style={styles.historyRow}>
+              <Text style={styles.historyMeta}>
+                {getContactChannelLabel(t, entry.channel)} ·{' '}
+                {getContactOutcomeLabel(t, entry.outcome)}
+              </Text>
+              {entry.notes ? (
+                <Text style={styles.historyNotes}>{entry.notes}</Text>
+              ) : null}
+            </View>
+          ))
+        )}
+      </View>
     </View>
   );
 }
@@ -315,6 +374,25 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textMuted,
     marginTop: spacing.sm,
+  },
+  historyMeta: {
+    ...typography.metaStrong,
+    color: colors.text,
+  },
+  historyNotes: {
+    ...typography.body,
+    color: colors.textMuted,
+    marginTop: spacing['2xs'],
+  },
+  historyRow: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  historySection: {
+    marginTop: spacing.lg,
   },
   input: {
     backgroundColor: colors.surfaceMuted,
