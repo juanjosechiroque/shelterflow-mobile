@@ -26,19 +26,18 @@ planned matters here, so the whole document uses these labels.
   and follow-ups through feature-local Supabase repositories and TanStack Query.
 - Atomic PostgreSQL operations for evaluation recording, contact advancement, meeting scheduling
   and completion, decision advancement, adoption confirmation, follow-up completion, adoption
-  return, reevaluation, and setting an animal's primary photo.
+  return, reevaluation, setting an animal's primary photo, setting an adoption handover photo, and
+  setting a follow-up photo.
 - Row Level Security on every public domain table, with direct mobile-client table writes denied.
-- Private, shelter-scoped Supabase Storage bucket; the animal primary photo capture → upload →
-  attach → render path (camera/gallery picker, client-side validation, downscale, upload, signed-URL
-  rendering).
+- Private, shelter-scoped Supabase Storage bucket; the image capture → upload → attach → render
+  path (camera/gallery picker, client-side validation, downscale, upload, signed-URL rendering) for
+  animal primary photos, adoption handover photos, and follow-up photos.
 - Spanish-first i18n with English support, and a persisted language preference.
 - Jest unit, component, structural, and repository tests. Database-level tests run against a local
   stack were removed with the local Supabase / Docker tooling ([ADR-026](decisions/026-remove-local-supabase-test-stack.md)).
 
 **Planned**
 
-- The adoption handover photo and follow-up photo upload workflows (same path as the animal primary
-  photo).
 - Native contact actions, local notifications, and follow-up deep links.
 - Network-resilience work beyond per-mutation loading and error states.
 - Error boundaries, structured error reporting, and redaction-enforced observability.
@@ -84,7 +83,7 @@ Supabase
 ├── PostgreSQL tables, constraints, and triggers
 ├── Row Level Security (reads)
 ├── SECURITY DEFINER functions / RPC (writes)
-└── Storage (shelter-media bucket; animal primary photo path implemented)
+└── Storage (shelter-media bucket; animal, adoption, and follow-up photo paths implemented)
 ```
 
 Reads go through RLS-protected queries. Writes go exclusively through RPCs
@@ -152,8 +151,8 @@ needs it.
 | Expo and React Native                      | SDK-managed cross-platform mobile runtime                         |
 | Expo Router and Linking                    | File-based navigation and deep-link-ready routing                 |
 | Expo Dev Client                            | Native development build compatible with SDK 57                   |
-| Expo Image Picker                          | Camera and gallery access for the animal photo flow               |
-| Expo Image                                 | Renders the animal's primary photo from a signed URL              |
+| Expo Image Picker                          | Camera and gallery access for the image photo flows               |
+| Expo Image                                 | Renders persisted photos from short-lived signed URLs             |
 | Expo Image Manipulator                     | Downscales and re-encodes a picked photo before upload            |
 | Expo File System                           | Reads a local image file into an `ArrayBuffer` for Storage upload |
 | Supabase JS client                         | Auth, RLS-protected reads, and RPC invocation                     |
@@ -309,6 +308,8 @@ its preconditions and effects — is in
 | `public.complete_followup`                   | `(p_followup_id uuid, p_outcome text, p_notes text)`                                                                           | follow-up id       |
 | `public.complete_reevaluation`               | `(p_animal_id uuid, p_next_status text)`                                                                                       | animal id          |
 | `public.set_animal_primary_photo`            | `(p_animal_id uuid, p_path text)`                                                                                              | animal id          |
+| `public.set_adoption_photo`                  | `(p_adoption_id uuid, p_path text)`                                                                                            | adoption id        |
+| `public.set_followup_photo`                  | `(p_followup_id uuid, p_path text)`                                                                                            | follow-up id       |
 
 Every function:
 
@@ -320,8 +321,9 @@ Every function:
 - locks the rows it mutates with `FOR UPDATE`, then validates every precondition inside the same
   transaction;
 - writes its own timeline events with display-safe metadata only, **except
-  `set_animal_primary_photo`**, which inserts no `timeline_events` row because attaching a photo is
-  not a domain transition ([DOMAIN.md](DOMAIN.md#timelineevent));
+  `set_animal_primary_photo`, `set_adoption_photo`, and `set_followup_photo`**, which insert no
+  `timeline_events` row because attaching a photo is not a domain transition
+  ([DOMAIN.md](DOMAIN.md#timelineevent));
 - raises a specific error the client can present, and rolls back completely.
 
 Concurrency rules that a single lock cannot express:
@@ -341,28 +343,31 @@ sequence of independent updates that could leave partial domain state.
 
 ### Storage
 
-**Implemented: bucket, shelter-scoped policies, and the animal primary photo path.** The private
+**Implemented: bucket, shelter-scoped policies, and all persisted photo paths.** The private
 `shelter-media` bucket and the `storage.objects` Row Level Security policies are in place. Every
 object key follows the convention `<shelter_id>/<entity>/<entity_id>/<filename>`; the first path
 segment is the owning shelter. The four policies (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) compare
 that prefix with the caller's shelter resolved through `public.auth_shelter_id()`, so a user can
 only read or write objects under their own shelter. `anon` has no access.
 
-The animal primary photo capture → upload → attach → render path is implemented:
-`src/features/animals/image-capture.ts` requests the relevant OS permission, opens the camera or
-gallery through `expo-image-picker`, validates the picked asset's MIME type and size client-side,
-downscales it to a maximum 1600px side and re-encodes it as JPEG at 0.7 quality through
-`expo-image-manipulator` (which also normalizes the uploaded content-type/extension), and reads the
-resulting file into an `ArrayBuffer` with `expo-file-system`'s `File.arrayBuffer()` before handing it
-to `SupabaseClient.storage.from('shelter-media').upload()`. This avoids the FormData/Blob path,
-which is unreliable for local `file://` URIs under Hermes. `persisted-animal-repository.ts` then
-calls `set_animal_primary_photo(p_animal_id, p_path)` with the exact uploaded path, and reads the
-photo back with `createSignedUrl(path, 3600)` (a 1-hour TTL); the TanStack Query read cache is kept
-stale-after 45 minutes, strictly shorter than the TTL. Replacing an existing photo does not delete
-the previous Storage object — see [SECURITY.md](SECURITY.md#sensitive-data).
+The image capture → upload → attach → render path is implemented in `src/lib/image-capture.ts`:
+it requests the relevant OS permission, opens the camera or gallery through `expo-image-picker`,
+validates the picked asset's MIME type and size client-side, downscales it to a maximum 1600px side
+and re-encodes it as JPEG at 0.7 quality through `expo-image-manipulator` (which also normalizes
+the uploaded content-type/extension), and reads the resulting file into an `ArrayBuffer` with
+`expo-file-system`'s `File.arrayBuffer()` before handing it to
+`SupabaseClient.storage.from('shelter-media').upload()`. This avoids the FormData/Blob path, which
+is unreliable for local `file://` URIs under Hermes. The same adapter serves animal primary photos,
+adoption handover photos, and follow-up photos.
 
-**Planned.** The same upload-then-attach path for the adoption handover photo
-(`set_adoption_photo`) and the follow-up photo (`set_followup_photo`) — phase 8, slices 8.3/8.4.
+The repository layer calls `set_animal_primary_photo`, `set_adoption_photo`, or
+`set_followup_photo` with the exact uploaded path, and reads the photo back with
+`createSignedUrl(path, 3600)` (a 1-hour TTL); the TanStack Query read cache is kept stale-after
+45 minutes, strictly shorter than the TTL. Replacing an existing photo does not delete the previous
+Storage object — see [SECURITY.md](SECURITY.md#sensitive-data).
+
+**Implemented.** The same upload-then-attach path for the adoption handover photo
+(`set_adoption_photo`) and the follow-up photo (`set_followup_photo`).
 
 ## Internationalization
 
@@ -382,9 +387,9 @@ considered when building components.
 Mobile capabilities stay behind feature-level adapters where platform behavior or failure handling
 matters:
 
-- image picker or camera _(implemented: `src/features/animals/image-capture.ts`, animal primary
-  photo only — feature-local per [ADR-021](decisions/021-keep-implementation-feature-local.md),
-  promoted to a shared module only when a second feature consumes it)_;
+- image picker or camera _(implemented: `src/lib/image-capture.ts`, shared across animal primary
+  photo, adoption handover photo, and follow-up photo — promoted from feature-local per
+  [ADR-021](decisions/021-keep-implementation-feature-local.md))_;
 - WhatsApp and telephone URL schemes _(planned)_;
 - local notifications, and push notifications later only if justified _(planned)_;
 - deep links into follow-up routes _(planned)_;

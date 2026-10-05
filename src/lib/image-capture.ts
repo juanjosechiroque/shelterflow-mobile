@@ -27,6 +27,13 @@ export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const DOWNSCALE_MAX_DIMENSION = 1600;
 const DOWNSCALE_QUALITY = 0.7;
 
+// Signed-URL TTL: 1 hour. The read query's staleness is kept strictly shorter
+// than this TTL so a refetch always requests a new URL before the previous
+// one expires.
+export const PHOTO_SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+export type ImageEntitySegment = 'animals' | 'adoptions' | 'followups';
+
 export type ImageCaptureAsset = {
   uri: string;
   mimeType: string;
@@ -67,7 +74,7 @@ export async function pickImageFromGallery(): Promise<ImageCaptureOutcome> {
     selectionLimit: 1,
   });
 
-  if (result.canceled || result.assets.length === 0) {
+  if (result.canceled || !result.assets?.[0]) {
     return { status: 'cancelled' };
   }
 
@@ -85,7 +92,7 @@ export async function captureImageWithCamera(): Promise<ImageCaptureOutcome> {
     quality: 0.9,
   });
 
-  if (result.canceled || result.assets.length === 0) {
+  if (result.canceled || !result.assets?.[0]) {
     return { status: 'cancelled' };
   }
 
@@ -157,11 +164,12 @@ export async function uploadImageToStorage(
   client: SupabaseClient<Database>,
   asset: ImageCaptureAsset,
   shelterId: string,
-  animalId: string,
+  entitySegment: ImageEntitySegment,
+  entityId: string,
 ): Promise<string> {
   const downscaled = await downscaleImage(asset);
   const fileExt = downscaled.mimeType.split('/')[1] ?? 'jpg';
-  const path = `${shelterId}/animals/${animalId}/${uuid.v4()}.${fileExt}`;
+  const path = `${shelterId}/${entitySegment}/${entityId}/${uuid.v4()}.${fileExt}`;
 
   const file = new File(downscaled.uri);
   const bytes = await file.arrayBuffer();
@@ -179,4 +187,21 @@ export async function uploadImageToStorage(
   }
 
   return path;
+}
+
+export async function getPhotoSignedUrl(
+  client: SupabaseClient<Database>,
+  path: string,
+  ttl: number = PHOTO_SIGNED_URL_TTL_SECONDS,
+): Promise<{ path: string; signedUrl: string }> {
+  const { data, error } = await client.storage
+    .from('shelter-media')
+    .createSignedUrl(path, ttl);
+
+  if (error) throw error;
+  if (!data?.signedUrl) {
+    throw new Error('Failed to generate signed URL');
+  }
+
+  return { path, signedUrl: data.signedUrl };
 }
