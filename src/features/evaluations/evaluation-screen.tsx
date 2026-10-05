@@ -1,6 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +26,7 @@ import {
   getEvaluationFitLabel,
   getEvaluationRecommendationLabel,
 } from './presenters';
+import { evaluationDraftKey, evaluationDraftStore } from './evaluation-draft';
 import {
   useEvaluationByCandidate,
   useRecordEvaluationMutation,
@@ -68,16 +75,107 @@ export function EvaluationScreen() {
     !evaluationQuery.isLoading &&
     !evaluationQuery.isError;
 
-  function handleSubmit() {
-    if (positiveFactors.length === 0) return;
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [isDraftHydrated, setIsDraftHydrated] = useState(false);
+  const [hasSubmitError, setHasSubmitError] = useState(false);
+  const submissionStartedRef = useRef(false);
 
-    mutateRecordEvaluation.mutate({
-      overallFit,
-      positiveFactors,
-      concerns,
-      recommendation,
-      notes: notes.trim() || null,
-    });
+  useEffect(() => {
+    if (!candidateId || !showForm) return;
+    let isMounted = true;
+    void evaluationDraftStore
+      .load(evaluationDraftKey(candidateId))
+      .then((draft) => {
+        if (!isMounted) return;
+        if (draft) {
+          setOverallFit(draft.overallFit);
+          setRecommendation(draft.recommendation);
+          setPositiveFactors(draft.positiveFactors);
+          setConcerns(draft.concerns);
+          setNotes(draft.notes);
+          setDraftRestored(true);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!isMounted) return;
+        setIsDraftHydrated(true);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [candidateId, showForm]);
+
+  const hasDraftContent =
+    positiveFactors.length > 0 ||
+    concerns.length > 0 ||
+    notes.trim().length > 0 ||
+    overallFit !== 'STRONG' ||
+    recommendation !== 'CONTINUE';
+
+  useEffect(() => {
+    if (!candidateId || !showForm || !isDraftHydrated || !hasDraftContent) {
+      return;
+    }
+    void evaluationDraftStore
+      .save(evaluationDraftKey(candidateId), {
+        overallFit,
+        recommendation,
+        positiveFactors,
+        concerns,
+        notes,
+      })
+      .catch(() => undefined);
+  }, [
+    candidateId,
+    showForm,
+    isDraftHydrated,
+    hasDraftContent,
+    overallFit,
+    recommendation,
+    positiveFactors,
+    concerns,
+    notes,
+  ]);
+
+  function handleDiscardDraft() {
+    void evaluationDraftStore
+      .clear(evaluationDraftKey(candidateId ?? ''))
+      .catch(() => undefined);
+    setOverallFit('STRONG');
+    setRecommendation('CONTINUE');
+    setPositiveFactors([]);
+    setConcerns([]);
+    setNotes('');
+    setDraftRestored(false);
+  }
+
+  function handleSubmit() {
+    if (positiveFactors.length === 0 || submissionStartedRef.current) return;
+    submissionStartedRef.current = true;
+    setHasSubmitError(false);
+
+    mutateRecordEvaluation.mutate(
+      {
+        overallFit,
+        positiveFactors,
+        concerns,
+        recommendation,
+        notes: notes.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          submissionStartedRef.current = false;
+          void evaluationDraftStore
+            .clear(evaluationDraftKey(candidateId ?? ''))
+            .catch(() => undefined);
+        },
+        onError: () => {
+          submissionStartedRef.current = false;
+          setHasSubmitError(true);
+        },
+      },
+    );
   }
 
   const canSubmit = positiveFactors.length > 0;
@@ -92,6 +190,26 @@ export function EvaluationScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Stack.Screen options={{ title: t('evaluations.title') }} />
+
+        {showForm && draftRestored ? (
+          <View style={styles.draftBanner}>
+            <Text style={styles.draftText}>
+              {t('evaluations.form.draftRestored')}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleDiscardDraft}
+              style={({ pressed }) => [
+                styles.draftDiscard,
+                pressed && styles.draftDiscardPressed,
+              ]}
+            >
+              <Text style={styles.draftDiscardText}>
+                {t('evaluations.form.discardDraft')}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {!shelterId || !candidateId ? (
           <View style={styles.card}>
@@ -122,25 +240,32 @@ export function EvaluationScreen() {
         ) : evaluation ? (
           <EvaluationSummary evaluation={evaluation} />
         ) : showForm ? (
-          <EvaluationForm
-            onSubmit={handleSubmit}
-            overallFit={overallFit}
-            setOverallFit={setOverallFit}
-            recommendation={recommendation}
-            setRecommendation={setRecommendation}
-            positiveFactors={positiveFactors}
-            setPositiveFactors={setPositiveFactors}
-            concern={concern}
-            setConcern={setConcern}
-            concerns={concerns}
-            setConcerns={setConcerns}
-            positiveFactor={positiveFactor}
-            setPositiveFactor={setPositiveFactor}
-            notes={notes}
-            setNotes={setNotes}
-            canSubmit={canSubmit}
-            isMutating={mutateRecordEvaluation.isPending}
-          />
+          <>
+            {hasSubmitError ? (
+              <Text accessibilityRole="alert" style={styles.submitError}>
+                {t('evaluations.form.submitError')}
+              </Text>
+            ) : null}
+            <EvaluationForm
+              onSubmit={handleSubmit}
+              overallFit={overallFit}
+              setOverallFit={setOverallFit}
+              recommendation={recommendation}
+              setRecommendation={setRecommendation}
+              positiveFactors={positiveFactors}
+              setPositiveFactors={setPositiveFactors}
+              concern={concern}
+              setConcern={setConcern}
+              concerns={concerns}
+              setConcerns={setConcerns}
+              positiveFactor={positiveFactor}
+              setPositiveFactor={setPositiveFactor}
+              notes={notes}
+              setNotes={setNotes}
+              canSubmit={canSubmit}
+              isMutating={mutateRecordEvaluation.isPending}
+            />
+          </>
         ) : (
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>{t('evaluations.title')}</Text>
@@ -547,6 +672,37 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
+  draftBanner: {
+    alignItems: 'center',
+    backgroundColor: colors.infoSoft,
+    borderRadius: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  draftDiscard: {
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  draftDiscardPressed: {
+    backgroundColor: colors.surfaceSunken,
+  },
+  draftDiscardText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  draftText: {
+    color: colors.text,
+    flexShrink: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   fieldLabel: {
     color: colors.text,
     fontSize: 14,
@@ -630,6 +786,12 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontSize: 17,
     fontWeight: '900',
+  },
+  submitError: {
+    color: colors.danger,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
   },
   summaryLabel: {
     color: colors.textMuted,

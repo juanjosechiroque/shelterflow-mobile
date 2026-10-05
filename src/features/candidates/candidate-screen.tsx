@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/features/auth/auth-provider';
 
 import { colors } from '@/constants/theme';
+import { NetworkStatusBanner } from '@/components/ui';
 import { CandidateStatusBadge } from '@/features/animals/components/candidate-status-badge';
 import {
   getAnimalSexLabel,
@@ -13,6 +14,7 @@ import {
   getCandidateStatusLabel,
 } from '@/features/animals/presenters';
 import { getCandidateSourceLabel } from '@/features/candidates/presenters';
+import { ContactActionsPanel } from '@/features/candidates/components/contact-actions-panel';
 import { formatDate } from '@/i18n/format';
 
 import { useCandidateById } from './candidate-queries';
@@ -35,6 +37,7 @@ export function CandidateScreen() {
     data: candidate,
     isLoading,
     isError,
+    isFetching,
     refetch,
   } = useCandidateById(supabase, shelterId ?? '', candidateId ?? '');
 
@@ -106,6 +109,13 @@ export function CandidateScreen() {
     >
       <Stack.Screen options={{ title: candidate.person.name }} />
 
+      <NetworkStatusBanner
+        hasData={Boolean(candidate)}
+        isError={isError}
+        isFetching={isFetching}
+        onRetry={() => refetch()}
+      />
+
       <View style={styles.hero}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -154,6 +164,12 @@ export function CandidateScreen() {
           />
         </View>
       </View>
+
+      <ContactActionsPanel
+        candidateId={candidate.id}
+        personName={candidate.person.name}
+        phone={candidate.person.phone}
+      />
 
       {candidate.notes ? (
         <View style={styles.section}>

@@ -222,7 +222,34 @@
     "loadingTitle": "Cargando candidato",
     "loading": "Cargando el candidato…",
     "contactError": "No se pudo avanzar el contacto. Inténtalo nuevamente.",
-    "decisionError": "No se pudo marcar para decisión. Inténtalo nuevamente."
+    "decisionError": "No se pudo marcar para decisión. Inténtalo nuevamente.",
+    "contact": {
+      "title": "Contacto",
+      "call": "Llamar",
+      "whatsapp": "WhatsApp",
+      "openingCall": "Abriendo la aplicación de teléfono…",
+      "openingWhatsApp": "Abriendo WhatsApp…",
+      "invalidNumber": "El teléfono de {{name}} no se puede usar para llamadas ni WhatsApp.",
+      "appUnavailable": "La aplicación que maneja esta acción no está disponible en este dispositivo.",
+      "openError": "No pudimos abrir la aplicación. Inténtalo nuevamente.",
+      "startedHint": "Solo iniciamos la acción externa. No confirma que la llamada se haya conectado ni que el mensaje se haya enviado.",
+      "outcomeTitle": "Registrar el resultado del contacto",
+      "outcomeHint": "Registra lo que realmente ocurrió al intentar contactar a {{name}}.",
+      "outcomes": {
+        "reached": "Se logró contacto",
+        "noAnswer": "Sin respuesta",
+        "wrongNumber": "Número incorrecto",
+        "callbackRequested": "Pidió que lo llamen"
+      },
+      "notes": "Notas",
+      "notesPlaceholder": "Notas opcionales sobre el contacto",
+      "save": "Guardar resultado",
+      "saving": "Guardando resultado…",
+      "selectOutcome": "Selecciona un resultado para habilitar el guardado.",
+      "savedTitle": "Resultado del contacto guardado",
+      "savedDescription": "Guardado localmente en este dispositivo. La sincronización con el servidor aún está pendiente.",
+      "saveError": "No pudimos guardar el resultado del contacto. Inténtalo nuevamente."
+    }
   },
   "evaluations": {
     "title": "Evaluación",
@@ -261,7 +288,10 @@
       "notes": "Notas",
       "notesPlaceholder": "Observaciones adicionales",
       "recommendation": "Recomendación",
-      "submit": "Guardar evaluación"
+      "submit": "Guardar evaluación",
+      "draftRestored": "Restauramos un borrador guardado.",
+      "discardDraft": "Descartar borrador",
+      "submitError": "No pudimos guardar la evaluación. Tus respuestas se conservan para reintentar."
     }
   },
   "meetings": {
@@ -503,6 +533,20 @@
       "completeAction": "Completar seguimiento"
     }
   },
+  "notifications": {
+    "followupReminder": {
+      "schedule": "Programar recordatorio",
+      "scheduling": "Programando recordatorio…",
+      "cancel": "Cancelar recordatorio",
+      "scheduled": "Recordatorio programado. Aún no ha sido entregado.",
+      "cancelled": "Recordatorio cancelado.",
+      "permissionDenied": "Las notificaciones no están permitidas. Habilítalas en la configuración del dispositivo para programar recordatorios.",
+      "invalidDate": "La fecha ya pasó, así que no se programó ningún recordatorio.",
+      "error": "No pudimos actualizar el recordatorio. Inténtalo nuevamente.",
+      "title": "Seguimiento de {{animalName}}",
+      "body": "Recuerda completar el seguimiento con {{personName}}."
+    }
+  },
   "settings": {
     "title": "Configuración",
     "language": {
@@ -542,5 +586,11 @@
   },
   "common": {
     "retry": "Reintentar"
+  },
+  "network": {
+    "offline": "Estás sin conexión. Las acciones que necesitan el servidor esperarán a que vuelva la conexión.",
+    "offlineWithCache": "Estás sin conexión. Se muestran datos guardados, no el estado confirmado del servidor.",
+    "refreshing": "Actualizando los datos guardados…",
+    "refreshError": "No pudimos actualizar. Se muestran datos guardados."
   }
 }

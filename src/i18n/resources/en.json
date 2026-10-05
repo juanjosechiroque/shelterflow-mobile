@@ -222,7 +222,34 @@
     "loadingTitle": "Loading candidate",
     "loading": "Loading candidate…",
     "contactError": "Could not advance contact. Please try again.",
-    "decisionError": "Could not mark for decision. Please try again."
+    "decisionError": "Could not mark for decision. Please try again.",
+    "contact": {
+      "title": "Contact",
+      "call": "Call",
+      "whatsapp": "WhatsApp",
+      "openingCall": "Opening the phone app…",
+      "openingWhatsApp": "Opening WhatsApp…",
+      "invalidNumber": "{{name}}'s phone number can't be used for calls or WhatsApp.",
+      "appUnavailable": "The application that handles this action isn't available on this device.",
+      "openError": "We couldn't open the application. Please try again.",
+      "startedHint": "We only started the external action. It doesn't confirm that a call connected or a message was sent.",
+      "outcomeTitle": "Record the contact result",
+      "outcomeHint": "Record what actually happened when you tried to contact {{name}}.",
+      "outcomes": {
+        "reached": "Contact made",
+        "noAnswer": "No answer",
+        "wrongNumber": "Wrong number",
+        "callbackRequested": "Callback requested"
+      },
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes about the contact",
+      "save": "Save result",
+      "saving": "Saving result…",
+      "selectOutcome": "Select a result to enable saving.",
+      "savedTitle": "Contact result saved",
+      "savedDescription": "Stored locally on this device. Saving it to the server is still pending.",
+      "saveError": "We couldn't save the contact result. Please try again."
+    }
   },
   "evaluations": {
     "title": "Evaluation",
@@ -261,7 +288,10 @@
       "notes": "Notes",
       "notesPlaceholder": "Additional observations",
       "recommendation": "Recommendation",
-      "submit": "Save evaluation"
+      "submit": "Save evaluation",
+      "draftRestored": "We restored a saved draft.",
+      "discardDraft": "Discard draft",
+      "submitError": "We couldn't save the evaluation. Your answers are kept so you can retry."
     }
   },
   "meetings": {
@@ -503,6 +533,20 @@
       "completeAction": "Complete follow-up"
     }
   },
+  "notifications": {
+    "followupReminder": {
+      "schedule": "Schedule reminder",
+      "scheduling": "Scheduling reminder…",
+      "cancel": "Cancel reminder",
+      "scheduled": "Reminder scheduled. It hasn't been delivered yet.",
+      "cancelled": "Reminder cancelled.",
+      "permissionDenied": "Notifications aren't allowed. Enable them in device settings to schedule reminders.",
+      "invalidDate": "The due date has already passed, so no reminder was scheduled.",
+      "error": "We couldn't update the reminder. Please try again.",
+      "title": "Follow-up for {{animalName}}",
+      "body": "Remember to complete the follow-up with {{personName}}."
+    }
+  },
   "settings": {
     "title": "Settings",
     "language": {
@@ -542,5 +586,11 @@
   },
   "common": {
     "retry": "Retry"
+  },
+  "network": {
+    "offline": "You're offline. Actions that need the server will wait until the connection returns.",
+    "offlineWithCache": "You're offline. Showing saved data, not confirmed server state.",
+    "refreshing": "Refreshing saved data…",
+    "refreshError": "We couldn't refresh. Showing saved data."
   }
 }

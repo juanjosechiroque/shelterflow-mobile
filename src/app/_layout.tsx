@@ -1,11 +1,14 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
 import { AuthLoadingScreen } from '@/features/auth/auth-loading-screen';
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
+import { NotificationResponseProvider } from '@/features/notifications/notification-response-provider';
+import { ConnectivityProvider } from '@/providers/connectivity-provider';
 import { I18nProvider } from '@/providers/i18n-provider';
 import { AppQueryClientProvider } from '@/providers/query-client-provider';
 import { PrototypeFlowProvider } from '@/features/prototype-flow/prototype-flow-provider';
@@ -52,13 +55,30 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <I18nProvider>
         <AuthProvider>
-          <AppQueryClientProvider>
-            <PrototypeFlowProvider>
-              <RootNavigator />
-            </PrototypeFlowProvider>
-          </AppQueryClientProvider>
+          <ConnectivityProvider>
+            <AppQueryClientProvider>
+              <AuthenticatedNotificationRouting>
+                <PrototypeFlowProvider>
+                  <RootNavigator />
+                </PrototypeFlowProvider>
+              </AuthenticatedNotificationRouting>
+            </AppQueryClientProvider>
+          </ConnectivityProvider>
         </AuthProvider>
       </I18nProvider>
     </SafeAreaProvider>
+  );
+}
+
+function AuthenticatedNotificationRouting({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const { status } = useAuth();
+  return (
+    <NotificationResponseProvider enabled={status === 'authenticated'}>
+      {children}
+    </NotificationResponseProvider>
   );
 }
