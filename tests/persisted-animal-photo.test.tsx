@@ -311,7 +311,6 @@ describe('Animal primary photo', () => {
         p_path: `${shelterId}/animals/${animalId}/new.jpg`,
       });
     });
-    // The retry re-uses the already-picked asset instead of opening the picker again.
     expect(pickImageFromGallery).toHaveBeenCalledTimes(1);
   });
 

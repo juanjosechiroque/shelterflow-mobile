@@ -27,11 +27,10 @@ import type { Database } from '@/lib/database.types';
 
 type Result = { data: unknown; error: unknown };
 
-/**
- * Minimal PostgREST-shaped fake. `select()` returns a chain that ignores every
- * `.eq()` / `.order()` filter and resolves the configured result on the
- * terminating call (`.maybeSingle()`, `.order()` or awaiting the builder).
- */
+// Minimal PostgREST-shaped fake. `select()` returns a chain that ignores
+// every `.eq()` / `.order()` filter and resolves the configured result on
+// the terminating call (`.maybeSingle()`, `.order()` or awaiting the
+// builder).
 function createClient(config: {
   tableResult?: Result;
   rpc?: Record<string, Result>;

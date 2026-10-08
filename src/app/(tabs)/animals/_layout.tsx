@@ -38,10 +38,6 @@ export default function AnimalsLayout() {
         options={{ title: t('meetings.title') }}
       />
       <Stack.Screen
-        name="candidate/[candidateId]/confirm-adoption"
-        options={{ title: t('adoptions.confirm.title') }}
-      />
-      <Stack.Screen
         name="followups/[animalId]"
         options={{ title: t('followups.title') }}
       />

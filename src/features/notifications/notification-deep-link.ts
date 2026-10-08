@@ -2,15 +2,6 @@ import type { Href } from 'expo-router';
 
 import { FOLLOWUP_REMINDER_TYPE } from '@/lib/local-notifications';
 
-/**
- * Payload parsing and routing for follow-up reminder notifications.
- *
- * The payload is treated as untrusted: an invalid or unexpected value never
- * navigates. A valid payload routes to the existing follow-up completion
- * screen, which already handles a follow-up that does not exist or is not
- * available.
- */
-
 export interface FollowupNotificationPayload {
   adoptionId: string;
   followupId: string;

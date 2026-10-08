@@ -54,7 +54,6 @@ describe('<SettingsScreen /> My Shelter section', () => {
     expect(screen.getByText('Administrador Huellitas')).toBeTruthy();
     expect(screen.getByText('admin@shelter.com')).toBeTruthy();
 
-    // The other shelter fixture must not be visible to the administrator.
     expect(screen.queryByText('Patitas Felices')).toBeNull();
     expect(screen.queryByText('Argentina')).toBeNull();
   });

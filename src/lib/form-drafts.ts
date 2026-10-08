@@ -1,13 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/**
- * Recoverable form drafts.
- *
- * A draft is device-local, unencrypted, and temporary: it holds only the
- * values the user typed so a failed or interrupted form can be resumed. It
- * must never hold signed URLs or tokens.
- */
-
 export const FORM_DRAFT_STORAGE_PREFIX = 'shelterflow.draft.';
 
 export interface KeyValueStorage {
@@ -22,6 +14,8 @@ export interface DraftStore<T> {
   clear(key: string): Promise<void>;
 }
 
+// A draft is device-local, unencrypted, and temporary — it must never hold
+// signed URLs or tokens.
 export function createAsyncStorageDraftStore<T>(
   storage: KeyValueStorage = AsyncStorage,
 ): DraftStore<T> {

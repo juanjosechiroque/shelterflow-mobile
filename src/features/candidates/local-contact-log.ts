@@ -2,16 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { ContactChannel } from './contact-actions';
 
-/**
- * Device-local record of the contact outcomes a shelter user explicitly
- * records after attempting a native contact action.
- *
- * This is intentionally local-only for this delivery: there is no persisted
- * backend entity or RPC for contact outcomes yet. It never stores signed URLs
- * or tokens, and it never claims a contact succeeded merely because an
- * external application opened.
- */
-
 export const contactOutcomes = [
   'REACHED',
   'NO_ANSWER',

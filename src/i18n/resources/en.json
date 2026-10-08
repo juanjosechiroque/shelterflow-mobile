@@ -338,22 +338,6 @@
     "notFoundTitle": "Candidate not found"
   },
   "adoptions": {
-    "confirm": {
-      "title": "Confirm adoption",
-      "headline": "Confirm adoption",
-      "subtitle": "You are about to confirm the adoption of {{animalName}} with {{personName}}.",
-      "animal": "Animal",
-      "candidate": "Candidate",
-      "candidateStatus": "Candidate status",
-      "appliedOn": "Applied on",
-      "action": "Confirm adoption",
-      "unavailable": "Not available ({{status}})",
-      "warning": "On confirmation the adoption is recorded and the other candidates are left unselected. This action is performed atomically on the server.",
-      "successTitle": "Adoption confirmed",
-      "successDescription": "The animal adoption has been recorded. You can now review and complete the follow-ups.",
-      "viewFollowUps": "View follow-ups",
-      "done": "Done"
-    },
     "notFoundTitle": "Candidate not found",
     "persisted": {
       "title": "Confirm adoption",

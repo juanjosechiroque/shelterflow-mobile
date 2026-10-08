@@ -9,5 +9,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["__tests__", "jest.setup.ts"]
+  "exclude": ["tests", "jest.setup.ts"]
 }

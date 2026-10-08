@@ -4,6 +4,6 @@
     "types": ["jest", "node"],
     "noEmit": true
   },
-  "include": ["__tests__/**/*.ts", "__tests__/**/*.tsx", "jest.setup.ts"],
+  "include": ["tests/**/*.ts", "tests/**/*.tsx", "jest.setup.ts"],
   "exclude": []
 }

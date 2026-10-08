@@ -31,9 +31,9 @@ import {
   useAnimalById,
   useAnimalPrimaryPhotoSignedUrl,
   useAnimalTimeline,
-  useActiveAdoptionForAnimal,
   useSetAnimalPrimaryPhoto,
 } from '@/features/animals/persisted-animal-queries';
+import { useActiveAdoptionForAnimal } from '@/features/adoptions/active-adoption-queries';
 import { useAuth } from '@/features/auth/auth-provider';
 import { useCandidatesByAnimal } from '@/features/candidates/candidate-queries';
 import type { Database } from '@/lib/database.types';

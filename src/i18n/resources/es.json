@@ -338,22 +338,6 @@
     "notFoundTitle": "Candidato no encontrado"
   },
   "adoptions": {
-    "confirm": {
-      "title": "Confirmar adopción",
-      "headline": "Confirmar adopción",
-      "subtitle": "Estás por confirmar la adopción de {{animalName}} con {{personName}}.",
-      "animal": "Animal",
-      "candidate": "Candidato",
-      "candidateStatus": "Estado del candidato",
-      "appliedOn": "Postulado el",
-      "action": "Confirmar adopción",
-      "unavailable": "No disponible ({{status}})",
-      "warning": "Al confirmar, la adopción quedará registrada y los otros candidatos quedarán sin seleccionar. Esta acción se realiza de forma atómica en el servidor.",
-      "successTitle": "Adopción confirmada",
-      "successDescription": "La adopción del animal quedó registrada. Ahora puedes revisar y completar los seguimientos.",
-      "viewFollowUps": "Ver seguimientos",
-      "done": "Listo"
-    },
     "notFoundTitle": "Candidato no encontrado",
     "persisted": {
       "title": "Confirmar adopción",
