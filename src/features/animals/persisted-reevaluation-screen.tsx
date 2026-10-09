@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import {
   Card,
+  NetworkStatusBanner,
   PrimaryButton,
   ScreenHeader,
   SecondaryButton,
@@ -154,6 +155,13 @@ export function PersistedReevaluationScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Stack.Screen options={{ title: t('adoptions.reevaluation.title') }} />
+
+      <NetworkStatusBanner
+        hasData={Boolean(animalQuery.data)}
+        isError={animalQuery.isError}
+        isFetching={animalQuery.isFetching}
+        onRetry={() => void animalQuery.refetch()}
+      />
 
       <View style={styles.header}>
         <ScreenHeader

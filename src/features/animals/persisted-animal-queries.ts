@@ -14,19 +14,11 @@ import {
 import { getActiveAdoptionByAnimal } from '@/features/adoptions/active-adoption-repository';
 import { adoptionKeys } from '@/features/adoptions/active-adoption-queries';
 import { adoptionDecisionKeys } from '@/features/adoptions/adoption-queries';
+import { animalKeys } from '@/features/animals/animal-query-keys';
 import { PHOTO_SIGNED_URL_TTL_SECONDS } from '@/lib/image-capture';
 import type { Database } from '@/lib/database.types';
 
-export const animalKeys = {
-  all: (shelterId: string) => ['animals', shelterId] as const,
-  list: (shelterId: string) => ['animals', shelterId, 'list'] as const,
-  detail: (shelterId: string, animalId: string) =>
-    ['animals', shelterId, 'detail', animalId] as const,
-  timeline: (shelterId: string, animalId: string) =>
-    ['animals', shelterId, 'timeline', animalId] as const,
-  photoSignedUrl: (path: string) =>
-    ['animals', 'photo-signed-url', path] as const,
-};
+export { animalKeys };
 
 export function useAnimalsForShelter(
   client: SupabaseClient<Database> | null,
@@ -93,6 +85,9 @@ export function useCompleteReevaluation(
         }),
         queryClient.invalidateQueries({
           queryKey: animalKeys.timeline(shelterId ?? '', input.animalId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: animalKeys.list(shelterId ?? ''),
         }),
         queryClient.invalidateQueries({
           queryKey: adoptionKeys.list(shelterId ?? ''),

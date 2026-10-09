@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { colors, radii, spacing, typography } from '@/constants/theme';
 import {
   Card,
+  NetworkStatusBanner,
   PrimaryButton,
   ScreenHeader,
   SecondaryButton,
@@ -161,6 +162,13 @@ export function ReturnAdoptionScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Stack.Screen options={{ title: t('adoptions.return.title') }} />
+
+      <NetworkStatusBanner
+        hasData={Boolean(adoption)}
+        isError={adoptionQuery.isError}
+        isFetching={adoptionQuery.isFetching}
+        onRetry={() => void adoptionQuery.refetch()}
+      />
 
       <View style={styles.header}>
         <ScreenHeader
