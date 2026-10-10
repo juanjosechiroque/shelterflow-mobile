@@ -373,4 +373,160 @@ describe('Animal primary photo', () => {
     });
     expect(screen.getByText('M')).toBeTruthy();
   });
+
+  it('completes the flow via the camera and attaches the photo', async () => {
+    captureImageWithCamera.mockResolvedValue({
+      status: 'success',
+      asset: pickedAsset,
+    });
+    uploadImageToStorage.mockResolvedValue(
+      `${shelterId}/animals/${animalId}/camera.jpg`,
+    );
+
+    const { client, mocks } = createClient({ primaryPhotoPath: null });
+    const { screen } = await renderScreen(client);
+    await screen.findByText('Mia');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Tomar foto' }));
+
+    await waitFor(() => {
+      expect(mocks.rpc).toHaveBeenCalledWith('set_animal_primary_photo', {
+        p_animal_id: animalId,
+        p_path: `${shelterId}/animals/${animalId}/camera.jpg`,
+      });
+    });
+    expect(pickImageFromGallery).not.toHaveBeenCalled();
+  });
+
+  it('does not start a second upload while one is already in flight', async () => {
+    let resolveUpload!: (value: string) => void;
+    const pendingUpload = new Promise<string>((resolve) => {
+      resolveUpload = resolve;
+    });
+    uploadImageToStorage.mockReturnValue(pendingUpload);
+    pickImageFromGallery.mockResolvedValue({
+      status: 'success',
+      asset: pickedAsset,
+    });
+
+    const { client } = createClient({ primaryPhotoPath: null });
+    const { screen } = await renderScreen(client);
+    await screen.findByText('Mia');
+
+    const galleryButton = screen.getByRole('button', {
+      name: 'Seleccionar de galería',
+    });
+    await fireEvent.press(galleryButton);
+    await waitFor(() => {
+      expect(uploadImageToStorage).toHaveBeenCalledTimes(1);
+    });
+
+    await fireEvent.press(galleryButton);
+    await fireEvent.press(screen.getByRole('button', { name: 'Tomar foto' }));
+
+    expect(pickImageFromGallery).toHaveBeenCalledTimes(1);
+    expect(captureImageWithCamera).not.toHaveBeenCalled();
+    expect(uploadImageToStorage).toHaveBeenCalledTimes(1);
+
+    resolveUpload(`${shelterId}/animals/${animalId}/new.jpg`);
+    await waitFor(() => {
+      expect(uploadImageToStorage).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('replacing an existing photo fetches a signed URL for the new path', async () => {
+    let currentPhotoPath: string | null =
+      `${shelterId}/animals/${animalId}/old.jpg`;
+    const newPath = `${shelterId}/animals/${animalId}/new.jpg`;
+
+    const animalEq = jest.fn(() => ({
+      maybeSingle: jest.fn(() =>
+        Promise.resolve({ data: animalRow(currentPhotoPath), error: null }),
+      ),
+    }));
+    const timelineEq = jest.fn(() => ({
+      order: jest.fn(() => Promise.resolve({ data: [], error: null })),
+    }));
+    const adoptionEq2 = jest.fn(() => ({
+      maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
+    }));
+    const adoptionEq1 = jest.fn(() => ({ eq: adoptionEq2 }));
+    const candidatesEq2 = jest.fn(() => ({
+      order: jest.fn(() => Promise.resolve({ data: [], error: null })),
+    }));
+    const candidatesEq1 = jest.fn(() => ({ eq: candidatesEq2 }));
+
+    const from = jest.fn((table: string) => {
+      if (table === 'animals') {
+        return { select: jest.fn(() => ({ eq: jest.fn(() => animalEq()) })) };
+      }
+      if (table === 'timeline_events') {
+        return { select: jest.fn(() => ({ eq: jest.fn(() => timelineEq()) })) };
+      }
+      if (table === 'adoptions') {
+        return {
+          select: jest.fn(() => ({ eq: jest.fn(() => adoptionEq1()) })),
+        };
+      }
+      if (table === 'candidates') {
+        return { select: jest.fn(() => ({ eq: candidatesEq1 })) };
+      }
+      throw new Error(`unexpected table: ${table}`);
+    });
+
+    const rpc = jest.fn((name: string) => {
+      if (name === 'set_animal_primary_photo') {
+        currentPhotoPath = newPath;
+        return Promise.resolve({ data: animalId, error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    const createSignedUrlMock = jest.fn((path: string) =>
+      Promise.resolve({
+        data: { signedUrl: `https://signed.example.com/${path}` },
+        error: null,
+      }),
+    );
+    const storageFrom = jest.fn(() => ({
+      createSignedUrl: createSignedUrlMock,
+    }));
+
+    const client = {
+      from,
+      rpc,
+      storage: { from: storageFrom },
+    } as unknown as SupabaseClient<Database>;
+
+    pickImageFromGallery.mockResolvedValue({
+      status: 'success',
+      asset: pickedAsset,
+    });
+    uploadImageToStorage.mockResolvedValue(newPath);
+
+    const { screen } = await renderScreen(client);
+    await screen.findByText('Mia');
+
+    await waitFor(() => {
+      expect(createSignedUrlMock).toHaveBeenCalledWith(
+        `${shelterId}/animals/${animalId}/old.jpg`,
+        3600,
+      );
+    });
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Seleccionar de galería' }),
+    );
+
+    await waitFor(() => {
+      expect(rpc).toHaveBeenCalledWith('set_animal_primary_photo', {
+        p_animal_id: animalId,
+        p_path: newPath,
+      });
+    });
+
+    await waitFor(() => {
+      expect(createSignedUrlMock).toHaveBeenCalledWith(newPath, 3600);
+    });
+  });
 });
